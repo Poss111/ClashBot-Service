@@ -1,0 +1,15 @@
+spring:
+  application:
+    name: clash-bot-service
+  jpa:
+    hibernate:
+      ddl-auto: update
+aws:
+  accessKey: accessKey
+  secretKey: secretKey
+  dynamoDb:
+    endpoint: http://localhost:8000/
+logging:
+  level:
+    root: ERROR
+    com.poss: INFO
