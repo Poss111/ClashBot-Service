@@ -1,6 +1,7 @@
 package com.poss.clash.bot.utils;
 
 import com.poss.clash.bot.daos.models.TentativeQueue;
+import com.poss.clash.bot.openapi.model.Player;
 import com.poss.clash.bot.openapi.model.Tentative;
 import com.poss.clash.bot.openapi.model.TentativePlayer;
 import org.mapstruct.Builder;
@@ -27,6 +28,8 @@ public interface TentativeMapper {
     @Mapping(source = "discordIds", target = "tentativePlayers", qualifiedByName = "discordIdsToTentativePlayers")
     @Mapping(source = "tentativeId.serverId", target = "serverId")
     Tentative tentativeQueueToTentative(TentativeQueue tentative);
+
+    TentativePlayer playerToTentativePlayer(Player player);
 
     @Named("tentativePlayersToDiscordIds")
     static Set<Integer> tentativePlayersToDiscordIds(List<TentativePlayer> tentativePlayerList) {
