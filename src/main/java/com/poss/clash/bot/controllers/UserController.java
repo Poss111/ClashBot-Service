@@ -1,7 +1,6 @@
 package com.poss.clash.bot.controllers;
 
 import com.poss.clash.bot.daos.models.LoLChampion;
-import com.poss.clash.bot.daos.models.User;
 import com.poss.clash.bot.enums.UserSubscription;
 import com.poss.clash.bot.openapi.api.UserApi;
 import com.poss.clash.bot.openapi.model.*;
@@ -15,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -83,7 +83,9 @@ public class UserController implements UserApi {
 
     @Override
     public Mono<ResponseEntity<Champions>> removePreferredChampionForUser(Integer discordId, String champion, ServerWebExchange exchange) {
-        return userService.removePreferredChampionsForUser(discordId, Set.of(LoLChampion.builder().name(champion).build()))
+        Set<LoLChampion> championSet = new HashSet<>();
+        championSet.add(LoLChampion.builder().name(champion).build());
+        return userService.removePreferredChampionsForUser(discordId, championSet)
                 .map(ResponseEntity::ok)
                 .defaultIfEmpty(ResponseEntity.notFound().build());
     }

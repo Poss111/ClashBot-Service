@@ -2,7 +2,6 @@ package com.poss.clash.bot.utils;
 
 import com.poss.clash.bot.daos.models.ClashTournament;
 import com.poss.clash.bot.openapi.model.DetailedTournament;
-import com.poss.clash.bot.openapi.model.Tournament;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;

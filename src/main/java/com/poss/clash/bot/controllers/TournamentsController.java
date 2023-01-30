@@ -2,7 +2,6 @@ package com.poss.clash.bot.controllers;
 
 import com.poss.clash.bot.openapi.api.TournamentsApi;
 import com.poss.clash.bot.openapi.model.DetailedTournament;
-import com.poss.clash.bot.openapi.model.Tournament;
 import com.poss.clash.bot.openapi.model.Tournaments;
 import com.poss.clash.bot.services.TournamentService;
 import com.poss.clash.bot.utils.TournamentMapper;

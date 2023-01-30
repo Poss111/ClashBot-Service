@@ -440,13 +440,7 @@ paths:
         - Tentative
       responses:
         200:
-          description: 'A tentative queue for a specific Tournament.'
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Tentative'
+          $ref: '#/components/responses/TentativeListResponse'
         204:
           $ref: '#/components/responses/NoneFound'
         500:

@@ -1,6 +1,5 @@
 package com.poss.clash.bot.exceptions;
 
-import lombok.Data;
 import org.springframework.http.HttpStatus;
 
 public class HttpResponseException extends Throwable {

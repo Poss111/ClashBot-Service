@@ -4,7 +4,6 @@ import com.poss.clash.bot.daos.TournamentDao;
 import com.poss.clash.bot.daos.models.ClashTournament;
 import com.poss.clash.bot.daos.models.TournamentId;
 import com.poss.clash.bot.openapi.model.DetailedTournament;
-import com.poss.clash.bot.openapi.model.Tournament;
 import com.poss.clash.bot.utils.TournamentMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
