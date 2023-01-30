@@ -11,8 +11,9 @@ import reactor.core.publisher.Mono;
 
 @RestController
 public class TentativeController implements TentativeApi {
+
     @Override
-    public Mono<ResponseEntity<Flux<Tentative>>> getTentativeDetails(String serverName, String tournamentName, String tournamentDay, ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Flux<Tentative>>> getTentativeDetails(Integer serverId, String tournamentName, String tournamentDay, ServerWebExchange exchange) {
         return null;
     }
 
@@ -22,7 +23,8 @@ public class TentativeController implements TentativeApi {
     }
 
     @Override
-    public Mono<ResponseEntity<Tentative>> removePlayerFromTentative(String serverName, String playerId, String tournament, String tournamentDay, ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Tentative>> removePlayerFromTentative(Integer serverId, Integer discordId, String tournament, String tournamentDay, ServerWebExchange exchange) {
         return null;
     }
+
 }

@@ -1,6 +1,6 @@
 spring:
   application:
-    name: clash-bot-service
+    name: clash-bot-service-local
   jpa:
     hibernate:
       ddl-auto: update

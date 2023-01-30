@@ -39,12 +39,9 @@ sourceSets {
 
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
-    implementation 'com.github.derjust:spring-data-dynamodb:5.1.0'
-    implementation platform('software.amazon.awssdk:bom:2.19.13')
-    implementation 'software.amazon.awssdk:dynamodb'
+    implementation 'org.springframework.boot:spring-boot-starter-data-mongodb-reactive'
     implementation 'org.springdoc:springdoc-openapi-webflux-ui:1.6.14'
     implementation 'io.swagger.core.v3:swagger-annotations:2.2.8'
     implementation 'javax.validation:validation-api:2.0.1.Final'
@@ -81,7 +78,7 @@ openApiGenerate {
             reactive: "true",
             interfaceOnly: "true",
             skipDefaultInterface: "true",
-            additionalModelTypeAnnotations: "@lombok.Data();@lombok.NoArgsConstructor()",
+            additionalModelTypeAnnotations: "@lombok.Data();@lombok.NoArgsConstructor();@lombok.AllArgsConstructor();@lombok.Builder()",
             useSwaggerUI: "true"
     ]
 }
