@@ -47,20 +47,20 @@ components:
           type: object
           properties:
             Top:
-              $ref: '#/components/schemas/Player'
+              $ref: '#/components/schemas/TeamPlayer'
             Mid:
-              $ref: '#/components/schemas/Player'
+              $ref: '#/components/schemas/TeamPlayer'
             Jg:
-              $ref: '#/components/schemas/Player'
+              $ref: '#/components/schemas/TeamPlayer'
             Bot:
-              $ref: '#/components/schemas/Player'
+              $ref: '#/components/schemas/TeamPlayer'
             Supp:
-              $ref: '#/components/schemas/Player'
+              $ref: '#/components/schemas/TeamPlayer'
         serverId:
           description: The Discord server id that the Team belongs to.
           type: string
         tournament:
-          $ref: '#/components/schemas/Tournament'
+          $ref: '#/components/schemas/BaseTournament'
     Teams:
       description: A list of League of Legend's Clash Teams
       properties:
@@ -68,7 +68,18 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Team'
-    Tournament:
+    BaseTournament:
+      description: The base necessary Tournament details
+      type: object
+      properties:
+        tournamentName:
+          description: The name of the Tournament.
+          type: string
+        tournamentDay:
+          description: The day number of the Tournament. [1-4]
+          example: 1
+          type: string
+    DetailedTournament:
       description: A League of Legends Clash Tournament
       type: object
       properties:
@@ -94,7 +105,7 @@ components:
         tournaments:
           type: array
           items:
-            $ref: '#/components/schemas/Tournament'
+            $ref: '#/components/schemas/DetailedTournament'
     Tentative:
       description: A queue for Players unsure if they will play Clash for a given Tournament.
       type: object
@@ -103,10 +114,10 @@ components:
           description: The default Discord Server id for the player to use.
           type: integer
         tournamentDetails:
-          $ref: '#/components/schemas/Tournament'
+          $ref: '#/components/schemas/BaseTournament'
         tentativePlayers:
           items:
-            $ref: '#/components/schemas/Player'
+            $ref: '#/components/schemas/TentativePlayer'
     Tentatives:
       description: A list of queues for Players unsure if they will play Clash for a given Tournament.
       type: object
@@ -139,6 +150,36 @@ components:
         serverId:
           description: The Discord Server id that the User is defaulted to.
           type: integer
+    TeamPlayer:
+      description: A Player record with a subset of Player information for usage with Teams.
+      type: object
+      properties:
+        discordId:
+          description: Discord Id for the Player
+          type: integer
+        name:
+          description: The Players discord name
+          type: string
+        champions:
+          description: A list of the Users preferred champions.
+          type: array
+          items:
+            $ref: '#/components/schemas/Champion'
+    TentativePlayer:
+      description: A Player record with a subset of Player information for usage with Tentative queues.
+      type: object
+      properties:
+        discordId:
+          description: Discord Id for the Player
+          type: integer
+        name:
+          description: The Players discord name
+          type: string
+        champions:
+          description: A list of the Users preferred champions.
+          type: array
+          items:
+            $ref: '#/components/schemas/Champion'
     Subscription:
       description: A map of subscriptions a player has for Clash Bot
       type: object
@@ -460,14 +501,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Tournament'
+              $ref: '#/components/schemas/DetailedTournament'
       responses:
         200:
           description: Create Tournament record
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Tournament'
+                $ref: '#/components/schemas/DetailedTournament'
   /server/{serverId}/tenantive:
     summary: To return data regarding Tentative queues for a given Discord Server.
     parameters:
@@ -580,7 +621,7 @@ paths:
           type: integer
     get:
       description: Returns all Teams based on the Discord Server.
-      operationId: getTentativeQueuesBasedOnServer
+      operationId: getTeamBasedOnServer
       tags:
         - Team
       responses:

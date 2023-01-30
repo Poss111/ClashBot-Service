@@ -3,10 +3,9 @@ package com.poss.clash.bot.exceptions;
 import lombok.Data;
 import org.springframework.http.HttpStatus;
 
-@Data
 public class HttpResponseException extends Throwable {
 
-    private HttpStatus httpStatus;
+    private final HttpStatus httpStatus;
 
     HttpResponseException(String message, Throwable exception, HttpStatus httpStatus) {
         super(message, exception);
@@ -16,6 +15,10 @@ public class HttpResponseException extends Throwable {
     HttpResponseException(String message, HttpStatus httpStatus) {
         super(message);
         this.httpStatus = httpStatus;
+    }
+
+    public HttpStatus getHttpStatus() {
+        return httpStatus;
     }
 
 }

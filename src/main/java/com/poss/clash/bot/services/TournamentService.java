@@ -3,6 +3,7 @@ package com.poss.clash.bot.services;
 import com.poss.clash.bot.daos.TournamentDao;
 import com.poss.clash.bot.daos.models.ClashTournament;
 import com.poss.clash.bot.daos.models.TournamentId;
+import com.poss.clash.bot.openapi.model.DetailedTournament;
 import com.poss.clash.bot.openapi.model.Tournament;
 import com.poss.clash.bot.utils.TournamentMapper;
 import lombok.AllArgsConstructor;
@@ -23,7 +24,7 @@ public class TournamentService {
 
     private final TournamentMapper tournamentMapper;
 
-    public Flux<Tournament> retrieveTournamentsByTournamentOrDay(String tournament, String day) {
+    public Flux<DetailedTournament> retrieveTournamentsByTournamentOrDay(String tournament, String day) {
         ClashTournament clashTournament = ClashTournament.builder()
                 .tournamentId(TournamentId.builder()
                         .tournamentName(tournament)
@@ -31,21 +32,21 @@ public class TournamentService {
                         .build())
                 .build();
         return tournamentDao.findAll(Example.of(clashTournament))
-                .map(tournamentMapper::clashTournamentToTournament);
+                .map(tournamentMapper::clashTournamentToDetailedTournament);
     }
 
-    public Flux<Tournament> retrieveAllTournaments(boolean upcomingOnly) {
+    public Flux<DetailedTournament> retrieveAllTournaments(boolean upcomingOnly) {
         Flux<ClashTournament> flux;
         if (upcomingOnly) {
             flux = tournamentDao.findClashTournamentsByStartTimeAfter(Instant.now());
         } else {
             flux = tournamentDao.findAll();
         }
-        return flux.map(tournamentMapper::clashTournamentToTournament);
+        return flux.map(tournamentMapper::clashTournamentToDetailedTournament);
     }
 
-    public Mono<Tournament> saveTournament(ClashTournament clashTournament) {
+    public Mono<DetailedTournament> saveTournament(ClashTournament clashTournament) {
         return tournamentDao.save(clashTournament)
-                .map(tournamentMapper::clashTournamentToTournament);
+                .map(tournamentMapper::clashTournamentToDetailedTournament);
     }
 }

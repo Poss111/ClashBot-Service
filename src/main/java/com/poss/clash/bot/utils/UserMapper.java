@@ -35,7 +35,7 @@ public interface UserMapper {
     Champion loLChampionToChampion(LoLChampion loLChampion);
 
     @Named("subscriptionsToUserSubscriptionMap")
-    public static Map<UserSubscription, Boolean> subscriptionsToUserSubscriptionMap(List<Subscription> subscriptions) {
+    static Map<UserSubscription, Boolean> subscriptionsToUserSubscriptionMap(List<Subscription> subscriptions) {
         Map<UserSubscription, Boolean> userSubscriptionsHashMap = new HashMap<>();
         if (null != subscriptions && !subscriptions.isEmpty()) {
             subscriptions.forEach((entry) -> userSubscriptionsHashMap
@@ -45,7 +45,7 @@ public interface UserMapper {
     }
 
     @Named("userSubscriptionMapToSubscriptions")
-    public static List<Subscription> userSubscriptionMapToSubscriptions(Map<UserSubscription, Boolean> userSubscriptions) {
+    static List<Subscription> userSubscriptionMapToSubscriptions(Map<UserSubscription, Boolean> userSubscriptions) {
         List<Subscription> subscriptions = new ArrayList<>();
         if (!CollectionUtils.isEmpty(userSubscriptions)) {
             userSubscriptions.forEach((key, value) ->
