@@ -69,7 +69,7 @@ tasks.named('asciidoctor') {
 
 openApiGenerate {
     generatorName = "spring"
-    inputSpec = '/Users/poss/Documents/Applications/NodeProjects/Clash-Bot-WebApp/ClashBot-OpenAPI/definitions/open-api.yml'.toString()
+    inputSpec = '../clash-bot-spring-service/ClashBot-OpenAPI/definitions/open-api.yml'.toString()
     outputDir = "$buildDir/generated".toString()
     apiPackage = "com.poss.clash.bot.openapi.api".toString()
     modelPackage = "com.poss.clash.bot.openapi.model".toString()
