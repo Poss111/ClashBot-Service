@@ -91,6 +91,29 @@ public class UserController implements UserApi {
     }
 
     @Override
+    public Mono<ResponseEntity<Team>> removeUserFromATeam(Integer discordId, String teamId,
+                                                          ServerWebExchange exchange) {
+        return null;
+    }
+
+    @Override
+    public Mono<ResponseEntity<Tentative>> removeUserFromATentativeQueue(Integer discordId, String tentativeId,
+                                                                         ServerWebExchange exchange) {
+        return null;
+    }
+
+    @Override
+    public Mono<ResponseEntity<Teams>> retrieveTeamsForUser(Integer discordId, ServerWebExchange exchange) {
+        return null;
+    }
+
+    @Override
+    public Mono<ResponseEntity<Tentatives>> retrieveTentativeQueuesForUser(Integer discordId,
+                                                                           ServerWebExchange exchange) {
+        return null;
+    }
+
+    @Override
     public Mono<ResponseEntity<Champions>> retrieveUsersPreferredChampions(Integer discordId, ServerWebExchange exchange) {
         return userService.retrieveUser(discordId)
                 .map(player -> Champions.builder().champions(player.getChampions()).build())

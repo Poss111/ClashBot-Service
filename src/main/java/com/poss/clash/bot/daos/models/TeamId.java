@@ -9,7 +9,7 @@ import lombok.*;
 @Builder
 public class TeamId {
 
-    private Integer teamId;
+    private String id;
     private TournamentId tournamentId;
 
 }

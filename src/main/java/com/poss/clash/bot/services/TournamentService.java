@@ -48,4 +48,8 @@ public class TournamentService {
         return tournamentDao.save(clashTournament)
                 .map(tournamentMapper::clashTournamentToDetailedTournament);
     }
+
+    public Flux<DetailedTournament> retrieveActiveTournaments() {
+        return Flux.empty();
+    }
 }

@@ -3,7 +3,6 @@ info:
   title: 'clash-bot-webapp-service'
   description: |
     Clash Bot Webapp Service to support League of Legends Clash tournament scheduling with Discord.
-
   contact:
     name: ClashBot-API-Support
     email: rixxroid@gmail.com
@@ -20,25 +19,46 @@ servers:
       basePath:
         default: api/v2
 tags:
+  - name: Champions
+    description: Dealing with User's League of Legends champions choices.
+  - name: Server
+    description: A Discord server that is leveraging the Clash Bot.
+  - name: Subscription
+    description: Subscriptions to certain notifications that Clash Bot produces.
   - name: Team
     description: A Clash Bot team for a League of Legends Clash tournament.
   - name: Tentative
     description: A tentative queue for upcoming League of Legends Clash tournaments.
-  - name: User
-    description: A Discord user that is leveraging the Clash Bot.
-  - name: SRE
-    description: Site reliability Engineering (SRE).
   - name: Tournament
     description: A League of Legends Clash Tournament.
+  - name: User
+    description: A Discord user that is leveraging the Clash Bot.
 components:
   schemas:
+    Server:
+      description: A Discord Server
+      type: object
+      properties:
+        id:
+          type: integer
+          description: The unique identifier for a Discord Server.
+        name:
+          type: string
+          description: The Discord Server name associated to the id.
+    Servers:
+      description: A list of Discord Servers
+      properties:
+        servers:
+          type: array
+          items:
+            $ref: '#/components/schemas/Server'
     Team:
       description: A League of Legends Clash Team
       type: object
       properties:
         id:
           description: Unique identifier for a Team.
-          type: integer
+          type: String
         name:
           description: The name of the Team.
           type: string
@@ -110,6 +130,9 @@ components:
       description: A queue for Players unsure if they will play Clash for a given Tournament.
       type: object
       properties:
+        id:
+          description: Unique identifier for the Tentative Queue.
+          type: string
         serverId:
           description: The default Discord Server id for the player to use.
           type: integer
@@ -180,6 +203,8 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Champion'
+        role:
+          $ref: '#/components/schemas/Role'
     Subscription:
       description: A map of subscriptions a player has for Clash Bot
       type: object
@@ -231,8 +256,10 @@ components:
         discordId:
           description: The user's Discord Id.
           type: integer
+        champions:
+          $ref: "#/components/schemas/Champions"
         role:
-          $ref: Role
+          $ref: "#/components/schemas/Role"
     TeamTournamentDetails:
       description: Details necessary to update a User's position on a Team based on fluid details.
       type: object
@@ -245,7 +272,7 @@ components:
         tournamentDay:
           description: The Clash Tournament's day.
         role:
-          $ref: Role
+          $ref: "#/components/schemas/Role"
   requestBodies:
     TeamInteractionDetailsRequestBody:
       description: Used to define the User and Role to be added to a Team.
@@ -320,6 +347,12 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/Champions"
+    ServerListResponse:
+      description: List of Discord Servers available from Clash Bot
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Servers"
     NotFound:
       description: Unable to find requested resource
       content:
@@ -503,7 +536,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DetailedTournament'
-  /server/{serverId}/tenantive:
+  /tentative/server/{serverId}:
     summary: To return data regarding Tentative queues for a given Discord Server.
     parameters:
       - name: serverId
@@ -520,7 +553,7 @@ paths:
       responses:
         200:
           $ref: '#/components/responses/TentativeListResponse'
-  /server/{serverId}/{tournamentName}/tenantive:
+  /tentative/server/{serverId}/tournament/{tournamentName}:
     summary: To interact with the Tentative queue for a given Discord Server and Tournament name.
     parameters:
       - name: serverId
@@ -559,7 +592,7 @@ paths:
       responses:
         200:
           $ref: '#/components/responses/TentativeResponse'
-  /server/{serverId}/{tournamentName}/{tournamentDay}/tentative:
+  /tentative/server/{serverId}/tournament/{tournamentName}/{tournamentDay}:
     summary: To interact with the Tentative queue for a given Discord Server and Tournament name and day.
     parameters:
       - name: serverId
@@ -589,22 +622,14 @@ paths:
         200:
           $ref: '#/components/responses/TentativeListResponse'
     post:
-      description: Creates a Tentative queue based on the Discord Server and Tournament name and day and lastly adds the User to it.
+      description: Creates a Tentative queue based on the Discord Server and Tournament name and day.
       operationId: createTentativeQueueBasedOnServerAndTournamentAndDay
       tags:
         - Tentative
       responses:
         200:
           $ref: '#/components/responses/TentativeResponse'
-    patch:
-      description: Assigns a User to an already created Tentative queue based on the Discord Server and Tournament name and day.
-      operationId: updateTentativeQueueBasedOnServerAndTournamentAndDay
-      tags:
-        - Tentative
-      responses:
-        200:
-          $ref: '#/components/responses/TentativeResponse'
-  /server/{serverId}/team:
+  /team/server/{serverId}:
     summary: To return data regarding Teams for a given Discord Server.
     parameters:
       - name: serverId
@@ -621,7 +646,7 @@ paths:
       responses:
         200:
           $ref: '#/components/responses/TeamListResponse'
-  /server/{serverId}/{tournamentName}/team:
+  /team/server/{serverId}/tournament/{tournamentName}:
     summary: To interact with Teams for a given Discord Server and Tournament name.
     parameters:
       - name: serverId
@@ -657,10 +682,12 @@ paths:
       operationId: updateTeamBasedOnServerAndTournament
       tags:
         - Team
+      requestBody:
+        $ref: '#/components/requestBodies/TeamInteractionDetailsRequestBody'
       responses:
         200:
           $ref: '#/components/responses/TeamResponse'
-  /server/{serverId}/{tournamentName}/{tournamentDay}/team:
+  /team/server/{serverId}/tournament/{tournamentName}/{tournamentDay}:
     summary: To interact with Teams for a given Discord Server and Tournament name and day.
     parameters:
       - name: serverId
@@ -702,6 +729,8 @@ paths:
       operationId: updateTeamBasedOnServerAndTournamentAndDay
       tags:
         - Team
+      requestBody:
+        $ref: '#/components/requestBodies/TeamInteractionDetailsRequestBody'
       responses:
         200:
           $ref: '#/components/responses/TeamResponse'
@@ -793,7 +822,7 @@ paths:
       description: Retrieve details on a user's subscription.
       operationId: isUserSubscribed
       tags:
-        - User
+        - Subscription
       responses:
         200:
           description: The User's subscription details.
@@ -813,7 +842,7 @@ paths:
       description: Subscribes the User to the specified subscription.
       operationId: subscribeUser
       tags:
-        - User
+        - Subscription
       responses:
         200:
           description: The User's subscription details after a successful subscription.
@@ -833,7 +862,7 @@ paths:
       description: Unsubscribes the User from the specified subscription.
       operationId: unsubscribeUser
       tags:
-        - User
+        - Subscription
       responses:
         200:
           description: The User's subscription details after they have successfully unsubscribed.
@@ -862,7 +891,7 @@ paths:
       description: Returns a list of preferred champions that the User has.
       operationId: retrieveUsersPreferredChampions
       tags:
-        - User
+        - Champions
       responses:
         200:
           $ref: '#/components/responses/ChampionListResponse'
@@ -876,7 +905,7 @@ paths:
       description: Updates the users preferred champions with an entirely new list. Cannot be greater than a length of 5.
       operationId: createListOfPreferredChampionsForUser
       tags:
-        - User
+        - Champions
       requestBody:
         $ref: '#/components/requestBodies/ChampionRequestBody'
       responses:
@@ -894,7 +923,7 @@ paths:
       description: Adds the requested champion to the users preferred champions. Cannot be greater than a length of 5.
       operationId: addToPreferredChampionsForUser
       tags:
-        - User
+        - Champions
       requestBody:
         $ref: '#/components/requestBodies/ChampionRequestBody'
       responses:
@@ -912,7 +941,7 @@ paths:
       description: Removes the requested champion to the users preferred champions.
       operationId: removePreferredChampionForUser
       tags:
-        - User
+        - Champions
       parameters:
         - name: champion
           description: the champion name to remove from the user's list of champions
@@ -923,6 +952,117 @@ paths:
       responses:
         200:
           $ref: '#/components/responses/ChampionListResponse'
+        400:
+          $ref: '#/components/responses/BadInput'
+        404:
+          $ref: '#/components/responses/NotFound'
+        5XX:
+          $ref: '#/components/schemas/Error'
+  /user/{discordId}/tentative:
+    summary: Interacts with all tentative under a specific user id
+    parameters:
+      - name: discordId
+        description: The discord Id of the Player
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      description: Retrieves a list of active Tentative queues the User is on.
+      operationId: retrieveTentativeQueuesForUser
+      tags:
+        - User
+      responses:
+        200:
+          $ref: '#/components/responses/TentativeListResponse'
+        204:
+          $ref: '#/components/responses/NoneFound'
+        500:
+          $ref: '#/components/schemas/Error'
+  /user/{discordId}/tentative/{tentativeId}:
+    summary: Interacts with a specific Tentative Queue for a User.
+    parameters:
+      - name: discordId
+        description: The discord Id of the Player
+        in: path
+        required: true
+        schema:
+          type: integer
+      - name: tentativeId
+        description: The unique Id of the Tentative Queue.
+        in: path
+        required: true
+        schema:
+          type: string
+    delete:
+      description: Removes a user from a Tentative Queue based on the id.
+      operationId: removeUserFromATentativeQueue
+      tags:
+        - User
+      responses:
+        200:
+          $ref: '#/components/responses/TentativeResponse'
+        204:
+          $ref: '#/components/responses/NoneFound'
+        500:
+          $ref: '#/components/schemas/Error'
+  /user/{discordId}/team:
+    summary: Interacts with all tentative under a specific user id
+    parameters:
+      - name: discordId
+        description: The discord Id of the Player
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      description: Retrieves a list of active Teams the User is on.
+      operationId: retrieveTeamsForUser
+      tags:
+        - User
+      responses:
+        200:
+          $ref: '#/components/responses/TeamListResponse'
+        204:
+          $ref: '#/components/responses/NoneFound'
+        500:
+          $ref: '#/components/schemas/Error'
+  /user/{discordId}/team/{teamId}:
+    summary: Interacts with a specific Clash Team for a User.
+    parameters:
+      - name: discordId
+        description: The discord Id of the Player
+        in: path
+        required: true
+        schema:
+          type: integer
+      - name: teamId
+        description: The unique Id of the Team.
+        in: path
+        required: true
+        schema:
+          type: string
+    delete:
+      description: Removes a user from a Team based on the id.
+      operationId: removeUserFromATeam
+      tags:
+        - User
+      responses:
+        200:
+          $ref: '#/components/responses/TeamResponse'
+        204:
+          $ref: '#/components/responses/NoneFound'
+        500:
+          $ref: '#/components/schemas/Error'
+  /server:
+    get:
+      operationId: retrieveServers
+      description: Retrieves all current Discord servers using Clash Bot
+      tags:
+        - Server
+      responses:
+        200:
+          $ref: '#/components/responses/ServerListResponse'
         400:
           $ref: '#/components/responses/BadInput'
         404:

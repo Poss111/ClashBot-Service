@@ -1,4 +1,4 @@
-package com.poss.clash.bot.clash.bot.utils;
+package com.poss.clash.bot.utils;
 
 import com.poss.clash.bot.daos.models.TentativeId;
 import com.poss.clash.bot.daos.models.TentativeQueue;

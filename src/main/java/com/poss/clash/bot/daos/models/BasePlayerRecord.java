@@ -10,7 +10,7 @@ import java.util.Set;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class Position {
+public class BasePlayerRecord {
 
     private Integer discordId;
     private Set<Champion> championsToPlay;

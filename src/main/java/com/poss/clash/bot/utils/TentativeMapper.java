@@ -21,12 +21,14 @@ public interface TentativeMapper {
     @Mapping(source = "tournamentDetails.tournamentDay", target = "tentativeId.tournamentId.tournamentDay")
     @Mapping(source = "tentativePlayers", target = "discordIds", qualifiedByName = "tentativePlayersToDiscordIds")
     @Mapping(source = "serverId", target = "tentativeId.serverId")
+    @Mapping(source = "id", target = "tentativeId.id")
     TentativeQueue tentativeToTentativeQueue(Tentative tentative);
 
     @Mapping(source = "tentativeId.tournamentId.tournamentName", target = "tournamentDetails.tournamentName")
     @Mapping(source = "tentativeId.tournamentId.tournamentDay", target = "tournamentDetails.tournamentDay")
     @Mapping(source = "discordIds", target = "tentativePlayers", qualifiedByName = "discordIdsToTentativePlayers")
     @Mapping(source = "tentativeId.serverId", target = "serverId")
+    @Mapping(source = "tentativeId.id", target = "id")
     Tentative tentativeQueueToTentative(TentativeQueue tentative);
 
     TentativePlayer playerToTentativePlayer(Player player);

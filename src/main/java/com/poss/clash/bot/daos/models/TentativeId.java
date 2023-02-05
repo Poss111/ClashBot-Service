@@ -9,6 +9,7 @@ import lombok.*;
 @Builder
 public class TentativeId {
 
+    private String id;
     private TournamentId tournamentId;
     private Integer serverId;
 

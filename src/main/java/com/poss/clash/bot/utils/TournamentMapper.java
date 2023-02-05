@@ -1,6 +1,7 @@
 package com.poss.clash.bot.utils;
 
 import com.poss.clash.bot.daos.models.ClashTournament;
+import com.poss.clash.bot.openapi.model.BaseTournament;
 import com.poss.clash.bot.openapi.model.DetailedTournament;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -24,6 +25,8 @@ public interface TournamentMapper {
     @Mapping(source = "startTime", target = "startTime", qualifiedByName = "offsetDateToInstant")
     @Mapping(source = "registrationTime", target = "registrationTime", qualifiedByName = "offsetDateToInstant")
     ClashTournament detailedTournamentToClashTournament(DetailedTournament tournament);
+
+    BaseTournament detailedTournamentToBaseTournament(DetailedTournament detailedTournament);
 
     @Named("offsetDateToInstant")
     static Instant offsetDateToInstant(OffsetDateTime offsetDateTime) {

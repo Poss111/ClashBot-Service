@@ -1,0 +1,11 @@
+spring:
+  application:
+    name: clash-bot-service
+  jpa:
+    hibernate:
+      ddl-auto: update
+logging:
+  level:
+    root: ERROR
+    com.poss: INFO
+    org.springframework: ERROR
