@@ -6,7 +6,6 @@ import com.poss.clash.bot.daos.models.TournamentId;
 import com.poss.clash.bot.openapi.model.BaseTournament;
 import com.poss.clash.bot.openapi.model.Tentative;
 import com.poss.clash.bot.openapi.model.TentativePlayer;
-import com.poss.clash.bot.utils.TentativeMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;

@@ -1,6 +1,6 @@
 package com.poss.clash.bot.controllers;
 
-import com.poss.clash.bot.openapi.api.ServerApi;
+import com.poss.clash.bot.openapi.api.ServersApi;
 import com.poss.clash.bot.openapi.model.Servers;
 import com.poss.clash.bot.services.ServerService;
 import lombok.AllArgsConstructor;
@@ -11,7 +11,7 @@ import reactor.core.publisher.Mono;
 
 @RestController
 @AllArgsConstructor
-public class ServerController implements ServerApi {
+public class ServerController implements ServersApi {
 
     private final ServerService serverService;
 

@@ -1,6 +1,6 @@
 package com.poss.clash.bot.controllers;
 
-import com.poss.clash.bot.openapi.api.TeamApi;
+import com.poss.clash.bot.openapi.api.TeamsApi;
 import com.poss.clash.bot.openapi.model.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -8,74 +8,34 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 @RestController
-public class TeamController implements TeamApi {
+public class TeamController implements TeamsApi {
     @Override
-    public Mono<ResponseEntity<Team>> assignUserToTeam(Integer teamId, Mono<PositionDetails> positionDetails,
-                                                       ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Team>> assignUserToTeam(String teamId, Long discordId, Mono<PositionDetails> positionDetails, ServerWebExchange exchange) {
         return null;
     }
 
     @Override
-    public Mono<ResponseEntity<Team>> createTeamBasedOnServerAndTournament(Integer serverId, String tournamentName,
-                                                                           ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Team>> createTeam(Mono<TeamRequired> teamRequired, ServerWebExchange exchange) {
         return null;
     }
 
     @Override
-    public Mono<ResponseEntity<Team>> createTeamBasedOnServerAndTournamentAndDay(Integer serverId,
-                                                                                 String tournamentName,
-                                                                                 String tournamentDay,
-                                                                                 ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Team>> removeUserFromTeam(String teamId, Long discordId, ServerWebExchange exchange) {
         return null;
     }
 
     @Override
-    public Mono<ResponseEntity<Teams>> getTeamBasedOnServer(Integer serverId, ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Team>> retrieveTeamBasedOnId(String teamId, ServerWebExchange exchange) {
         return null;
     }
 
     @Override
-    public Mono<ResponseEntity<Teams>> getTeamsBasedOnServerAndTournament(Integer serverId, String tournamentName,
-                                                                          ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Teams>> retrieveTeams(Boolean inactive, Long discordId, Long serverId, String tournamentName, String tournamentDay, ServerWebExchange exchange) {
         return null;
     }
 
     @Override
-    public Mono<ResponseEntity<Teams>> getTeamsBasedOnServerAndTournamentAndDay(Integer serverId, String tournamentName,
-                                                                                String tournamentDay,
-                                                                                ServerWebExchange exchange) {
-        return null;
-    }
-
-    @Override
-    public Mono<ResponseEntity<Team>> removeUserFromTeam(Integer teamId, Integer discordId,
-                                                         ServerWebExchange exchange) {
-        return null;
-    }
-
-    @Override
-    public Mono<ResponseEntity<Team>> retrieveTeamBasedOnId(Integer teamId, ServerWebExchange exchange) {
-        return null;
-    }
-
-    @Override
-    public Mono<ResponseEntity<Teams>> retrieveTeams(Boolean onlyActive, ServerWebExchange exchange) {
-        return null;
-    }
-
-    @Override
-    public Mono<ResponseEntity<Team>> updateTeamBasedOnServerAndTournament(Integer serverId, String tournamentName,
-                                                                           Mono<PositionDetails> positionDetails,
-                                                                           ServerWebExchange exchange) {
-        return null;
-    }
-
-    @Override
-    public Mono<ResponseEntity<Team>> updateTeamBasedOnServerAndTournamentAndDay(Integer serverId,
-                                                                                 String tournamentName,
-                                                                                 String tournamentDay,
-                                                                                 Mono<PositionDetails> positionDetails,
-                                                                                 ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Team>> updateTeam(String teamId, Mono<TeamOnlyRequired> teamOnlyRequired, ServerWebExchange exchange) {
         return null;
     }
 }

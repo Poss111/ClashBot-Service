@@ -2,7 +2,7 @@ package com.poss.clash.bot.controllers;
 
 import com.poss.clash.bot.daos.models.LoLChampion;
 import com.poss.clash.bot.enums.UserSubscription;
-import com.poss.clash.bot.openapi.api.UserApi;
+import com.poss.clash.bot.openapi.api.UsersApi;
 import com.poss.clash.bot.openapi.model.*;
 import com.poss.clash.bot.services.UserService;
 import com.poss.clash.bot.utils.UserMapper;
@@ -21,32 +21,32 @@ import java.util.stream.Collectors;
 @RestController
 @AllArgsConstructor
 @Slf4j
-public class UserController implements UserApi {
+public class UserController implements UsersApi {
 
     private final UserService userService;
 
     private final UserMapper userMapper;
 
     @Override
-    public Mono<ResponseEntity<Champions>> addToPreferredChampionsForUser(Integer discordId, Mono<Champions> champions, ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Champions>> addToPreferredChampionsForUser(Long discordId, Mono<Champions> champions, ServerWebExchange exchange) {
         return champions
                 .flatMapIterable(Champions::getChampions)
                 .map(userMapper::championToLoLChampions)
                 .collect(Collectors.toSet())
                 .log()
-                .flatMap(preferredChampions -> userService.mergePreferredChampionsForUser(discordId, preferredChampions))
+                .flatMap(preferredChampions -> userService.mergePreferredChampionsForUser(discordId.intValue(), preferredChampions))
                 .map(ResponseEntity::ok)
                 .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 
     @Override
-    public Mono<ResponseEntity<Champions>> createListOfPreferredChampionsForUser(Integer discordId, Mono<Champions> champions, ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Champions>> createListOfPreferredChampionsForUser(Long discordId, Mono<Champions> champions, ServerWebExchange exchange) {
         return champions
                 .flatMapIterable(Champions::getChampions)
                 .map(userMapper::championToLoLChampions)
                 .collect(Collectors.toSet())
                 .log()
-                .flatMap(preferredChampions -> userService.createPreferredChampionsForUser(discordId, preferredChampions))
+                .flatMap(preferredChampions -> userService.createPreferredChampionsForUser(discordId.intValue(), preferredChampions))
                 .map(ResponseEntity::ok)
                 .defaultIfEmpty(ResponseEntity.notFound().build());
     }
@@ -72,8 +72,8 @@ public class UserController implements UserApi {
     }
 
     @Override
-    public Mono<ResponseEntity<Subscription>> isUserSubscribed(Integer discordId, String subscription, ServerWebExchange exchange) {
-        return userService.retrieveUser(discordId)
+    public Mono<ResponseEntity<Subscription>> isUserSubscribed(Long discordId, String subscription, ServerWebExchange exchange) {
+        return userService.retrieveUser(discordId.intValue())
                 .flatMapIterable(Player::getSubscriptions)
                 .filter(subscription1 -> StringUtils.equals(subscription, subscription1.getKey().getValue()))
                 .last()
@@ -82,48 +82,25 @@ public class UserController implements UserApi {
     }
 
     @Override
-    public Mono<ResponseEntity<Champions>> removePreferredChampionForUser(Integer discordId, String champion, ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Champions>> removePreferredChampionForUser(Long discordId, String champion, ServerWebExchange exchange) {
         Set<LoLChampion> championSet = new HashSet<>();
         championSet.add(LoLChampion.builder().name(champion).build());
-        return userService.removePreferredChampionsForUser(discordId, championSet)
+        return userService.removePreferredChampionsForUser(discordId.intValue(), championSet)
                 .map(ResponseEntity::ok)
                 .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 
     @Override
-    public Mono<ResponseEntity<Team>> removeUserFromATeam(Integer discordId, String teamId,
-                                                          ServerWebExchange exchange) {
-        return null;
-    }
-
-    @Override
-    public Mono<ResponseEntity<Tentative>> removeUserFromATentativeQueue(Integer discordId, String tentativeId,
-                                                                         ServerWebExchange exchange) {
-        return null;
-    }
-
-    @Override
-    public Mono<ResponseEntity<Teams>> retrieveTeamsForUser(Integer discordId, ServerWebExchange exchange) {
-        return null;
-    }
-
-    @Override
-    public Mono<ResponseEntity<Tentatives>> retrieveTentativeQueuesForUser(Integer discordId,
-                                                                           ServerWebExchange exchange) {
-        return null;
-    }
-
-    @Override
-    public Mono<ResponseEntity<Champions>> retrieveUsersPreferredChampions(Integer discordId, ServerWebExchange exchange) {
-        return userService.retrieveUser(discordId)
+    public Mono<ResponseEntity<Champions>> retrieveUsersPreferredChampions(Long discordId, ServerWebExchange exchange) {
+        return userService.retrieveUser(discordId.intValue())
                 .map(player -> Champions.builder().champions(player.getChampions()).build())
                 .map(ResponseEntity::ok)
                 .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 
     @Override
-    public Mono<ResponseEntity<Subscription>> subscribeUser(Integer discordId, String subscription, ServerWebExchange exchange) {
-        return userService.toggleUserSubscription(discordId, subscription, true)
+    public Mono<ResponseEntity<Subscription>> subscribeUser(Long discordId, String subscription, ServerWebExchange exchange) {
+        return userService.toggleUserSubscription(discordId.intValue(), subscription, true)
                 .map(subscriptionMap -> Subscription.builder()
                         .key(SubscriptionType.fromValue(subscription))
                         .isOn(subscriptionMap.get(UserSubscription.fromValue(subscription)))
@@ -133,8 +110,8 @@ public class UserController implements UserApi {
     }
 
     @Override
-    public Mono<ResponseEntity<Subscription>> unsubscribeUser(Integer discordId, String subscription, ServerWebExchange exchange) {
-        return userService.toggleUserSubscription(discordId, subscription, false)
+    public Mono<ResponseEntity<Subscription>> unsubscribeUser(Long discordId, String subscription, ServerWebExchange exchange) {
+        return userService.toggleUserSubscription(discordId.intValue(), subscription, false)
                 .map(subscriptionMap -> Subscription.builder()
                         .key(SubscriptionType.fromValue(subscription))
                         .isOn(subscriptionMap.get(UserSubscription.fromValue(subscription)))

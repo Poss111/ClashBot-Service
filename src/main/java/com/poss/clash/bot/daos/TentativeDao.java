@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
 
 @Repository
-public interface TentativeDao extends ReactiveCrudRepository<TentativeQueue, Integer> {
+public interface TentativeDao extends ReactiveCrudRepository<TentativeQueue, TentativeId> {
 
     Flux<TentativeQueue> findAll(Example<TentativeQueue> example);
 

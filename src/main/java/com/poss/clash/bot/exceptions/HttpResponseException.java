@@ -2,7 +2,7 @@ package com.poss.clash.bot.exceptions;
 
 import org.springframework.http.HttpStatus;
 
-public class HttpResponseException extends Throwable {
+public class HttpResponseException extends RuntimeException {
 
     private final HttpStatus httpStatus;
 

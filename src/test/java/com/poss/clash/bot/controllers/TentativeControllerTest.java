@@ -4,6 +4,7 @@ import com.poss.clash.bot.ClashBotTestingConfig;
 import com.poss.clash.bot.daos.models.TentativeId;
 import com.poss.clash.bot.daos.models.TentativeQueue;
 import com.poss.clash.bot.daos.models.TournamentId;
+import com.poss.clash.bot.exceptions.ClashBotControllerException;
 import com.poss.clash.bot.openapi.model.*;
 import com.poss.clash.bot.services.TentativeService;
 import com.poss.clash.bot.services.TournamentService;
@@ -29,11 +30,14 @@ import reactor.test.StepVerifier;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith({SpringExtension.class})
 @Import(ClashBotTestingConfig.class)
@@ -103,16 +107,19 @@ class TentativeControllerTest {
                     .discordId(playerOne.getDiscordId())
                     .name(playerOne.getName())
                     .champions(playerOne.getChampions())
+                    .role(playerOne.getRole())
                     .build();
             TentativePlayer tentativePlayerTwo = TentativePlayer.builder()
                     .discordId(playerTwo.getDiscordId())
                     .name(playerTwo.getName())
                     .champions(playerTwo.getChampions())
+                    .role(playerTwo.getRole())
                     .build();
             TentativePlayer tentativePlayerThree = TentativePlayer.builder()
                     .discordId(playerThree.getDiscordId())
                     .name(playerThree.getName())
                     .champions(playerThree.getChampions())
+                    .role(playerThree.getRole())
                     .build();
 
             Set<Integer> discordIds = Set.of(playerOne.getDiscordId(), playerTwo.getDiscordId(),
@@ -151,11 +158,13 @@ class TentativeControllerTest {
                     .discordId(playerOne.getDiscordId())
                     .name(playerOne.getName())
                     .champions(playerOne.getChampions())
+                    .role(playerOne.getRole())
                     .build();
             TentativePlayer tentativePlayerTwo = TentativePlayer.builder()
                     .discordId(playerTwo.getDiscordId())
                     .name(playerTwo.getName())
                     .champions(playerTwo.getChampions())
+                    .role(playerTwo.getRole())
                     .build();
             TentativePlayer tentativePlayerThree = TentativePlayer.builder()
                     .discordId(playerThree.getDiscordId())
@@ -190,12 +199,26 @@ class TentativeControllerTest {
     class CreateTentativeQueueBasedOnServerAndTournamentAndDay {
 
         @Test
-        @DisplayName("Should create a Tentative Queue based on the Server, Tournament Name, and Day")
+        @DisplayName("Should create a Tentative Queue based on the Server, Tournament Name, and Day if one does not already exist.")
         void test_createTentativeQueueBasedOnServerAndTournamentAndDay_shouldCreateATentativeQueueAndSaveIt() {
             String tournamentName = "awesome_sauce";
             String tournamentDay = "1";
             int discordId = 1;
             int serverId = 2;
+
+            TentativeRequired tentativePayload = TentativeRequired.builder()
+                    .serverId(serverId)
+                    .tentativePlayers(List.of(TentativePlayer
+                            .builder()
+                            .discordId(discordId)
+                            .build()))
+                    .tournamentDetails(
+                            BaseTournament.builder()
+                                    .tournamentName(tournamentName)
+                                    .tournamentDay(tournamentDay)
+                                    .build()
+                    )
+                    .build();
 
             TentativeQueue tentativeQueueToSave =
                     TentativeQueue.builder()
@@ -211,14 +234,69 @@ class TentativeControllerTest {
 
             Tentative savedMappedObject = easyRandom.nextObject(Tentative.class);
 
+            when(tentativeService.retrieveTentativeQueues(serverId, tournamentName, tournamentDay))
+                    .thenReturn(Flux.empty());
             when(tentativeService.saveTentativeQueue(tentativeQueueToSave))
                     .thenReturn(Mono.just(savedMappedObject));
 
             StepVerifier
-                    .create(tentativeController.createTentativeQueueBasedOnServerAndTournamentAndDay(discordId, tournamentName, tournamentDay, null))
+                    .create(tentativeController.createTentativeQueue(Mono.just(tentativePayload), null))
                     .expectNext(ResponseEntity.ok(savedMappedObject))
                     .expectComplete()
                     .verify();
+
+            verify(tentativeService, times(1))
+                    .retrieveTentativeQueues(serverId, tournamentName, tournamentDay);
+        }
+
+        @Test
+        @DisplayName("400 - Should return 400 and not create a Tentative Queue if a Queue exists based on the Server, Tournament Name, and Day.")
+        void test_createTentativeQueueBasedOnServerAndTournamentAndDay_shouldNotCreateATentativeQueueAndSaveItIfOneExists() {
+            String tournamentName = "awesome_sauce";
+            String tournamentDay = "1";
+            int discordId = 1;
+            int serverId = 2;
+
+            TentativeRequired tentativePayload = TentativeRequired.builder()
+                    .serverId(serverId)
+                    .tentativePlayers(List.of(TentativePlayer
+                            .builder()
+                            .discordId(discordId)
+                            .build()))
+                    .tournamentDetails(
+                            BaseTournament.builder()
+                                    .tournamentName(tournamentName)
+                                    .tournamentDay(tournamentDay)
+                                    .build()
+                    )
+                    .build();
+
+            TentativeQueue tentativeQueueToSave =
+                    TentativeQueue.builder()
+                            .tentativeId(TentativeId.builder()
+                                                 .tournamentId(TournamentId.builder()
+                                                                       .tournamentName(tournamentName)
+                                                                       .tournamentDay(tournamentDay)
+                                                                       .build())
+                                                 .serverId(serverId)
+                                                 .build())
+                            .discordIds(Set.of(1))
+                            .build();
+
+            Tentative savedMappedObject = easyRandom.nextObject(Tentative.class);
+
+            when(tentativeService.retrieveTentativeQueues(serverId, tournamentName, tournamentDay))
+                    .thenReturn(Flux.just(Tentative.builder().id("123").build()));
+            when(tentativeService.saveTentativeQueue(tentativeQueueToSave))
+                    .thenReturn(Mono.just(savedMappedObject));
+
+            StepVerifier
+                    .create(tentativeController.createTentativeQueue(Mono.just(tentativePayload), null))
+                    .expectError(ClashBotControllerException.class)
+                    .verify();
+
+            verify(tentativeService, times(1))
+                    .retrieveTentativeQueues(serverId, tournamentName, tournamentDay);
         }
     }
 
@@ -290,7 +368,7 @@ class TentativeControllerTest {
                                             .build()))
                     .build();
 
-            StepVerifier.create(tentativeController.retrieveTentativeQueues(false, null))
+            StepVerifier.create(tentativeController.retrieveTentativeQueues(true, null, null, null, null, null))
                     .expectNext(ResponseEntity.ok(tentatives))
                     .expectComplete()
                     .verify();
@@ -370,7 +448,7 @@ class TentativeControllerTest {
                                             .build()))
                     .build();
 
-            StepVerifier.create(tentativeController.retrieveTentativeQueues(true, null))
+            StepVerifier.create(tentativeController.retrieveTentativeQueues(false, null, null, null, null, null))
                     .expectNext(ResponseEntity.ok(tentatives))
                     .expectComplete()
                     .verify();

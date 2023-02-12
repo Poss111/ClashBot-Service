@@ -9,6 +9,7 @@ import com.poss.clash.bot.openapi.model.BaseTournament;
 import com.poss.clash.bot.openapi.model.Tentative;
 import com.poss.clash.bot.openapi.model.TentativePlayer;
 import com.poss.clash.bot.utils.TentativeMapper;
+import org.apache.commons.lang3.StringUtils;
 import org.jeasy.random.EasyRandom;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -104,7 +105,7 @@ public class TentativeServiceTest {
                 .thenReturn(dbResponse);
 
         StepVerifier
-                .create(tentativeService.retrieveTentativeQueuesByTournament(tournamentName, null))
+                .create(tentativeService.retrieveTentativeQueues(null, tournamentName, null))
                 .expectNext(tentative)
                 .expectNext(tentative1)
                 .expectNext(tentative2)
@@ -143,7 +144,7 @@ public class TentativeServiceTest {
                 .thenReturn(dbResponse);
 
         StepVerifier
-                .create(tentativeService.retrieveTentativeQueuesByTournament(null, tournamentDay))
+                .create(tentativeService.retrieveTentativeQueues(null, null, tournamentDay))
                 .expectNext(tentative)
                 .expectNext(tentative1)
                 .expectNext(tentative2)
@@ -184,7 +185,7 @@ public class TentativeServiceTest {
                 .thenReturn(dbResponse);
 
         StepVerifier
-                .create(tentativeService.retrieveTentativeQueuesByTournament(tournamentName, tournamentDay))
+                .create(tentativeService.retrieveTentativeQueues(null, tournamentName, tournamentDay))
                 .expectNext(tentative)
                 .expectNext(tentative1)
                 .expectNext(tentative2)
@@ -201,6 +202,7 @@ public class TentativeServiceTest {
         @DisplayName("Should be able to save tentative Queues and map them back to Tentative")
         void test_mapBackToTentative() {
             TentativeQueue tentativeQueue = easyRandom.nextObject(TentativeQueue.class);
+            tentativeQueue.getTentativeId().setId(null);
             Tentative expectedMappedTentative = Tentative.builder()
                     .tentativePlayers(tentativeQueue.getDiscordIds().stream()
                                               .map(id -> TentativePlayer.builder().discordId(id).build()).collect(
@@ -219,7 +221,12 @@ public class TentativeServiceTest {
 
             StepVerifier
                     .create(tentativeService.saveTentativeQueue(tentativeQueue))
-                    .expectNext(expectedMappedTentative)
+                    .expectNextMatches(tentative ->
+                            StringUtils.isNotBlank(tentative.getId())
+                            && expectedMappedTentative.getTentativePlayers().equals(tentative.getTentativePlayers())
+                            && expectedMappedTentative.getServerId().equals(tentative.getServerId())
+                            && expectedMappedTentative.getTournamentDetails().equals(tentative.getTournamentDetails())
+                    )
                     .expectComplete()
                     .verify();
         }
@@ -228,6 +235,7 @@ public class TentativeServiceTest {
 
     private Tentative tentativeQueueToTentative(TentativeQueue tentativeQueue) {
         return Tentative.builder()
+                .id(tentativeQueue.getTentativeId().getId())
                 .tentativePlayers(tentativeQueue.getDiscordIds().stream()
                                           .map(id -> TentativePlayer.builder().discordId(id).build()).collect(
                                 Collectors.toList()))

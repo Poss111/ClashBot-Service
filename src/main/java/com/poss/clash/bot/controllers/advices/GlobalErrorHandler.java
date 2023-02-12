@@ -1,6 +1,5 @@
 package com.poss.clash.bot.controllers.advices;
 
-import com.poss.clash.bot.exceptions.ClashBotDbException;
 import com.poss.clash.bot.exceptions.HttpResponseException;
 import org.springframework.boot.autoconfigure.web.WebProperties;
 import org.springframework.boot.autoconfigure.web.reactive.error.AbstractErrorWebExceptionHandler;
@@ -42,7 +41,7 @@ public class GlobalErrorHandler extends AbstractErrorWebExceptionHandler {
         HttpStatus statusCode = HttpStatus.INTERNAL_SERVER_ERROR;
         Throwable error = getError(request);
 
-        if (error instanceof ClashBotDbException
+        if (error instanceof HttpResponseException
                 && null != ((HttpResponseException) error).getHttpStatus()) {
             statusCode = ((HttpResponseException) error).getHttpStatus();
             errorPropertiesMap.put("status", ((HttpResponseException) error).getHttpStatus().value());

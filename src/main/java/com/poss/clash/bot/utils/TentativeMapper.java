@@ -4,6 +4,7 @@ import com.poss.clash.bot.daos.models.TentativeQueue;
 import com.poss.clash.bot.openapi.model.Player;
 import com.poss.clash.bot.openapi.model.Tentative;
 import com.poss.clash.bot.openapi.model.TentativePlayer;
+import com.poss.clash.bot.openapi.model.TentativeRequired;
 import org.mapstruct.Builder;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -31,6 +32,13 @@ public interface TentativeMapper {
     @Mapping(source = "tentativeId.id", target = "id")
     Tentative tentativeQueueToTentative(TentativeQueue tentative);
 
+    @Mapping(source = "tournamentDetails.tournamentName", target = "tentativeId.tournamentId.tournamentName")
+    @Mapping(source = "tournamentDetails.tournamentDay", target = "tentativeId.tournamentId.tournamentDay")
+    @Mapping(source = "tentativePlayers", target = "discordIds", qualifiedByName = "tentativePlayersToDiscordIds")
+    @Mapping(source = "serverId", target = "tentativeId.serverId")
+    @Mapping(source = "id", target = "tentativeId.id")
+    TentativeQueue tentativeRequiredToTentativeQueue(TentativeRequired tentativeRequired);
+
     TentativePlayer playerToTentativePlayer(Player player);
 
     @Named("tentativePlayersToDiscordIds")
@@ -43,7 +51,6 @@ public interface TentativeMapper {
 
     @Named("discordIdsToTentativePlayers")
     static List<TentativePlayer> discordIdsToTentativePlayers(Set<Integer> discordIds) {
-        ArrayList<TentativePlayer> tentativePlayers = new ArrayList<>();
         if (null != discordIds && !discordIds.isEmpty()) {
             return discordIds.stream().map(id -> TentativePlayer.builder().discordId(id).build()).collect(Collectors.toList());
         }
