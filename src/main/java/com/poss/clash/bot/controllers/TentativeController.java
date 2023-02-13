@@ -84,6 +84,7 @@ public class TentativeController implements TentativesApi {
                             tentativePlayer.setRole(detailedPlayer.getRole());
                         }
                     }
+                    tuple.getT1().setCount(tuple.getT1().getQueues().size());
                     return tuple.getT1();
                 })
                 .map(ResponseEntity::ok)

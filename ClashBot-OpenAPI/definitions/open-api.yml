@@ -111,6 +111,8 @@ components:
     Teams:
       description: A list of League of Legend's Clash Teams
       properties:
+        count:
+          type: integer
         teams:
           type: array
           items:
@@ -149,6 +151,8 @@ components:
       description: A list of Tournaments
       type: object
       properties:
+        count:
+          type: integer
         tournaments:
           type: array
           items:
@@ -180,6 +184,8 @@ components:
       description: A list of queues for Players unsure if they will play Clash for a given Tournament.
       type: object
       properties:
+        count:
+          type: integer
         queues:
           type: array
           items:

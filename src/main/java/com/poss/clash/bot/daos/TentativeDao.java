@@ -18,8 +18,6 @@ public interface TentativeDao extends ReactiveCrudRepository<TentativeQueue, Ten
 
     Mono<TentativeQueue> findBy(Example<TentativeId> tentativeIdExample);
 
-    Flux<TentativeQueue> findAllBy(Example<TentativeQueue> tentativeQueueExample);
-
     Flux<TentativeQueue> findByTentativeId_ServerId(Integer serverId);
 
     Flux<TentativeQueue> findByTentativeId_TournamentId_TournamentName(String tournamentName);
