@@ -36,47 +36,30 @@ public class TentativeService {
 
     public Flux<Tentative> retrieveTentativeQueues(Long discordId, Long serverId, String tournamentName, String tournamentDay) {
         Flux<TentativeQueue> tentativeQueueFlux;
-        TournamentId tournamentId = null;
-        if (StringUtils.isNotBlank(tournamentName) || StringUtils.isNotBlank(tournamentDay)) {
-            tournamentId = TournamentId.builder()
-                    .tournamentName(tournamentName)
-                    .tournamentDay(tournamentDay)
-                    .build();
+        if (null != discordId) {
+            tentativeQueueFlux = tentativeDao.findByDiscordIdsContaining(discordId.intValue());
+        } else if (null != serverId
+                && StringUtils.isNotBlank(tournamentName)
+                && StringUtils.isNotBlank(tournamentDay)) {
+            tentativeQueueFlux = tentativeDao.findByTentativeId_ServerId_AndTentativeId_TournamentId_TournamentName_AndTentativeId_TournamentId_TournamentDay(serverId.intValue(), tournamentName, tournamentDay);
+        } else if (null != serverId
+            && StringUtils.isNotBlank(tournamentName)) {
+            tentativeQueueFlux = tentativeDao.findByTentativeId_ServerId_AndTentativeId_TournamentId_TournamentName(serverId.intValue(), tournamentName);
+        } else if (null != serverId
+                && StringUtils.isNotBlank(tournamentDay)) {
+            tentativeQueueFlux =tentativeDao.findByTentativeId_ServerId_AndTentativeId_TournamentId_TournamentDay(serverId.intValue(), tournamentDay);
+        } else if (null != serverId) {
+            tentativeQueueFlux = tentativeDao.findByTentativeId_ServerId(serverId.intValue());
+        } else if (StringUtils.isNotBlank(tournamentName)
+                && StringUtils.isNotBlank(tournamentDay)) {
+            tentativeQueueFlux = tentativeDao.findByTentativeId_TournamentId_TournamentName_AndTentativeId_TournamentId_TournamentDay(tournamentName, tournamentDay);
+        } else if (StringUtils.isNotBlank(tournamentName)) {
+            tentativeQueueFlux = tentativeDao.findByTentativeId_TournamentId_TournamentName(tournamentName);
+        } else if (StringUtils.isNotBlank(tournamentDay)) {
+            tentativeQueueFlux = tentativeDao.findByTentativeId_TournamentId_TournamentDay(tournamentDay);
+        } else {
+            tentativeQueueFlux = tentativeDao.findAll();
         }
-        TentativeQueue build = TentativeQueue.builder()
-                .tentativeId(TentativeId.builder()
-                        .tournamentId(tournamentId)
-                        .serverId(serverId != null ? serverId.intValue() : null)
-                        .build())
-                .build();
-
-        Example<TentativeQueue> example = Example.of(build, ExampleMatcher.matchingAny().withIgnoreNullValues());
-
-        log.info("Ignored Paths {}", example.getMatcher().getIgnoredPaths());
-
-        tentativeQueueFlux = tentativeDao.findAll(example);
-//        if (null != serverId
-//                && StringUtils.isNotBlank(tournamentName)
-//                && StringUtils.isNotBlank(tournamentDay)) {
-//            tentativeQueueFlux = tentativeDao.findByTentativeId_ServerId_AndTentativeId_TournamentId_TournamentName_AndTentativeId_TournamentId_TournamentDay(serverId.intValue(), tournamentName, tournamentDay);
-//        } else if (null != serverId
-//            && StringUtils.isNotBlank(tournamentName)) {
-//            tentativeQueueFlux = tentativeDao.findByTentativeId_ServerId_AndTentativeId_TournamentId_TournamentName(serverId.intValue(), tournamentName);
-//        } else if (null != serverId
-//                && StringUtils.isNotBlank(tournamentDay)) {
-//            tentativeQueueFlux =tentativeDao.findByTentativeId_ServerId_AndTentativeId_TournamentId_TournamentDay(serverId.intValue(), tournamentDay);
-//        } else if (null != serverId) {
-//            tentativeQueueFlux = tentativeDao.findByTentativeId_ServerId(serverId.intValue());
-//        } else if (StringUtils.isNotBlank(tournamentName)
-//                && StringUtils.isNotBlank(tournamentDay)) {
-//            tentativeQueueFlux = tentativeDao.findByTentativeId_TournamentId_TournamentName_AndTentativeId_TournamentId_TournamentDay(tournamentName, tournamentDay);
-//        } else if (StringUtils.isNotBlank(tournamentName)) {
-//            tentativeQueueFlux = tentativeDao.findByTentativeId_TournamentId_TournamentName(tournamentName);
-//        } else if (StringUtils.isNotBlank(tournamentDay)) {
-//            tentativeQueueFlux = tentativeDao.findByTentativeId_TournamentId_TournamentDay(tournamentDay);
-//        } else {
-//            tentativeQueueFlux = tentativeDao.findAll();
-//        }
         return tentativeQueueFlux.map(tentativeMapper::tentativeQueueToTentative);
     }
 
