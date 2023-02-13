@@ -1,15 +1,16 @@
 package com.poss.clash.bot.controllers;
 
-import com.poss.clash.bot.daos.TentativeDao;
 import com.poss.clash.bot.exceptions.ClashBotControllerException;
 import com.poss.clash.bot.openapi.api.TentativesApi;
 import com.poss.clash.bot.openapi.model.*;
+import com.poss.clash.bot.services.ArchivedService;
 import com.poss.clash.bot.services.TentativeService;
 import com.poss.clash.bot.services.TournamentService;
 import com.poss.clash.bot.services.UserService;
 import com.poss.clash.bot.utils.TentativeMapper;
 import com.poss.clash.bot.utils.TournamentMapper;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -29,44 +30,32 @@ import java.util.stream.Collectors;
 
 @RestController
 @AllArgsConstructor
+@Slf4j
 public class TentativeController implements TentativesApi {
 
     private final TournamentService tournamentService;
     private final TentativeService tentativeService;
+    private final ArchivedService archivedService;
     private final UserService userService;
     private final TentativeMapper tentativeMapper;
     private final TournamentMapper tournamentMapper;
-    private final TentativeDao tentativeDao;
 
     @Override
     public Mono<ResponseEntity<Tentative>> assignUserToATentativeQueue(String tentativeId, Long discordId, ServerWebExchange exchange) {
-        return null;
+        return tentativeService.assignUserToTentativeQueue(discordId.intValue(), tentativeId)
+                .map(ResponseEntity::ok)
+                .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 
     @Override
     public Mono<ResponseEntity<Tentative>> createTentativeQueue(Mono<TentativeRequired> tentativeRequired, ServerWebExchange exchange) {
-        return Mono.zip(tentativeRequired,
-                tentativeRequired
-                        .flatMap(createQueueDetails -> tentativeService.retrieveTentativeQueues(
-                                createQueueDetails.getServerId(),
-                                createQueueDetails.getTournamentDetails().getTournamentName(),
-                                createQueueDetails.getTournamentDetails().getTournamentDay())
-                                .defaultIfEmpty(Tentative.builder().build())
-                                .last()
-                                .map(tentative -> {
-                                    if (null != tentative.getId()) {
-                                        throw new ClashBotControllerException(
-                                                MessageFormat.format("Tentative queue exists for Server {0} and Tournament {1}",
-                                                        tentative.getServerId(),
-                                                        tentative.getTournamentDetails()),
-                                                HttpStatus.BAD_REQUEST);
-                                    } else {
-                                        return tentative;
-                                    }
-                                })))
+        return tentativeRequired
+                .map(this::validateTentativeRequest)
+                .flatMap(this::checkIfTentativeQueueExists)
                 .map(tuple -> tentativeMapper.tentativeRequiredToTentativeQueue(tuple.getT1()))
-                .flatMap(tentativeService::saveTentativeQueue)
-                .map(ResponseEntity::ok);
+                .flatMap(tentativeService::createTentativeQueue)
+                .map(ResponseEntity::ok)
+                .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 
     @Override
@@ -80,8 +69,8 @@ public class TentativeController implements TentativesApi {
     }
 
     @Override
-    public Mono<ResponseEntity<Tentatives>> retrieveTentativeQueues(Boolean inactive, Long discordId, Long serverId, String tournamentName, String tournamentDay, ServerWebExchange exchange) {
-        return swapFluxBasedOnActiveFlag(inactive)
+    public Mono<ResponseEntity<Tentatives>> retrieveTentativeQueues(Boolean archived, Long discordId, Long serverId, String tournamentName, String tournamentDay, ServerWebExchange exchange) {
+        return swapFluxBasedOnArchivedFlag(archived, discordId, serverId, tournamentName, tournamentDay)
                 .collectList()
                 .map(this::buildTupleOfTentativesAndSetOfDiscordIds)
                 .flatMap(this::populateTupleWithTentativePlayerDetails)
@@ -99,6 +88,29 @@ public class TentativeController implements TentativesApi {
                 })
                 .map(ResponseEntity::ok)
                 .defaultIfEmpty(ResponseEntity.notFound().build());
+    }
+
+    private Mono<Tuple2<TentativeRequired, Tentative>> checkIfTentativeQueueExists(TentativeRequired tentativeRequired) {
+        return tentativeService.retrieveTentativeQueues(
+                        tentativeRequired.getServerId(),
+                        tentativeRequired.getTournamentDetails().getTournamentName(),
+                        tentativeRequired.getTournamentDetails().getTournamentDay())
+                        .defaultIfEmpty(Tentative.builder().build())
+                                .log()
+                                .last()
+                                .map(tentative -> {
+                                    if (null != tentative
+                                        && null != tentative.getId()) {
+                                        throw new ClashBotControllerException(
+                                                MessageFormat.format("Tentative queue exists for Server {0} and Tournament {1} {2}",
+                                                        tentative.getServerId(),
+                                                        tentative.getTournamentDetails().getTournamentName(),
+                                                        tentative.getTournamentDetails().getTournamentDay()),
+                                                HttpStatus.BAD_REQUEST);
+                                    } else {
+                                        return Tuples.of(tentativeRequired, tentative);
+                                    }
+                                });
     }
 
     protected Tuple2<Tentatives, Set<Integer>> buildTupleOfTentativesAndSetOfDiscordIds(List<Tentative> list) {
@@ -121,18 +133,22 @@ public class TentativeController implements TentativesApi {
                         .collectMap(TentativePlayer::getDiscordId, Function.identity()));
     }
 
-    protected Flux<Tentative> swapFluxBasedOnActiveFlag(Boolean onlyActive) {
+    protected Flux<Tentative> swapFluxBasedOnArchivedFlag(Boolean archived, Long discordId, Long serverId, String tournamentName, String tournamentDay) {
         Flux<Tentative> tentativeFlux;
-        if (!onlyActive) {
-            tentativeFlux = Mono.defer(() -> tournamentService.retrieveAllTournaments(true)
-                            .map(tournamentMapper::detailedTournamentToBaseTournament)
-                            .collect(Collectors.toSet()))
-                    .flatMapMany(upcomingTournaments -> tentativeService.retrieveTentativeQueues().map(tentative -> Tuples.of(tentative, upcomingTournaments)))
-                    .filter(tentativeRecord -> tentativeRecord.getT2().contains(tentativeRecord.getT1().getTournamentDetails()))
-                    .map(Tuple2::getT1);
+        if (archived) {
+            tentativeFlux = archivedService.retrieveArchivedTentativeQueues(discordId, serverId, tournamentName, tournamentDay);
         } else {
-            tentativeFlux = tentativeService.retrieveTentativeQueues();
+            tentativeFlux = tentativeService.retrieveTentativeQueues(discordId, serverId, tournamentName, tournamentDay);
         }
         return tentativeFlux;
+    }
+
+    protected TentativeRequired validateTentativeRequest(TentativeRequired tentativePayload) {
+        if (null == tentativePayload.getTentativePlayers()
+                || 0 == tentativePayload.getTentativePlayers().size()
+                || null == tentativePayload.getTentativePlayers().get(0).getDiscordId()) {
+            throw new ClashBotControllerException("To create a Tentative Queue, you must pass a valid Tentative Player.", HttpStatus.BAD_REQUEST);
+        }
+        return tentativePayload;
     }
 }

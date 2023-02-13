@@ -1,10 +1,11 @@
 package com.poss.clash.bot.daos.models;
 
+import com.poss.clash.bot.openapi.model.Role;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.util.Set;
+import java.util.Map;
 
 @Document
 @EqualsAndHashCode(callSuper = false)
@@ -13,10 +14,13 @@ import java.util.Set;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class TentativeQueue extends AuditEntity {
+public class ArchivedClashTeam extends AuditEntity {
 
     @Id
-    private TentativeId tentativeId;
-    private Set<Integer> discordIds;
+    private TeamId teamId;
+    private String teamName;
+    private Integer serverId;
+    private String teamIconLink;
+    private Map<Role, BasePlayerRecord> positions;
 
 }

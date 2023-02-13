@@ -1,10 +1,13 @@
 package com.poss.clash.bot.daos.models;
 
+import lombok.Data;
 import org.springframework.data.annotation.*;
 
+import java.io.Serializable;
 import java.time.Instant;
 
-public class AuditEntity {
+@Data
+public class AuditEntity implements Serializable {
 
     @CreatedDate
     Instant createdDate;

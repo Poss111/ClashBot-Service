@@ -307,11 +307,12 @@ components:
           $ref: "#/components/schemas/Role"
   parameters:
     InactiveQueryParam:
-      name: inactive
+      name: archived
       in: query
       description: Will retrieve records that are from past Tournaments
       schema:
         type: boolean
+        default: false
     DiscordIdPathParam:
       name: discordId
       in: path

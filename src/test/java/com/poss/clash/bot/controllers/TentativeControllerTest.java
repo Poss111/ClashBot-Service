@@ -37,6 +37,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 @ExtendWith({SpringExtension.class})
@@ -236,7 +237,58 @@ class TentativeControllerTest {
 
             when(tentativeService.retrieveTentativeQueues(serverId, tournamentName, tournamentDay))
                     .thenReturn(Flux.empty());
-            when(tentativeService.saveTentativeQueue(tentativeQueueToSave))
+            when(tentativeService.createTentativeQueue(tentativeQueueToSave))
+                    .thenReturn(Mono.just(savedMappedObject));
+
+            StepVerifier
+                    .create(tentativeController.createTentativeQueue(Mono.just(tentativePayload), null))
+                    .expectNext(ResponseEntity.ok(savedMappedObject))
+                    .expectComplete()
+                    .verify();
+
+            verify(tentativeService, times(1))
+                    .retrieveTentativeQueues(serverId, tournamentName, tournamentDay);
+        }
+
+        @Test
+        @DisplayName("Should create a Tentative Queue based on the Server, Tournament Name, and Day if one does not already exist at all.")
+        void test_createTentativeQueueBasedOnServerAndTournamentAndDay_noTentativeQueues_shouldCreateATentativeQueueAndSaveIt() {
+            String tournamentName = "awesome_sauce";
+            String tournamentDay = "1";
+            int discordId = 1;
+            int serverId = 2;
+
+            TentativeRequired tentativePayload = TentativeRequired.builder()
+                    .serverId(serverId)
+                    .tentativePlayers(List.of(TentativePlayer
+                            .builder()
+                            .discordId(discordId)
+                            .build()))
+                    .tournamentDetails(
+                            BaseTournament.builder()
+                                    .tournamentName(tournamentName)
+                                    .tournamentDay(tournamentDay)
+                                    .build()
+                    )
+                    .build();
+
+            TentativeQueue tentativeQueueToSave =
+                    TentativeQueue.builder()
+                            .tentativeId(TentativeId.builder()
+                                    .tournamentId(TournamentId.builder()
+                                            .tournamentName(tournamentName)
+                                            .tournamentDay(tournamentDay)
+                                            .build())
+                                    .serverId(serverId)
+                                    .build())
+                            .discordIds(Set.of(1))
+                            .build();
+
+            Tentative savedMappedObject = easyRandom.nextObject(Tentative.class);
+
+            when(tentativeService.retrieveTentativeQueues(serverId, tournamentName, tournamentDay))
+                    .thenReturn(Flux.empty());
+            when(tentativeService.createTentativeQueue(tentativeQueueToSave))
                     .thenReturn(Mono.just(savedMappedObject));
 
             StepVerifier
@@ -287,7 +339,7 @@ class TentativeControllerTest {
 
             when(tentativeService.retrieveTentativeQueues(serverId, tournamentName, tournamentDay))
                     .thenReturn(Flux.just(Tentative.builder().id("123").build()));
-            when(tentativeService.saveTentativeQueue(tentativeQueueToSave))
+            when(tentativeService.createTentativeQueue(tentativeQueueToSave))
                     .thenReturn(Mono.just(savedMappedObject));
 
             StepVerifier
@@ -298,6 +350,79 @@ class TentativeControllerTest {
             verify(tentativeService, times(1))
                     .retrieveTentativeQueues(serverId, tournamentName, tournamentDay);
         }
+
+        @Test
+        @DisplayName("400 - Should return 400 and not create a Tentative Queue if the tentativePlayer list is empty.")
+        void test_createTentativeQueueBasedOnServerAndTournamentAndDay_shouldNotCreateATentativeQueueAndSaveItIfNoTentativePlayers() {
+            String tournamentName = "awesome_sauce";
+            String tournamentDay = "1";
+            int serverId = 2;
+
+            TentativeRequired tentativePayload = TentativeRequired.builder()
+                    .serverId(serverId)
+                    .tournamentDetails(
+                            BaseTournament.builder()
+                                    .tournamentName(tournamentName)
+                                    .tournamentDay(tournamentDay)
+                                    .build()
+                    )
+                    .build();
+
+            TentativeQueue tentativeQueueToSave =
+                    TentativeQueue.builder()
+                            .tentativeId(TentativeId.builder()
+                                    .tournamentId(TournamentId.builder()
+                                            .tournamentName(tournamentName)
+                                            .tournamentDay(tournamentDay)
+                                            .build())
+                                    .serverId(serverId)
+                                    .build())
+                            .discordIds(Set.of(1))
+                            .build();
+
+            Tentative savedMappedObject = easyRandom.nextObject(Tentative.class);
+
+            when(tentativeService.createTentativeQueue(tentativeQueueToSave))
+                    .thenReturn(Mono.just(savedMappedObject));
+
+            StepVerifier
+                    .create(tentativeController.createTentativeQueue(Mono.just(tentativePayload), null))
+                    .expectError(ClashBotControllerException.class)
+                    .verify();
+
+            verify(tentativeService, times(0))
+                    .retrieveTentativeQueues(serverId, tournamentName, tournamentDay);
+        }
+
+    }
+
+    @Nested
+    @DisplayName("validateTentativeRequest")
+    class TentativeRequestValidator {
+        @Test
+        @DisplayName("Should validate that list is not null")
+        void test_validateTentativeRequest_shouldThrowAnExceptionIfListIsNotNull() {
+            assertThrows(ClashBotControllerException.class, () -> tentativeController
+                    .validateTentativeRequest(TentativeRequired.builder().build()));
+        }
+
+        @Test
+        @DisplayName("Should validate that list is not empty")
+        void test_validateTentativeRequest_shouldThrowAnExceptionIfListIsNotEmpty() {
+            assertThrows(ClashBotControllerException.class, () -> tentativeController
+                    .validateTentativeRequest(TentativeRequired.builder().tentativePlayers(List.of()).build()));
+        }
+
+        @Test
+        @DisplayName("Should validate that list has discord id")
+        void test_validateTentativeRequest_shouldThrowAnExceptionIfListDoesNotHaveDiscordIds() {
+            assertThrows(ClashBotControllerException.class, () -> tentativeController
+                    .validateTentativeRequest(TentativeRequired.builder()
+                            .tentativePlayers(List.of(TentativePlayer.builder()
+                                    .build()))
+                            .build()));
+        }
+
     }
 
     @Nested

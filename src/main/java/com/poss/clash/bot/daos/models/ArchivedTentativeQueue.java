@@ -13,7 +13,7 @@ import java.util.Set;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class TentativeQueue extends AuditEntity {
+public class ArchivedTentativeQueue extends AuditEntity {
 
     @Id
     private TentativeId tentativeId;

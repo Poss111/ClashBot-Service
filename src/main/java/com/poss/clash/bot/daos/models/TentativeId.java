@@ -2,14 +2,15 @@ package com.poss.clash.bot.daos.models;
 
 import lombok.*;
 
-@EqualsAndHashCode
+import java.io.Serializable;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class TentativeId {
+public class  TentativeId implements Serializable {
 
-    private String id;
+    private String tentativeId;
     private TournamentId tournamentId;
     private Integer serverId;
 

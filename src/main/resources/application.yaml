@@ -4,7 +4,11 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+  devtools:
+    restart:
+      enabled: false
 logging:
   level:
-    root: ERROR
+    root: INFO
     com.poss: INFO
+    org.springframework.data: DEBUG
