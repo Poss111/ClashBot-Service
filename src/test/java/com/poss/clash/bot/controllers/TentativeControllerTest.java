@@ -6,6 +6,7 @@ import com.poss.clash.bot.daos.models.TentativeQueue;
 import com.poss.clash.bot.daos.models.TournamentId;
 import com.poss.clash.bot.exceptions.ClashBotControllerException;
 import com.poss.clash.bot.openapi.model.*;
+import com.poss.clash.bot.services.ArchivedService;
 import com.poss.clash.bot.services.TentativeService;
 import com.poss.clash.bot.services.TournamentService;
 import com.poss.clash.bot.services.UserService;
@@ -49,6 +50,8 @@ class TentativeControllerTest {
     @Mock
     TournamentService tournamentService;
     @Mock
+    ArchivedService archivedService;
+    @Mock
     TentativeService tentativeService;
     @Mock
     UserService userService;
@@ -62,6 +65,30 @@ class TentativeControllerTest {
     @Nested
     @DisplayName("Utils")
     class TentativeControllerUtils {
+
+        @Test
+        @DisplayName("validateTentativeRequest - Should validate that list is not null")
+        void test_validateTentativeRequest_shouldThrowAnExceptionIfListIsNotNull() {
+            assertThrows(ClashBotControllerException.class, () -> tentativeController
+                    .validateTentativeRequest(TentativeRequired.builder().build()));
+        }
+
+        @Test
+        @DisplayName("validateTentativeRequest - Should validate that list is not empty")
+        void test_validateTentativeRequest_shouldThrowAnExceptionIfListIsNotEmpty() {
+            assertThrows(ClashBotControllerException.class, () -> tentativeController
+                    .validateTentativeRequest(TentativeRequired.builder().tentativePlayers(List.of()).build()));
+        }
+
+        @Test
+        @DisplayName("validateTentativeRequest - Should validate that list has discord id")
+        void test_validateTentativeRequest_shouldThrowAnExceptionIfListDoesNotHaveDiscordIds() {
+            assertThrows(ClashBotControllerException.class, () -> tentativeController
+                    .validateTentativeRequest(TentativeRequired.builder()
+                            .tentativePlayers(List.of(TentativePlayer.builder()
+                                    .build()))
+                            .build()));
+        }
 
         @Test
         @DisplayName("buildTupleOfTentativeAndSetOfDiscordIds - should take in a List of Tentative and build a tuple of a set of Discord Ids")
@@ -193,6 +220,82 @@ class TentativeControllerTest {
                     .expectComplete()
                     .verify();
         }
+    }
+
+    @Nested
+    @DisplayName("PATCH - assignUserToATentativeQueue")
+    class AssignUserToTentativeQueue {
+
+        @Test
+        @DisplayName("200 - A tentative queue was found and the id was added")
+        void test_assignUserToATentativeQueue_successfullyAddedUserToTentativeQueue() {
+            String tqId = "tq1234";
+            Long discordId = 1L;
+
+            Tentative tentative = easyRandom.nextObject(Tentative.class);
+
+            when(tentativeService.assignUserToTentativeQueue(discordId.intValue(), tqId))
+                    .thenReturn(Mono.just(tentative));
+
+            StepVerifier
+                    .create(tentativeController.assignUserToATentativeQueue(tqId, discordId, null))
+                    .expectNext(ResponseEntity.ok(tentative))
+                    .verifyComplete();
+        }
+
+        @Test
+        @DisplayName("404 - A tentative queue was not found")
+        void test_assignUserToATentativeQueue_unableToFindTentativeQueueWithId() {
+            String tqId = "tq1234";
+            Long discordId = 1L;
+
+            when(tentativeService.assignUserToTentativeQueue(discordId.intValue(), tqId))
+                    .thenReturn(Mono.empty());
+
+            StepVerifier
+                    .create(tentativeController.assignUserToATentativeQueue(tqId, discordId, null))
+                    .expectNext(ResponseEntity.notFound().build())
+                    .verifyComplete();
+        }
+
+    }
+
+    @Nested
+    @DisplayName("DELETE - assignUserToATentativeQueue")
+    class RemoteUserFromTentativeQueue {
+
+        @Test
+        @DisplayName("200 - A tentative queue was found and the id was removed")
+        void test_removeUserFromTentativeQueue_successfullyRemovedUserFromTentativeQueue() {
+            String tqId = "tq1234";
+            Long discordId = 1L;
+
+            Tentative tentative = easyRandom.nextObject(Tentative.class);
+
+            when(tentativeService.removeUserFromTentativeQueue(discordId.intValue(), tqId))
+                    .thenReturn(Mono.just(tentative));
+
+            StepVerifier
+                    .create(tentativeController.removeUserFromTentativeQueue(tqId, discordId, null))
+                    .expectNext(ResponseEntity.ok(tentative))
+                    .verifyComplete();
+        }
+
+        @Test
+        @DisplayName("404 - A tentative queue was not found")
+        void test_removeUserFromTentativeQueue_unableToFindTentativeQueueWithId() {
+            String tqId = "tq1234";
+            Long discordId = 1L;
+
+            when(tentativeService.removeUserFromTentativeQueue(discordId.intValue(), tqId))
+                    .thenReturn(Mono.empty());
+
+            StepVerifier
+                    .create(tentativeController.removeUserFromTentativeQueue(tqId, discordId, null))
+                    .expectNext(ResponseEntity.notFound().build())
+                    .verifyComplete();
+        }
+
     }
 
     @Nested
@@ -338,7 +441,7 @@ class TentativeControllerTest {
             Tentative savedMappedObject = easyRandom.nextObject(Tentative.class);
 
             when(tentativeService.retrieveTentativeQueues(serverId, tournamentName, tournamentDay))
-                    .thenReturn(Flux.just(Tentative.builder().id("123").build()));
+                    .thenReturn(Flux.just(easyRandom.nextObject(Tentative.class)));
             when(tentativeService.createTentativeQueue(tentativeQueueToSave))
                     .thenReturn(Mono.just(savedMappedObject));
 
@@ -349,6 +452,8 @@ class TentativeControllerTest {
 
             verify(tentativeService, times(1))
                     .retrieveTentativeQueues(serverId, tournamentName, tournamentDay);
+            verify(tentativeService, times(0))
+                    .createTentativeQueue(tentativeQueueToSave);
         }
 
         @Test
@@ -397,48 +502,22 @@ class TentativeControllerTest {
     }
 
     @Nested
-    @DisplayName("validateTentativeRequest")
-    class TentativeRequestValidator {
-        @Test
-        @DisplayName("Should validate that list is not null")
-        void test_validateTentativeRequest_shouldThrowAnExceptionIfListIsNotNull() {
-            assertThrows(ClashBotControllerException.class, () -> tentativeController
-                    .validateTentativeRequest(TentativeRequired.builder().build()));
-        }
-
-        @Test
-        @DisplayName("Should validate that list is not empty")
-        void test_validateTentativeRequest_shouldThrowAnExceptionIfListIsNotEmpty() {
-            assertThrows(ClashBotControllerException.class, () -> tentativeController
-                    .validateTentativeRequest(TentativeRequired.builder().tentativePlayers(List.of()).build()));
-        }
-
-        @Test
-        @DisplayName("Should validate that list has discord id")
-        void test_validateTentativeRequest_shouldThrowAnExceptionIfListDoesNotHaveDiscordIds() {
-            assertThrows(ClashBotControllerException.class, () -> tentativeController
-                    .validateTentativeRequest(TentativeRequired.builder()
-                            .tentativePlayers(List.of(TentativePlayer.builder()
-                                    .build()))
-                            .build()));
-        }
-
-    }
-
-    @Nested
     @DisplayName("GET - retrieveTentativeQueues")
     class RetrieveTentativeQueues {
 
         @Test
-        @DisplayName("Return all Tentative Queues")
+        @DisplayName("200 - Return all Tentative Queues")
         void test_retrieveTentativeQueues_mapTentativeQueuesAndPlayerDetails() {
             Integer serverId = 1;
             String tournamentName = "awesome_sauce";
             String tournamentDay = "1";
             String tentativeQueueId = "abcd";
             Player playerOne = easyRandom.nextObject(Player.class);
+            playerOne.setChampions(playerOne.getChampions().stream().limit(3).collect(Collectors.toList()));
             Player playerTwo = easyRandom.nextObject(Player.class);
+            playerTwo.setChampions(playerTwo.getChampions().stream().limit(3).collect(Collectors.toList()));
             Player playerThree = easyRandom.nextObject(Player.class);
+            playerThree.setChampions(playerThree.getChampions().stream().limit(3).collect(Collectors.toList()));
             List<TentativePlayer> tentativePlayers = List.of(
                     TentativePlayer.builder().discordId(playerOne.getDiscordId()).build(),
                     TentativePlayer.builder().discordId(playerTwo.getDiscordId()).build(),
@@ -455,7 +534,7 @@ class TentativeControllerTest {
                                         .tentativePlayers(tentativePlayers)
                                         .id(tentativeQueueId)
                                         .build());
-            when(tentativeService.retrieveTentativeQueues())
+            when(tentativeService.retrieveTentativeQueues(null, null, null, null))
                     .thenReturn(Mono.just(tentativeQueues)
                                         .flatMapIterable(tentatives -> tentatives));
             when(userService.retrieveUser(playerOne.getDiscordId()))
@@ -491,21 +570,25 @@ class TentativeControllerTest {
                                             .tentativePlayers(tentativePlayerList)
                                             .id(tentativeQueueId)
                                             .build()))
+                    .count(1)
                     .build();
 
-            StepVerifier.create(tentativeController.retrieveTentativeQueues(true, null, null, null, null, null))
+            StepVerifier.create(tentativeController.retrieveTentativeQueues(false, null, null, null, null, null))
                     .expectNext(ResponseEntity.ok(tentatives))
                     .expectComplete()
                     .verify();
         }
 
         @Test
-        @DisplayName("Return all Tentative Queues that are active")
+        @DisplayName("200 - Return all Tentative Queues that have been archived")
         void test_retrieveTentativeQueues_mapTentativeQueuesAndPlayerDetails_onlyActiveTournaments() {
             Integer serverId = 1;
             Player playerOne = easyRandom.nextObject(Player.class);
+            playerOne.setChampions(playerOne.getChampions().stream().limit(3).collect(Collectors.toList()));
             Player playerTwo = easyRandom.nextObject(Player.class);
+            playerTwo.setChampions(playerTwo.getChampions().stream().limit(3).collect(Collectors.toList()));
             Player playerThree = easyRandom.nextObject(Player.class);
+            playerThree.setChampions(playerThree.getChampions().stream().limit(3).collect(Collectors.toList()));
             String tentativeQueueIdOne = "12345";
             String tentativeQueueIdTwo = "12346";
             List<TentativePlayer> tentativePlayers = List.of(
@@ -535,7 +618,7 @@ class TentativeControllerTest {
 
             when(tournamentService.retrieveAllTournaments(true))
                     .thenReturn(Flux.just(activeTournament));
-            when(tentativeService.retrieveTentativeQueues())
+            when(archivedService.retrieveArchivedTentativeQueues(null, null, null, null))
                     .thenReturn(Mono.just(tentativeQueues)
                                         .flatMapIterable(tentatives -> tentatives));
             when(userService.retrieveUser(playerOne.getDiscordId()))
@@ -566,17 +649,57 @@ class TentativeControllerTest {
 
             Tentatives tentatives = Tentatives.builder()
                     .queues(List.of(Tentative.builder()
-                                            .id(tentativeQueueIdTwo)
+                                            .id(tentativeQueueIdOne)
                                             .serverId(serverId)
-                                            .tournamentDetails(baseTournamentTwo)
+                                            .tournamentDetails(baseTournamentOne)
                                             .tentativePlayers(tentativePlayerList)
-                                            .build()))
+                                            .build(),
+                            Tentative.builder()
+                                    .id(tentativeQueueIdTwo)
+                                    .serverId(serverId)
+                                    .tournamentDetails(baseTournamentTwo)
+                                    .tentativePlayers(tentativePlayerList)
+                                    .build()))
+                    .count(2)
                     .build();
 
-            StepVerifier.create(tentativeController.retrieveTentativeQueues(false, null, null, null, null, null))
+            StepVerifier.create(tentativeController.retrieveTentativeQueues(true, null, null, null, null, null))
                     .expectNext(ResponseEntity.ok(tentatives))
                     .expectComplete()
                     .verify();
+        }
+    }
+
+    @Nested
+    @DisplayName("GET - retrieveTentativeQueue")
+    class RetrieveTentativeQueue {
+
+        @Test
+        @DisplayName("200 - Successfully retrieved Tentative Queue based on id")
+        void test_retrieveTentativeQueue_ifTentativeQueueWasFoundThenItShouldBeReturned() {
+            String tqId = "tq1234";
+
+            Tentative tentative = easyRandom.nextObject(Tentative.class);
+
+            when(tentativeService.findById(tqId))
+                    .thenReturn(Mono.just(tentative));
+
+            StepVerifier
+                    .create(tentativeController.retrieveTentativeQueue(tqId, null))
+                    .expectNext(ResponseEntity.ok(tentative))
+                    .verifyComplete();
+        }
+
+        @Test
+        @DisplayName("404 - Was unable to find Tentative Queue based on id")
+        void test_retrieveTentativeQueue_ifTentativeQueueWasNotFoundThen404ShouldBeReturned() {
+            String tqId = "tq1234";
+            when(tentativeService.findById(tqId))
+                    .thenReturn(Mono.empty());
+            StepVerifier
+                    .create(tentativeController.retrieveTentativeQueue(tqId, null))
+                    .expectNext(ResponseEntity.notFound().build())
+                    .verifyComplete();
         }
     }
 

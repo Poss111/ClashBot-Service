@@ -1,9 +1,7 @@
 package com.poss.clash.bot.services;
 
 import com.poss.clash.bot.ClashBotTestingConfig;
-import com.poss.clash.bot.daos.TeamDao;
 import com.poss.clash.bot.daos.UserAssociationDao;
-import com.poss.clash.bot.daos.UserDao;
 import com.poss.clash.bot.daos.models.TournamentId;
 import com.poss.clash.bot.daos.models.UserAssociation;
 import com.poss.clash.bot.daos.models.UserAssociationKey;
@@ -17,7 +15,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.reactivestreams.Publisher;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import reactor.core.publisher.Mono;

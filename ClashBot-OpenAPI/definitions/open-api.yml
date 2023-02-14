@@ -824,7 +824,7 @@ paths:
         - Tentative
       responses:
         200:
-          $ref: '#/components/responses/TeamInteractionResponse'
+          $ref: '#/components/responses/TentativeResponse'
         400:
           $ref: '#/components/responses/BadInput'
         404:

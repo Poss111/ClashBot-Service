@@ -1,6 +1,5 @@
 package com.poss.clash.bot.utils;
 
-import com.poss.clash.bot.daos.ArchivedTentativeQueueDao;
 import com.poss.clash.bot.daos.models.ArchivedTentativeQueue;
 import com.poss.clash.bot.daos.models.TentativeQueue;
 import com.poss.clash.bot.openapi.model.Player;

@@ -1,7 +1,6 @@
 package com.poss.clash.bot.services;
 
 import com.poss.clash.bot.daos.UserAssociationDao;
-import com.poss.clash.bot.daos.models.TeamId;
 import com.poss.clash.bot.daos.models.TournamentId;
 import com.poss.clash.bot.daos.models.UserAssociation;
 import com.poss.clash.bot.daos.models.UserAssociationKey;

@@ -2,6 +2,7 @@ package com.poss.clash.bot.services;
 
 import com.poss.clash.bot.daos.TentativeDao;
 import com.poss.clash.bot.daos.models.*;
+import com.poss.clash.bot.exceptions.ClashBotDbException;
 import com.poss.clash.bot.openapi.model.Tentative;
 import com.poss.clash.bot.utils.IdUtils;
 import com.poss.clash.bot.utils.TentativeMapper;
@@ -10,12 +11,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.reactivestreams.Publisher;
 import org.springframework.data.domain.Example;
-import org.springframework.data.domain.ExampleMatcher;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.Set;
+import java.text.MessageFormat;
 import java.util.function.Function;
 
 @Service
@@ -34,17 +35,58 @@ public class TentativeService {
                 .map(tentativeMapper::tentativeQueueToTentative);
     }
 
+    /**
+     * I do not like this method. There has to be a better way to work with Spring Data for Dynamic queries.
+     *
+     * @param discordId
+     * @param serverId
+     * @param tournamentName
+     * @param tournamentDay
+     * @return
+     */
     public Flux<Tentative> retrieveTentativeQueues(Long discordId, Long serverId, String tournamentName, String tournamentDay) {
         Flux<TentativeQueue> tentativeQueueFlux;
-        if (null != discordId) {
-            tentativeQueueFlux = tentativeDao.findByDiscordIdsContaining(discordId.intValue());
+        if (null != discordId
+                && null != serverId
+                && StringUtils.isNotBlank(tournamentName)
+                && StringUtils.isNotBlank(tournamentDay)) {
+            tentativeQueueFlux = tentativeDao.findByTentativeId_ServerId_AndTentativeId_TournamentId_TournamentName_AndTentativeId_TournamentId_TournamentDay_AndDiscordIdsContaining(serverId.intValue(), tournamentName, tournamentDay, discordId.intValue());
+        } else if (null != discordId
+                && null != serverId
+                && StringUtils.isNotBlank(tournamentName)) {
+            tentativeQueueFlux = tentativeDao.findByTentativeId_ServerId_AndTentativeId_TournamentId_TournamentName_AndDiscordIdsContaining(serverId.intValue(), tournamentName, discordId.intValue());
+        } else if (null != discordId
+                && StringUtils.isNotBlank(tournamentName)
+                && StringUtils.isNotBlank(tournamentDay)) {
+            tentativeQueueFlux = tentativeDao.findByTentativeId_TournamentId_TournamentName_AndTentativeId_TournamentId_TournamentDay_AndDiscordIdsContaining(tournamentName, tournamentDay, discordId.intValue());
+        } else if (null != discordId
+                && StringUtils.isNotBlank(tournamentName)
+                && StringUtils.isNotBlank(tournamentDay)) {
+            tentativeQueueFlux = tentativeDao.findByTentativeId_TournamentId_TournamentName_AndTentativeId_TournamentId_TournamentDay_AndDiscordIdsContaining(tournamentName, tournamentDay, discordId.intValue());
+        } else if (null != discordId
+                && null != serverId
+                && StringUtils.isNotBlank(tournamentDay)) {
+            tentativeQueueFlux = tentativeDao.findByTentativeId_ServerId_AndTentativeId_TournamentId_TournamentDay_AndDiscordIdsContaining(serverId.intValue(), tournamentDay, discordId.intValue());
+        } else if (null != discordId
+                && null != serverId
+                && StringUtils.isNotBlank(tournamentDay)) {
+            tentativeQueueFlux = tentativeDao.findByTentativeId_ServerId_AndTentativeId_TournamentId_TournamentDay_AndDiscordIdsContaining(serverId.intValue(), tournamentDay, discordId.intValue());
         } else if (null != serverId
                 && StringUtils.isNotBlank(tournamentName)
                 && StringUtils.isNotBlank(tournamentDay)) {
             tentativeQueueFlux = tentativeDao.findByTentativeId_ServerId_AndTentativeId_TournamentId_TournamentName_AndTentativeId_TournamentId_TournamentDay(serverId.intValue(), tournamentName, tournamentDay);
+        } else if (null != discordId
+                && null != serverId) {
+            tentativeQueueFlux = tentativeDao.findByTentativeId_ServerId_AndDiscordIdsContaining(serverId.intValue(), discordId.intValue());
+        } else if (null != discordId
+            && StringUtils.isNotBlank(tournamentDay)) {
+            tentativeQueueFlux = tentativeDao.findByTentativeId_TournamentId_TournamentDay_AndDiscordIdsContaining(tournamentDay, discordId.intValue());
+        } else if (null != discordId
+                && StringUtils.isNotBlank(tournamentName)) {
+            tentativeQueueFlux = tentativeDao.findByTentativeId_TournamentId_TournamentName_AndDiscordIdsContaining(tournamentName, discordId.intValue());
         } else if (null != serverId
-            && StringUtils.isNotBlank(tournamentName)) {
-            tentativeQueueFlux = tentativeDao.findByTentativeId_ServerId_AndTentativeId_TournamentId_TournamentName(serverId.intValue(), tournamentName);
+                && StringUtils.isNotBlank(tournamentName)) {
+            tentativeQueueFlux =tentativeDao.findByTentativeId_ServerId_AndTentativeId_TournamentId_TournamentName(serverId.intValue(), tournamentName);
         } else if (null != serverId
                 && StringUtils.isNotBlank(tournamentDay)) {
             tentativeQueueFlux =tentativeDao.findByTentativeId_ServerId_AndTentativeId_TournamentId_TournamentDay(serverId.intValue(), tournamentDay);
@@ -57,6 +99,8 @@ public class TentativeService {
             tentativeQueueFlux = tentativeDao.findByTentativeId_TournamentId_TournamentName(tournamentName);
         } else if (StringUtils.isNotBlank(tournamentDay)) {
             tentativeQueueFlux = tentativeDao.findByTentativeId_TournamentId_TournamentDay(tournamentDay);
+        } else if (null != discordId) {
+            tentativeQueueFlux = tentativeDao.findByDiscordIdsContaining(discordId.intValue());
         } else {
             tentativeQueueFlux = tentativeDao.findAll();
         }
@@ -64,21 +108,42 @@ public class TentativeService {
     }
 
     public Mono<Tentative> findById(String tentativeId) {
-        return tentativeDao.findBy(Example.of(TentativeId.builder()
-                        .tentativeId(tentativeId)
-                        .build()))
+        return tentativeDao.findByTentativeId_TentativeId(tentativeId)
                 .map(tentativeMapper::tentativeQueueToTentative);
     }
 
     public Mono<Tentative> assignUserToTentativeQueue(Integer discordId, String tentativeId) {
-        return tentativeDao.findBy(Example.of(TentativeId.builder()
-                .tentativeId(tentativeId)
-                .build()))
-                .map(queue -> {
-                    queue.getDiscordIds().add(discordId);
-                    return queue;
-                })
-                .flatMap((queue) -> this.saveOrUpdateTentativeQueue(queue.getTentativeId().getTentativeId(), queue));
+        return tentativeDao.findByTentativeId_TentativeId(tentativeId)
+                .map(queue -> mapIdToTentativeQueue(discordId, queue))
+                .log()
+                .flatMap(queue -> tentativeDao.updateByTentativeId_TentativeId(tentativeId, discordId)
+                        .map(count -> queue))
+                .map(tentativeMapper::tentativeQueueToTentative);
+    }
+
+    public Mono<Tentative> removeUserFromTentativeQueue(Integer discordId, String tentativeId) {
+        return tentativeDao.findByTentativeId_TentativeId(tentativeId)
+                .map(queue -> removeIdFromTentativeQueue(discordId, queue))
+                .log()
+                .flatMap(queue -> tentativeDao.removeByTentativeId_TentativeId(tentativeId, discordId)
+                        .map(count -> queue))
+                .map(tentativeMapper::tentativeQueueToTentative);
+    }
+
+    protected static TentativeQueue mapIdToTentativeQueue(Integer discordId, TentativeQueue queue) {
+        if (queue.getDiscordIds().contains(discordId))
+            throw new ClashBotDbException(MessageFormat.format("Id {0} already belongs to specified Tentative Queue.", discordId), HttpStatus.BAD_REQUEST);
+
+        queue.getDiscordIds().add(discordId);
+        return queue;
+    }
+
+    protected static TentativeQueue removeIdFromTentativeQueue(Integer discordId, TentativeQueue queue) {
+        if (!queue.getDiscordIds().contains(discordId))
+            throw new ClashBotDbException(MessageFormat.format("Id {0} not found in specified Tentative Queue.", discordId), HttpStatus.BAD_REQUEST);
+
+        queue.getDiscordIds().remove(discordId);
+        return queue;
     }
 
     public Flux<Tentative> retrieveTentativeQueues(Integer serverId, String tournamentName, String tournamentDay) {

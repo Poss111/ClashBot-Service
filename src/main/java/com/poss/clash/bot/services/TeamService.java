@@ -4,7 +4,6 @@ import com.poss.clash.bot.daos.TeamDao;
 import com.poss.clash.bot.daos.models.ClashTeam;
 import com.poss.clash.bot.daos.models.TeamId;
 import com.poss.clash.bot.openapi.model.Role;
-import com.poss.clash.bot.openapi.model.Team;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
