@@ -43,6 +43,8 @@ tags:
     description: A tentative queue for upcoming League of Legends Clash tournaments.
   - name: Tournament
     description: A League of Legends Clash Tournament.
+  - name: Maintenance
+    description: Endpoints related to maintenance of the Service.
   - name: User
     description: A Discord user that is leveraging the Clash Bot.
 components:
@@ -311,6 +313,19 @@ components:
           description: The Clash Tournament's day.
         role:
           $ref: "#/components/schemas/Role"
+    ArchiveMetadata:
+      description: Metadata regarding the archive process.
+      type: object
+      properties:
+        teamsMoved:
+          description: The number of Teams moved into the archive table.
+          type: integer
+        tentativeQueuesMoved:
+          description: The number of Tentative Queues moved into the archive table.
+          type: integer
+        totalTime:
+          description: The total time the process took in milliseconds
+          type: string
   parameters:
     InactiveQueryParam:
       name: archived
@@ -471,6 +486,12 @@ components:
           schema:
             $ref: '#/components/schemas/Champions'
   responses:
+    ArchiveResponse:
+      description: The metadata regarding the archive process.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ArchiveMetadata"
     TentativeResponse:
       description: A Tentative queue.
       content:
@@ -1152,3 +1173,17 @@ paths:
           $ref: '#/components/responses/NotFound'
         5XX:
           $ref: '#/components/schemas/Error'
+  /archive:
+    post:
+      operationId: archiveTeamsAndTentativeQueues
+      description: |
+        Will move all Teams and Tentative Queues that are now inactive into an archive table. 
+        This will help keep current operations clean and quick.
+      tags:
+        - Maintenance
+      responses:
+        200:
+          $ref: '#/components/responses/ArchiveResponse'
+        5XX:
+          $ref: '#/components/schemas/Error'
+
