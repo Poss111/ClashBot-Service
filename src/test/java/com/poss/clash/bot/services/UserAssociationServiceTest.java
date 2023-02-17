@@ -14,16 +14,10 @@ import org.mapstruct.factory.Mappers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.reactivestreams.Publisher;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.function.Function;
 
 import static org.mockito.Mockito.when;
 
@@ -74,109 +68,6 @@ class UserAssociationServiceTest {
                     .verifyComplete();
         }
 
-    }
-
-    @Nested
-    @DisplayName("Swap user associations")
-    class SwapBetweenUserAssociationTypes {
-
-        @Test
-        @DisplayName("Swap from Team to Tentative")
-        void test_swapUserAssociationBetweenTeamAndTentative_ifUsersExistInOtherTeams() {
-            Set<Integer> discordIds = Set.of(1, 2, 3);
-            Integer serverId = 1;
-            String tqId = "tq-123";
-            TournamentId tournamentId = TournamentId.builder()
-                    .tournamentName("awesome_sauce")
-                    .tournamentDay("1")
-                    .build();
-            List<UserAssociation> uaList = new ArrayList<>();
-            UserAssociation userAssociationDefault = UserAssociation.builder()
-                    .userAssociationKey(UserAssociationKey
-                            .builder()
-                            .tournamentId(tournamentId)
-                            .build())
-                    .tentativeId(tqId)
-                    .serverId(serverId)
-                    .build();
-            Function<UserAssociation, Publisher<UserAssociation>> userAssociationPublisherFunction
-                    = Mono::just;
-            discordIds.forEach(id -> {
-                UserAssociationKey key = UserAssociationKey
-                        .builder()
-                        .tournamentId(tournamentId)
-                        .discordId(id)
-                        .build();
-                UserAssociation userAssociation = UserAssociation.builder()
-                        .userAssociationKey(key)
-                        .teamId("id-" + id)
-                        .serverId(serverId)
-                        .build();
-                uaList.add(userAssociation);
-                when(userAssociationDaoMock.findById(
-                        UserAssociationKey.builder()
-                                .discordId(id)
-                                .tournamentId(tournamentId)
-                                .build()))
-                        .thenReturn(Mono.just(userAssociation));
-                when(userAssociationDaoMock.save(userAssociation))
-                        .thenReturn(Mono.just(userAssociation));
-            });
-            StepVerifier
-                    .create(userAssociationService
-                    .swapUserAssociationBetweenTeamAndTentative(
-                            discordIds,
-                            tournamentId,
-                            userAssociationDefault,
-                            userAssociationPublisherFunction
-                    ))
-                    .expectNext(uaList)
-                    .verifyComplete();
-        }
-
-        @Test
-        @DisplayName("Swap from Team to Tentative when user does not have an association")
-        void test_swapUserAssociationBetweenTeamAndTentative_ifUsersDoNotExistInOtherTeams() {
-            Set<Integer> discordIds = Set.of(1, 2, 3);
-            Integer serverId = 1;
-            String tqId = "tq-123";
-            TournamentId tournamentId = TournamentId.builder()
-                    .tournamentName("awesome_sauce")
-                    .tournamentDay("1")
-                    .build();
-            List<UserAssociation> uaList = new ArrayList<>();
-            UserAssociation userAssociationDefault = UserAssociation.builder()
-                    .userAssociationKey(UserAssociationKey
-                            .builder()
-                            .tournamentId(tournamentId)
-                            .build())
-                    .tentativeId(tqId)
-                    .serverId(serverId)
-                    .build();
-            Function<UserAssociation, Publisher<UserAssociation>> userAssociationPublisherFunction
-                    = Mono::just;
-            discordIds.forEach(id -> {
-                uaList.add(userAssociationDefault);
-                when(userAssociationDaoMock.findById(
-                        UserAssociationKey.builder()
-                                .discordId(id)
-                                .tournamentId(tournamentId)
-                                .build()))
-                        .thenReturn(Mono.empty());
-                when(userAssociationDaoMock.save(userAssociationDefault))
-                        .thenReturn(Mono.just(userAssociationDefault));
-            });
-            StepVerifier
-                    .create(userAssociationService
-                            .swapUserAssociationBetweenTeamAndTentative(
-                                    discordIds,
-                                    tournamentId,
-                                    userAssociationDefault,
-                                    userAssociationPublisherFunction
-                            ))
-                    .expectNext(uaList)
-                    .verifyComplete();
-        }
     }
 
 }

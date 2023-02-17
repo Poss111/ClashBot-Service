@@ -271,11 +271,11 @@ components:
       description: A League of Legends role.
       type: string
       enum:
-        - Top
-        - Mid
-        - Jg
-        - Bot
-        - Supp
+        - TOP
+        - MID
+        - JG
+        - BOT
+        - SUPP
     SubscriptionType:
       description: The type of User subscription.
       type: string
@@ -425,8 +425,16 @@ components:
           schema:
             $ref: '#/components/schemas/PositionDetails'
           examples:
-            baseCreateTeam:
-              $ref: '#/components/examples/AssignUserToTeamExample'
+            assignTop:
+              $ref: '#/components/examples/AssignUserToTeamAsTopExample'
+            assignJg:
+              $ref: '#/components/examples/AssignUserToTeamAsJgExample'
+            assignMid:
+              $ref: '#/components/examples/AssignUserToTeamAsMidExample'
+            assignBot:
+              $ref: '#/components/examples/AssignUserToTeamAsBotExample'
+            assignSupp:
+              $ref: '#/components/examples/AssignUserToTeamAsSuppExample'
     PostTentativeQueueRequestBody:
       description: Details to create a Clash Bot Tentative Queue with.
       content:
@@ -546,13 +554,45 @@ components:
             "tournamentDay": "1"
           }
         }
-    AssignUserToTeamExample:
+    AssignUserToTeamAsTopExample:
       description: |
-        The details to assign a Player to a Clash Bot Team.
-      summary: Assign Player to a Team.
+        The details to assign a Player to a Clash Bot Team as Top.
+      summary: Assign Player to a Team as Top.
       value:
         {
-          "role": "Top"
+          "role": "TOP"
+        }
+    AssignUserToTeamAsJgExample:
+      description: |
+        The details to assign a Player to a Clash Bot Team as Jungle.
+      summary: Assign Player to a Team as Jungle.
+      value:
+        {
+          "role": "JG"
+        }
+    AssignUserToTeamAsMidExample:
+      description: |
+        The details to assign a Player to a Clash Bot Team as Mid.
+      summary: Assign Player to a Team as Mid.
+      value:
+        {
+          "role": "MID"
+        }
+    AssignUserToTeamAsBotExample:
+      description: |
+        The details to assign a Player to a Clash Bot Team as Bot.
+      summary: Assign Player to a Team as Bot.
+      value:
+        {
+          "role": "BOT"
+        }
+    AssignUserToTeamAsSuppExample:
+      description: |
+        The details to assign a Player to a Clash Bot Team as Support.
+      summary: Assign Player to a Team as Support.
+      value:
+        {
+          "role": "SUPP"
         }
     TeamMetadataExample:
       description: |

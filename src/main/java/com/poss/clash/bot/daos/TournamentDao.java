@@ -13,8 +13,8 @@ public interface TournamentDao extends ReactiveCrudRepository<ClashTournament, T
 
     Flux<ClashTournament> findAll(Example<ClashTournament> clashTournamentExample);
 
-    Mono<ClashTournament> findByTournamentId_TournamentName(String name);
-
     Flux<ClashTournament> findClashTournamentsByStartTimeAfter(Instant instant);
+
+    Mono<Boolean> existsByTournamentIdTournamentName_AndTournamentIdTournamentDay_AndStartTimeAfter(String tournamentName, String tournamentDay, Instant instant);
 
 }

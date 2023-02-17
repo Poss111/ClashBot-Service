@@ -49,7 +49,8 @@ public class TournamentService {
                 .map(tournamentMapper::clashTournamentToDetailedTournament);
     }
 
-    public Flux<DetailedTournament> retrieveActiveTournaments() {
-        return Flux.empty();
+    public Mono<Boolean> isTournamentActive(String tournamentName, String tournamentDay) {
+        return tournamentDao
+                .existsByTournamentIdTournamentName_AndTournamentIdTournamentDay_AndStartTimeAfter(tournamentName, tournamentDay, Instant.now());
     }
 }

@@ -2,7 +2,6 @@ package com.poss.clash.bot.daos;
 
 import com.poss.clash.bot.daos.models.TentativeId;
 import com.poss.clash.bot.daos.models.TentativeQueue;
-import org.springframework.data.domain.Example;
 import org.springframework.data.mongodb.repository.Query;
 import org.springframework.data.mongodb.repository.Update;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
@@ -13,7 +12,7 @@ import reactor.core.publisher.Mono;
 @Repository
 public interface TentativeDao extends ReactiveCrudRepository<TentativeQueue, TentativeId> {
 
-    Flux<TentativeQueue> findAll(Example<TentativeQueue> tentativeQueueExample);
+    Mono<Boolean> existsByTentativeIdServerId_AndTentativeIdTournamentIdTournamentName_AndTentativeIdTournamentIdTournamentDay(Integer serverId, String tournamentName, String tournamentDay);
 
     Mono<TentativeQueue> findByTentativeId_TentativeId(String tentativeId);
 
