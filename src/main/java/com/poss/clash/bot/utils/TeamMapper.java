@@ -1,5 +1,6 @@
 package com.poss.clash.bot.utils;
 
+import com.poss.clash.bot.daos.models.ArchivedClashTeam;
 import com.poss.clash.bot.daos.models.BasePlayerRecord;
 import com.poss.clash.bot.daos.models.ClashTeam;
 import com.poss.clash.bot.openapi.model.*;
@@ -24,6 +25,13 @@ public interface TeamMapper {
     @Mapping(source = "teamId.tournamentId.tournamentDay", target = "tournament.tournamentDay")
     @Mapping(source = "positions", target = "playerDetails", qualifiedByName = "positionsToTeamPlayerDetails")
     Team clashTeamToTeam(ClashTeam clashTeam);
+
+    @Mapping(source = "teamId.id", target = "id")
+    @Mapping(source = "teamName", target = "name")
+    @Mapping(source = "teamId.tournamentId.tournamentName", target = "tournament.tournamentName")
+    @Mapping(source = "teamId.tournamentId.tournamentDay", target = "tournament.tournamentDay")
+    @Mapping(source = "positions", target = "playerDetails", qualifiedByName = "positionsToTeamPlayerDetails")
+    Team archivedClashTeamToTeam(ArchivedClashTeam clashTeam);
 
     @Named("positionsToTeamPlayerDetails")
     static TeamPlayerDetails positionsToTeamPlayerDetails(Map<Role, BasePlayerRecord> positions) {

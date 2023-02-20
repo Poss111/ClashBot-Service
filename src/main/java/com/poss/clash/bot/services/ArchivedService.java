@@ -1,5 +1,7 @@
 package com.poss.clash.bot.services;
 
+import com.poss.clash.bot.daos.models.ArchivedClashTeam;
+import com.poss.clash.bot.daos.models.ArchivedClashTournament;
 import com.poss.clash.bot.daos.models.ArchivedTentativeQueue;
 import com.poss.clash.bot.exceptions.ClashBotControllerException;
 import lombok.AllArgsConstructor;
@@ -12,7 +14,15 @@ import reactor.core.publisher.Flux;
 public class ArchivedService {
 
     public Flux<ArchivedTentativeQueue> retrieveArchivedTentativeQueues(Long discordId, Long serverId, String tournamentName, String tournamentDay) {
-        throw new ClashBotControllerException("Not implemented yet.", HttpStatus.NOT_IMPLEMENTED);
+        return Flux.error(new ClashBotControllerException("Not implemented yet.", HttpStatus.NOT_IMPLEMENTED));
+    }
+
+    public Flux<ArchivedClashTeam> retrieveTeamBasedOnCriteria(Long discordId, Long serverId, String tournamentName, String tournamentDay) {
+        return Flux.error(new ClashBotControllerException("Not implemented yet.", HttpStatus.NOT_IMPLEMENTED));
+    }
+
+    public Flux<ArchivedClashTournament> retrieveClashTournaments(String tournamentName, String tournamentDay) {
+        return Flux.error(new ClashBotControllerException("Not implemented yet.", HttpStatus.NOT_IMPLEMENTED));
     }
 
 }

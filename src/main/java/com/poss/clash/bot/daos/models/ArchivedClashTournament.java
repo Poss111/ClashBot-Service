@@ -7,15 +7,18 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-@Document
+import java.time.Instant;
+
 @Data
+@Document
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class ClashServer extends AuditEntity {
+public class ArchivedClashTournament extends AuditEntity {
 
     @Id
-    private Integer id;
-    private String name;
+    private TournamentId tournamentId;
+    private Instant startTime;
+    private Instant registrationTime;
 
 }

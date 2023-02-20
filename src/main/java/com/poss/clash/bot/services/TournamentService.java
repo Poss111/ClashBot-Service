@@ -3,7 +3,6 @@ package com.poss.clash.bot.services;
 import com.poss.clash.bot.daos.TournamentDao;
 import com.poss.clash.bot.daos.models.ClashTournament;
 import com.poss.clash.bot.daos.models.TournamentId;
-import com.poss.clash.bot.openapi.model.DetailedTournament;
 import com.poss.clash.bot.utils.TournamentMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,30 +22,26 @@ public class TournamentService {
 
     private final TournamentMapper tournamentMapper;
 
-    public Flux<DetailedTournament> retrieveTournamentsByTournamentOrDay(String tournament, String day) {
+    public Flux<ClashTournament> retrieveTournamentsByTournamentOrDay(String tournament, String day) {
         ClashTournament clashTournament = ClashTournament.builder()
                 .tournamentId(TournamentId.builder()
                         .tournamentName(tournament)
                         .tournamentDay(day)
                         .build())
                 .build();
-        return tournamentDao.findAll(Example.of(clashTournament))
-                .map(tournamentMapper::clashTournamentToDetailedTournament);
+        return tournamentDao.findAll(Example.of(clashTournament));
     }
 
-    public Flux<DetailedTournament> retrieveAllTournaments(boolean upcomingOnly) {
-        Flux<ClashTournament> flux;
+    public Flux<ClashTournament> retrieveAllTournaments(boolean upcomingOnly) {
         if (upcomingOnly) {
-            flux = tournamentDao.findClashTournamentsByStartTimeAfter(Instant.now());
+            return tournamentDao.findClashTournamentsByStartTimeAfter(Instant.now());
         } else {
-            flux = tournamentDao.findAll();
+            return tournamentDao.findAll();
         }
-        return flux.map(tournamentMapper::clashTournamentToDetailedTournament);
     }
 
-    public Mono<DetailedTournament> saveTournament(ClashTournament clashTournament) {
-        return tournamentDao.save(clashTournament)
-                .map(tournamentMapper::clashTournamentToDetailedTournament);
+    public Mono<ClashTournament> saveTournament(ClashTournament clashTournament) {
+        return tournamentDao.save(clashTournament);
     }
 
     public Mono<Boolean> isTournamentActive(String tournamentName, String tournamentDay) {

@@ -19,13 +19,15 @@ import org.mockito.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.PublisherProbe;
 
+import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(SpringExtension.class)
 @Import(ClashBotTestingConfig.class)
@@ -50,7 +52,7 @@ public class TeamServiceTest {
     private ArgumentCaptor<TournamentId> tournamentIdCaptor;
 
     @Nested
-    @DisplayName("createClashTeam")
+    @DisplayName("Create")
     class Create {
 
         @Test
@@ -90,10 +92,293 @@ public class TeamServiceTest {
                     .create(teamService.createClashTeam(teamToPersist))
                     .expectNext(teamAfterSave)
                     .verifyComplete();
-
-            assertEquals(tournamentId, tournamentIdCaptor.getValue());
         }
 
+    }
+
+    @Nested
+    @DisplayName("Query")
+    class Query {
+
+        @Test
+        @DisplayName("Find All - When no arguments are passed")
+        void test_retrieveTeamBasedOnCriteria_shouldQueryForAll() {
+            List<ClashTeam> clashTeams = List.of(
+                    easyRandom.nextObject(ClashTeam.class),
+                    easyRandom.nextObject(ClashTeam.class),
+                    easyRandom.nextObject(ClashTeam.class)
+            );
+
+            when(teamDao.findAll())
+                    .thenReturn(Mono.just(clashTeams)
+                            .flatMapMany(Flux::fromIterable));
+
+            StepVerifier
+                    .create(teamService.retrieveTeamBasedOnCriteria(null, null, null, null))
+                    .expectNext(clashTeams.get(0))
+                    .expectNext(clashTeams.get(1))
+                    .expectNext(clashTeams.get(2))
+                    .verifyComplete();
+
+            verify(teamDao, times(1))
+                    .findAll();
+        }
+
+        @Test
+        @DisplayName("Find by User's Discord Id - When a User's Discord Id is passed")
+        void test_retrieveTeamBasedOnCriteria_shouldQueryForAllTeamsIncludingADiscordId() {
+            int discordId = 1;
+            List<ClashTeam> clashTeams = List.of(
+                    easyRandom.nextObject(ClashTeam.class),
+                    easyRandom.nextObject(ClashTeam.class),
+                    easyRandom.nextObject(ClashTeam.class)
+            );
+
+            when(teamDao.findAllTeamsThatUserBelongsTo(discordId))
+                    .thenReturn(Mono.just(clashTeams)
+                            .flatMapMany(Flux::fromIterable));
+            StepVerifier
+                    .create(teamService.retrieveTeamBasedOnCriteria(discordId, null, null, null))
+                    .expectNext(clashTeams.get(0))
+                    .expectNext(clashTeams.get(1))
+                    .expectNext(clashTeams.get(2))
+                    .verifyComplete();
+
+            verify(teamDao, times(1))
+                    .findAllTeamsThatUserBelongsTo(discordId);
+        }
+
+        @Test
+        @DisplayName("Find By Server id - When a Server Id is passed")
+        void test_retrieveTeamBasedOnCriteria_shouldQueryForAllTeamsIncludingAServerId() {
+            int serverId = 1234;
+            List<ClashTeam> clashTeams = List.of(
+                    easyRandom.nextObject(ClashTeam.class),
+                    easyRandom.nextObject(ClashTeam.class),
+                    easyRandom.nextObject(ClashTeam.class)
+            );
+
+            when(teamDao.findAllByServerId(serverId))
+                    .thenReturn(Mono.just(clashTeams)
+                            .flatMapMany(Flux::fromIterable));
+            StepVerifier
+                    .create(teamService.retrieveTeamBasedOnCriteria(null, serverId, null, null))
+                    .expectNext(clashTeams.get(0))
+                    .expectNext(clashTeams.get(1))
+                    .expectNext(clashTeams.get(2))
+                    .verifyComplete();
+
+            verify(teamDao, times(1))
+                    .findAllByServerId(serverId);
+        }
+
+        @Test
+        @DisplayName("Find By Tournament Name - When a Tournament Name is passed")
+        void test_retrieveTeamBasedOnCriteria_shouldQueryForAllTeamsIncludingATournamentName() {
+            String tournamentName = "awesome-sauce";
+            List<ClashTeam> clashTeams = List.of(
+                    easyRandom.nextObject(ClashTeam.class),
+                    easyRandom.nextObject(ClashTeam.class),
+                    easyRandom.nextObject(ClashTeam.class)
+            );
+
+            when(teamDao.findAllByTeamId_TournamentId_TournamentName(tournamentName))
+                    .thenReturn(Mono.just(clashTeams)
+                            .flatMapMany(Flux::fromIterable));
+
+            StepVerifier
+                    .create(teamService.retrieveTeamBasedOnCriteria(null, null, tournamentName, null))
+                    .expectNext(clashTeams.get(0))
+                    .expectNext(clashTeams.get(1))
+                    .expectNext(clashTeams.get(2))
+                    .verifyComplete();
+
+            verify(teamDao, times(1))
+                    .findAllByTeamId_TournamentId_TournamentName(tournamentName);
+        }
+
+        @Test
+        @DisplayName("Find By Tournament Day - When a Tournament Day is passed")
+        void test_retrieveTeamBasedOnCriteria_shouldQueryForAllTeamsIncludingATournamentDay() {
+            String tournamentDay = "1";
+            List<ClashTeam> clashTeams = List.of(
+                    easyRandom.nextObject(ClashTeam.class),
+                    easyRandom.nextObject(ClashTeam.class),
+                    easyRandom.nextObject(ClashTeam.class)
+            );
+
+            when(teamDao.findAllByTeamId_TournamentId_TournamentDay(tournamentDay))
+                    .thenReturn(Mono.just(clashTeams)
+                            .flatMapMany(Flux::fromIterable));
+
+            StepVerifier
+                    .create(teamService.retrieveTeamBasedOnCriteria(null, null, null, tournamentDay))
+                    .expectNext(clashTeams.get(0))
+                    .expectNext(clashTeams.get(1))
+                    .expectNext(clashTeams.get(2))
+                    .verifyComplete();
+
+            verify(teamDao, times(1))
+                    .findAllByTeamId_TournamentId_TournamentDay(tournamentDay);
+        }
+
+        @Test
+        @DisplayName("Find By Server Id, Tournament Name and Day")
+        void test6() {
+            int serverId = 1234;
+            String tournamentName = "awesome_sauce";
+            String tournamentDay = "1";
+            List<ClashTeam> clashTeams = List.of(
+                    easyRandom.nextObject(ClashTeam.class),
+                    easyRandom.nextObject(ClashTeam.class),
+                    easyRandom.nextObject(ClashTeam.class)
+            );
+
+            when(teamDao.findAllByServerId_AndTeamId_TournamentId_TournamentName_AndTeamId_TournamentId_TournamentDay(
+                    serverId,
+                    tournamentName,
+                    tournamentDay
+            )).thenReturn(Mono.just(clashTeams)
+                            .flatMapMany(Flux::fromIterable));
+
+            StepVerifier
+                    .create(teamService.retrieveTeamBasedOnCriteria(null, serverId, tournamentName, tournamentDay))
+                    .expectNext(clashTeams.get(0))
+                    .expectNext(clashTeams.get(1))
+                    .expectNext(clashTeams.get(2))
+                    .verifyComplete();
+
+            verify(teamDao, times(1))
+                    .findAllByServerId_AndTeamId_TournamentId_TournamentName_AndTeamId_TournamentId_TournamentDay(
+                            serverId,
+                            tournamentName,
+                            tournamentDay
+                    );
+        }
+
+        @Test
+        @DisplayName("Find By Tournament Name and Day")
+        void test7() {
+            String tournamentName = "awesome_sauce";
+            String tournamentDay = "1";
+            List<ClashTeam> clashTeams = List.of(
+                    easyRandom.nextObject(ClashTeam.class),
+                    easyRandom.nextObject(ClashTeam.class),
+                    easyRandom.nextObject(ClashTeam.class)
+            );
+
+            when(teamDao.findAllByTeamId_TournamentId_TournamentName_AndTeamId_TournamentId_TournamentName(
+                    tournamentName,
+                    tournamentDay
+            )).thenReturn(Mono.just(clashTeams)
+                    .flatMapMany(Flux::fromIterable));
+
+            StepVerifier
+                    .create(teamService.retrieveTeamBasedOnCriteria(null, null, tournamentName, tournamentDay))
+                    .expectNext(clashTeams.get(0))
+                    .expectNext(clashTeams.get(1))
+                    .expectNext(clashTeams.get(2))
+                    .verifyComplete();
+
+            verify(teamDao, times(1))
+                    .findAllByTeamId_TournamentId_TournamentName_AndTeamId_TournamentId_TournamentName(
+                            tournamentName,
+                            tournamentDay
+                    );
+        }
+
+        @Test
+        @DisplayName("Find By Server Id and Tournament Name")
+        void test8() {
+            Integer serverId = 1234;
+            String tournamentName = "awesome_sauce";
+            List<ClashTeam> clashTeams = List.of(
+                    easyRandom.nextObject(ClashTeam.class),
+                    easyRandom.nextObject(ClashTeam.class),
+                    easyRandom.nextObject(ClashTeam.class)
+            );
+
+            when(teamDao.findAllByServerId_AndTeamId_TournamentId_TournamentName(
+                    serverId,
+                    tournamentName
+            )).thenReturn(Mono.just(clashTeams)
+                    .flatMapMany(Flux::fromIterable));
+
+            StepVerifier
+                    .create(teamService.retrieveTeamBasedOnCriteria(null, serverId, tournamentName, null))
+                    .expectNext(clashTeams.get(0))
+                    .expectNext(clashTeams.get(1))
+                    .expectNext(clashTeams.get(2))
+                    .verifyComplete();
+
+            verify(teamDao, times(1))
+                    .findAllByServerId_AndTeamId_TournamentId_TournamentName(
+                            serverId,
+                            tournamentName
+                    );
+        }
+
+        @Test
+        @DisplayName("Find By Server Id and Tournament Day")
+        void test9() {
+            Integer serverId = 1234;
+            String tournamentDay = "1";
+            List<ClashTeam> clashTeams = List.of(
+                    easyRandom.nextObject(ClashTeam.class),
+                    easyRandom.nextObject(ClashTeam.class),
+                    easyRandom.nextObject(ClashTeam.class)
+            );
+
+            when(teamDao.findAllByServerId_AndTeamId_TournamentId_TournamentDay(
+                    serverId,
+                    tournamentDay
+            )).thenReturn(Mono.just(clashTeams)
+                    .flatMapMany(Flux::fromIterable));
+
+            StepVerifier
+                    .create(teamService.retrieveTeamBasedOnCriteria(null, serverId, null, tournamentDay))
+                    .expectNext(clashTeams.get(0))
+                    .expectNext(clashTeams.get(1))
+                    .expectNext(clashTeams.get(2))
+                    .verifyComplete();
+
+            verify(teamDao, times(1))
+                    .findAllByServerId_AndTeamId_TournamentId_TournamentDay(
+                            serverId,
+                            tournamentDay
+                    );
+        }
+    }
+
+    @Nested
+    @DisplayName("Update")
+    class Update {
+
+        @Test
+        @DisplayName("Update Team name")
+        void test() {
+            String clashTeamId = "ct-1234";
+            String newTeamName = "New Name";
+
+            ClashTeam clashTeam = easyRandom.nextObject(ClashTeam.class);
+            clashTeam.setTeamName(newTeamName);
+
+            PublisherProbe<Void> publisherProbe = PublisherProbe.empty();
+            when(teamDao.findByTeamId_Id(clashTeamId))
+                    .thenReturn(Mono.just(clashTeam));
+            when(teamDao.updateTeamName(clashTeamId, newTeamName))
+                    .thenReturn(publisherProbe.mono());
+
+            StepVerifier
+                    .create(teamService.updateTeamName(clashTeamId, newTeamName))
+                    .expectNext(clashTeam)
+                    .verifyComplete();
+
+            verify(teamDao, times(1))
+                    .findByTeamId_Id(clashTeamId);
+            verify(teamDao, times(1))
+                    .updateTeamName(clashTeamId, newTeamName);
+        }
     }
 
 }

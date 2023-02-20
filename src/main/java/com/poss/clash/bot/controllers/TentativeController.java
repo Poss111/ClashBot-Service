@@ -1,13 +1,18 @@
 package com.poss.clash.bot.controllers;
 
+import com.poss.clash.bot.daos.models.User;
 import com.poss.clash.bot.exceptions.ClashBotControllerException;
 import com.poss.clash.bot.openapi.api.TentativesApi;
-import com.poss.clash.bot.openapi.model.*;
+import com.poss.clash.bot.openapi.model.Tentative;
+import com.poss.clash.bot.openapi.model.TentativePlayer;
+import com.poss.clash.bot.openapi.model.TentativeRequired;
+import com.poss.clash.bot.openapi.model.Tentatives;
 import com.poss.clash.bot.services.ArchivedService;
 import com.poss.clash.bot.services.TentativeService;
 import com.poss.clash.bot.services.UserAssignmentService;
 import com.poss.clash.bot.services.UserService;
 import com.poss.clash.bot.utils.TentativeMapper;
+import com.poss.clash.bot.utils.UserMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -36,6 +41,7 @@ public class TentativeController implements TentativesApi {
     private final ArchivedService archivedService;
     private final UserService userService;
     private final TentativeMapper tentativeMapper;
+    private final UserMapper userMapper;
 
     @Override
     public Mono<ResponseEntity<Tentative>> assignUserToATentativeQueue(String tentativeId, Long discordId, ServerWebExchange exchange) {
@@ -114,8 +120,8 @@ public class TentativeController implements TentativesApi {
                 Mono.just(tuple.getT2())
                         .flatMapIterable(ids -> ids)
                         .flatMap(id -> userService.retrieveUser(id)
-                                .defaultIfEmpty(Player.builder().discordId(id).build()))
-                        .map(tentativeMapper::playerToTentativePlayer)
+                                .defaultIfEmpty(User.builder().discordId(id).build()))
+                        .map(tentativeMapper::userToTentativePlayer)
                         .collectMap(TentativePlayer::getDiscordId, Function.identity()));
     }
 

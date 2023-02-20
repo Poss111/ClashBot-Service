@@ -67,13 +67,53 @@ public class TeamService {
         return teamDao.save(clashTeam);
     }
 
+    public Mono<ClashTeam> updateTeamName(String teamId, String newTeamName) {
+        return teamDao.findByTeamId_Id(teamId)
+                .flatMap(team -> teamDao.updateTeamName(teamId, newTeamName)
+                        .thenReturn(team))
+                .map(team -> {
+                    team.setTeamName(newTeamName);
+                    return team;
+                });
+    }
+
     public Mono<ClashTeam> findTeamById(String teamId) {
-        return this.teamDao.findByTeamId_Id(teamId)
+        return teamDao.findByTeamId_Id(teamId)
                 .onErrorMap(error -> new ClashBotDbException("Failed to retrieve Clash Team record", error, HttpStatus.INTERNAL_SERVER_ERROR));
     }
 
     public Flux<ClashTeam> retrieveTeamBasedOnCriteria(Integer discordId, Integer serverId, String tournamentName, String tournamentDay) {
-        return this.teamDao.findAll();
+        if (null != discordId) {
+            return teamDao.findAllTeamsThatUserBelongsTo(discordId);
+        } else if (null != serverId && null != tournamentName && null != tournamentDay) {
+            return teamDao.findAllByServerId_AndTeamId_TournamentId_TournamentName_AndTeamId_TournamentId_TournamentDay(
+                    serverId,
+                    tournamentName,
+                    tournamentDay
+            );
+        } else if (null != serverId && null != tournamentName) {
+          return teamDao.findAllByServerId_AndTeamId_TournamentId_TournamentName(
+                  serverId,
+                  tournamentName
+          );
+        } else if (null != serverId && null != tournamentDay)  {
+            return teamDao.findAllByServerId_AndTeamId_TournamentId_TournamentDay(
+                    serverId,
+                    tournamentDay
+            );
+        } else if (null != tournamentName && null != tournamentDay) {
+            return teamDao.findAllByTeamId_TournamentId_TournamentName_AndTeamId_TournamentId_TournamentName(
+                    tournamentName,
+                    tournamentDay
+            );
+        } else if (null != serverId) {
+            return teamDao.findAllByServerId(serverId);
+        } else if (null != tournamentName) {
+            return teamDao.findAllByTeamId_TournamentId_TournamentName(tournamentName);
+        } else if (null != tournamentDay) {
+            return teamDao.findAllByTeamId_TournamentId_TournamentDay(tournamentDay);
+        }
+        return teamDao.findAll();
     }
 
 }

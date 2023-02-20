@@ -1,5 +1,6 @@
 package com.poss.clash.bot.controllers;
 
+import com.poss.clash.bot.daos.models.ClashTournament;
 import com.poss.clash.bot.openapi.api.TournamentsApi;
 import com.poss.clash.bot.openapi.model.DetailedTournament;
 import com.poss.clash.bot.openapi.model.Tournaments;
@@ -26,20 +27,23 @@ public class TournamentsController implements TournamentsApi {
         return tournament
                 .map(tournamentMapper::detailedTournamentToClashTournament)
                 .flatMap(tournamentService::saveTournament)
+                .map(tournamentMapper::clashTournamentToDetailedTournament)
                 .map(ResponseEntity::ok);
     }
 
     @Override
     public Mono<ResponseEntity<Tournaments>> getTournaments(String tournament, String day, Boolean upcoming, ServerWebExchange exchange) {
-        Flux<DetailedTournament> tournamentFlux;
+        Flux<ClashTournament> tournamentFlux;
         if (StringUtils.isNotBlank(tournament) || StringUtils.isNotBlank(day)) {
             tournamentFlux = tournamentService.retrieveTournamentsByTournamentOrDay(tournament, day);
         } else {
             tournamentFlux = tournamentService.retrieveAllTournaments(upcoming);
         }
         return tournamentFlux
+                .map(tournamentMapper::clashTournamentToDetailedTournament)
                 .collectList()
                 .map(listOfTournaments -> Tournaments.builder()
+                        .count(listOfTournaments.size())
                         .tournaments(listOfTournaments)
                         .build())
                 .map(ResponseEntity::ok);

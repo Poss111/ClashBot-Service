@@ -34,6 +34,8 @@ public interface UserMapper {
 
     Champion loLChampionToChampion(LoLChampion loLChampion);
 
+    User clone(User user);
+
     @Named("subscriptionsToUserSubscriptionMap")
     static Map<UserSubscription, Boolean> subscriptionsToUserSubscriptionMap(List<Subscription> subscriptions) {
         Map<UserSubscription, Boolean> userSubscriptionsHashMap = new HashMap<>();

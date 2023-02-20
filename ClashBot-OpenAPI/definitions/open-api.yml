@@ -59,13 +59,6 @@ components:
         name:
           type: string
           description: The Discord Server name associated to the id.
-    Servers:
-      description: A list of Discord Servers
-      properties:
-        servers:
-          type: array
-          items:
-            $ref: '#/components/schemas/Server'
     Team:
       description: A League of Legends Clash Team
       type: object
@@ -103,13 +96,14 @@ components:
             - serverId
             - tournament
             - playerDetails
-    TeamOnlyRequired:
-      allOf:
-        - $ref: '#/components/schemas/Team'
-        - type: object
-          required:
-            - serverId
-            - tournament
+    TeamUpdate:
+      description: Allowed properties to be updated on a Clash Team
+      required:
+        - teamName
+      properties:
+        teamName:
+          type: string
+          description: The name of the team
     Teams:
       description: A list of League of Legend's Clash Teams
       properties:
@@ -370,7 +364,7 @@ components:
       in: path
       required: true
       schema:
-        type: string
+        $ref: SubscriptionType
     TeamIdPathParam:
       name: teamId
       in: path
@@ -428,7 +422,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/TeamOnlyRequired'
+            $ref: '#/components/schemas/TeamUpdate'
           examples:
             baseCreateTeam:
               $ref: '#/components/examples/TeamMetadataExample'
@@ -473,9 +467,18 @@ components:
               discordId:
                 description: The Discord id of the player
                 type: integer
-              name:
-                description: The name of the player
-                type: string
+              serverId:
+                description: The Discord Server that the player is using by default.
+                type: integer
+    UpdatePlayerBody:
+      description: All necessary parameters to update an existing Player
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - serverId
+            properties:
               serverId:
                 description: The Discord Server that the player is using by default.
                 type: integer
@@ -531,12 +534,6 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/Champions"
-    ServerListResponse:
-      description: List of Discord Servers available from Clash Bot
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/Servers"
     NotFound:
       description: Unable to find requested resource
       content:
@@ -621,12 +618,7 @@ components:
       summary: A base Team patch body.
       value:
         {
-          "name": "Some new name",
-          "serverId": 123,
-          "tournament": {
-            "tournamentName": "awesome_sauce",
-            "tournamentDay": "1"
-          }
+          "teamName": "Some new name",
         }
     TentativeQueueCreateExample:
       description: |
@@ -1000,16 +992,19 @@ paths:
           $ref: '#/components/responses/ClashBotException'
         default:
           $ref: "#/components/responses/ClashBotException"
+  /users/{discordId}:
+    parameters:
+      - $ref: '#/components/parameters/DiscordIdPathParam'
     patch:
       description: Update an existing Clash Bot Player.
       operationId: updateUser
       tags:
         - User
       requestBody:
-        $ref: '#/components/requestBodies/CreatePlayerBody'
+        $ref: '#/components/requestBodies/UpdatePlayerBody'
       responses:
         200:
-          description: Created a new Clash Bot Player
+          description: Updated an existing Player
           content:
             application/json:
               schema:
@@ -1143,30 +1138,17 @@ paths:
       tags:
         - Champions
       parameters:
-        - name: champion
-          description: the champion name to remove from the user's list of champions
+        - name: champions
+          description: The list of champion's names to remove from the user's list of champions
           in: query
           required: true
           schema:
-            type: string
+            type: array
+            items:
+              type: string
       responses:
         200:
           $ref: '#/components/responses/ChampionListResponse'
-        400:
-          $ref: '#/components/responses/BadInput'
-        404:
-          $ref: '#/components/responses/NotFound'
-        5XX:
-          $ref: '#/components/schemas/Error'
-  /servers:
-    get:
-      operationId: retrieveServers
-      description: Retrieves all current Discord servers using Clash Bot
-      tags:
-        - Server
-      responses:
-        200:
-          $ref: '#/components/responses/ServerListResponse'
         400:
           $ref: '#/components/responses/BadInput'
         404:

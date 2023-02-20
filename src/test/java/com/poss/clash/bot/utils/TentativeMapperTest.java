@@ -1,24 +1,36 @@
 package com.poss.clash.bot.utils;
 
+import com.poss.clash.bot.ClashBotTestingConfig;
 import com.poss.clash.bot.daos.models.TentativeId;
 import com.poss.clash.bot.daos.models.TentativeQueue;
 import com.poss.clash.bot.daos.models.TournamentId;
+import com.poss.clash.bot.daos.models.User;
 import com.poss.clash.bot.openapi.model.BaseTournament;
+import com.poss.clash.bot.openapi.model.Champion;
 import com.poss.clash.bot.openapi.model.Tentative;
 import com.poss.clash.bot.openapi.model.TentativePlayer;
+import org.jeasy.random.EasyRandom;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mapstruct.factory.Mappers;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Import;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-
+@ExtendWith(SpringExtension.class)
+@Import(ClashBotTestingConfig.class)
 class TentativeMapperTest {
 
     TentativeMapper tentativeMapper = Mappers.getMapper(TentativeMapper.class);
+
+    @Autowired
+    EasyRandom easyRandom;
 
 
     @Test
@@ -103,6 +115,24 @@ class TentativeMapperTest {
                 .build();
 
         assertEquals(target, tentativeMapper.tentativeQueueToTentative(source));
+    }
+
+    @Test
+    @DisplayName("User -> TentativePlayer")
+    void test_userToTentativePlayer() {
+        User user = easyRandom.nextObject(User.class);
+
+        TentativePlayer tentativePlayer = TentativePlayer.builder()
+                .name(user.getName())
+                .discordId(user.getDiscordId())
+                .role(user.getDefaultRole())
+                .champions(user.getPreferredChampions().stream().map(champ -> Champion.builder()
+                                .name(champ.getName())
+                                .build())
+                        .collect(Collectors.toList()))
+                .build();
+
+        assertEquals(tentativePlayer, tentativeMapper.userToTentativePlayer(user));
     }
 
 }

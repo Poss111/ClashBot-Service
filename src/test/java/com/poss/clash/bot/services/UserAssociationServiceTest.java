@@ -5,15 +5,12 @@ import com.poss.clash.bot.daos.UserAssociationDao;
 import com.poss.clash.bot.daos.models.TournamentId;
 import com.poss.clash.bot.daos.models.UserAssociation;
 import com.poss.clash.bot.daos.models.UserAssociationKey;
-import com.poss.clash.bot.utils.UserAssociationMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mapstruct.factory.Mappers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Spy;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import reactor.core.publisher.Mono;
@@ -30,9 +27,6 @@ class UserAssociationServiceTest {
 
     @Mock
     UserAssociationDao userAssociationDaoMock;
-
-    @Spy
-    UserAssociationMapper userAssociationMapper = Mappers.getMapper(UserAssociationMapper.class);
 
     @Nested
     @DisplayName("Check If User Exists On Team Or Tentative Queue")

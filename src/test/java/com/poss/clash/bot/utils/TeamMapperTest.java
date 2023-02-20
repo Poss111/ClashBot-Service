@@ -12,7 +12,6 @@ import org.mapstruct.factory.Mappers;
 import java.util.HashMap;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
 
 public class TeamMapperTest {
 
@@ -78,12 +77,6 @@ public class TeamMapperTest {
                 .build();
 
         assertEquals(expectedTeamObject, teamMapper.clashTeamToTeam(clashTeamEntity));
-    }
-
-    @Test
-    @DisplayName("Team -> ClashTeam")
-    void test_teamToClashTeam() {
-        fail("Not implemented");
     }
 
 }
