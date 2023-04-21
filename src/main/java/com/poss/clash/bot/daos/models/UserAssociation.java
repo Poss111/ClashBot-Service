@@ -18,6 +18,6 @@ public class UserAssociation extends AuditEntity {
     private UserAssociationKey userAssociationKey;
     private String teamId;
     private String tentativeId;
-    private Integer serverId;
+    private String serverId;
 
 }

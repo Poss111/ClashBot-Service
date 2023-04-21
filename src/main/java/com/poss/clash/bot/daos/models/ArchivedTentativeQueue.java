@@ -17,6 +17,6 @@ public class ArchivedTentativeQueue extends AuditEntity {
 
     @Id
     private TentativeId tentativeId;
-    private Set<Integer> discordIds;
+    private Set<String> discordIds;
 
 }

@@ -4,7 +4,9 @@
   "description": "",
   "scripts": {
     "generate-spring-rest-server": "openapi-generator-cli generate -i definitions/open-api.yml -g spring -o ../ClashBot-Spring-Service-OpenAPI --minimal-update -s",
-    "start-rest-service-swagger": "swagger-ui-watcher ./definitions/open-api.yml"
+    "start-rest-service-swagger": "swagger-ui-watcher ./definitions/open-api.yml",
+    "generate-socket-server-documentation": "ag definitions/open-api-async.yml @asyncapi/html-template -o output --force-write",
+    "generate-dart-client": "openapi-generator-cli generate -i definitions/open-api.yml -g dart --additional-properties=pubName=clash_bot_api,pubAuthor=DanielPoss,pubAuthorEmail=rixxroid@gmail.com,pubVersion=1.0.1, -o /Users/poss/Projects/ClashBot/clashbot_flutter/clash-bot-api"
   },
   "author": "",
   "license": "ISC",

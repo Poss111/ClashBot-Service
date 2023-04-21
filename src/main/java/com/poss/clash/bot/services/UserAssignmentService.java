@@ -3,7 +3,11 @@ package com.poss.clash.bot.services;
 import com.poss.clash.bot.daos.models.*;
 import com.poss.clash.bot.exceptions.ClashBotDbException;
 import com.poss.clash.bot.openapi.model.Role;
+import com.poss.clash.bot.source.TeamSource;
+import com.poss.clash.bot.utils.TeamMapper;
+import com.poss.clash.bot.utils.TentativeMapper;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -21,40 +25,73 @@ import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
+@Slf4j
 public class UserAssignmentService {
 
     private final TeamService teamService;
     private final UserAssociationService userAssociationService;
     private final TentativeService tentativeService;
     private final TournamentService tournamentService;
+    private final TeamSource teamSource;
+    private final TeamMapper teamMapper;
+    private final TentativeMapper tentativeMapper;
 
-    public Mono<ClashTeam> assignUserToTeam(Integer discordId, Role role, String clashTeamId) {
+    public Mono<ClashTeam> assignUserToTeam(String discordId, Role role, String clashTeamId) {
         return teamService.findTeamById(clashTeamId)
                 .map(clashTeam -> this.validateTeamAvailability(role, clashTeam))
                 .flatMap(clashTeam -> userAssociationService.retrieveUsersTeamOrTentativeQueueForTournament(discordId,
-                        clashTeam.getTeamId().getTournamentId().getTournamentName(),
-                        clashTeam.getTeamId().getTournamentId().getTournamentDay())
+                                clashTeam.getTeamId().getTournamentId().getTournamentName(),
+                                clashTeam.getTeamId().getTournamentId().getTournamentDay())
                         .flatMap(userAssociation -> {
+                            if (StringUtils.equals(userAssociation.getTeamId(), clashTeamId)) {
+                                return Mono.just(UserAssociation.builder().build());
+                            }
                             UserAssociation updatedUserAssc = buildUserAssociationForTeam(discordId, clashTeamId, clashTeam);
                             if (StringUtils.isNotBlank(userAssociation.getTeamId())) {
-                                    return this.teamService.removeUserFromTeam(userAssociation.getTeamId(), discordId)
-                                            .thenReturn(updatedUserAssc);
-                                }
-                                return tentativeService.removeUserFromTentativeQueue(discordId, userAssociation.getTentativeId())
+                                return this.teamService.removeUserFromTeam(userAssociation.getTeamId(), discordId)
+                                        .flatMap(updatedTeam -> teamSource.sendTeamUpdateEvent(teamMapper.clashTeamToTeam(updatedTeam), discordId))
                                         .thenReturn(updatedUserAssc);
+                            }
+                            return tentativeService.removeUserFromTentativeQueue(discordId, userAssociation.getTentativeId())
+                                    .flatMap(updatedTentativeQueue -> teamSource.sendTentativeQueueUpdateEvent(tentativeMapper.tentativeQueueToTentative(updatedTentativeQueue), discordId))
+                                    .thenReturn(updatedUserAssc);
+                        }).defaultIfEmpty(buildUserAssociationForTeam(discordId, clashTeamId, clashTeam))
+                        .map(userAssc -> {
+                            if (StringUtils.isBlank(userAssc.getServerId())) {
+                                return Tuples.of(swapRole(discordId, role, clashTeam), userAssc);
+                            }
+                            return Tuples.of(teamService.addUserToTeam(discordId, role, clashTeam), userAssc);
                         })
-                        .defaultIfEmpty(buildUserAssociationForTeam(discordId, clashTeamId, clashTeam))
-                        .map(userAssc -> Tuples.of(teamService.addUserToTeam(discordId, role, clashTeam), userAssc)))
+                )
                 .flatMap(tuple -> teamService.upsertClashTeam(tuple.getT1())
                         .log()
                         .map(updatedTeam -> Tuples.of(updatedTeam, tuple.getT2())))
-                .flatMap(tuple -> userAssociationService.save(tuple.getT2())
-                        .log()
-                        .thenReturn(tuple.getT1()))
+                .flatMap(tuple -> {
+                            if (StringUtils.isBlank(tuple.getT2().getServerId())) {
+                                return teamSource.sendTeamUpdateEvent(teamMapper.clashTeamToTeam(tuple.getT1()), discordId)
+                                        .log()
+                                        .thenReturn(tuple.getT1());
+                            }
+                            return Mono.zip(
+                                            userAssociationService.save(tuple.getT2()),
+                                            teamSource.sendTeamUpdateEvent(teamMapper.clashTeamToTeam(tuple.getT1()), discordId))
+                                    .log()
+                                    .thenReturn(tuple.getT1());
+                        }
+                )
                 .switchIfEmpty(Mono.error(new ClashBotDbException(MessageFormat.format("No Team found with id {0}", clashTeamId), HttpStatus.NOT_FOUND)));
     }
 
-    private static UserAssociation buildUserAssociationForTeam(Integer discordId, String clashTeamId, ClashTeam clashTeam) {
+    private ClashTeam swapRole(String discordId, Role role, ClashTeam clashTeam) {
+        Optional<Map.Entry<Role, BasePlayerRecord>> existingUserRole = clashTeam.getPositions().entrySet().stream().filter((kv) -> StringUtils.equals(discordId, kv.getValue().getDiscordId())).findFirst();
+        existingUserRole.ifPresent((foundRole) -> clashTeam.getPositions().remove(foundRole.getKey()));
+        clashTeam.getPositions().put(role, BasePlayerRecord.builder()
+                .discordId(discordId)
+                .build());
+        return clashTeam;
+    }
+
+    private static UserAssociation buildUserAssociationForTeam(String discordId, String clashTeamId, ClashTeam clashTeam) {
         return UserAssociation.builder()
                 .teamId(clashTeamId)
                 .serverId(clashTeam.getServerId())
@@ -72,30 +109,46 @@ public class UserAssignmentService {
         return returnedClashTeam;
     }
 
-    public Mono<ClashTeam> createTeamAndAssignUser(Map<Role, Integer> positions, String teamName, Integer discordServerId, String tournamentName, String tournamentDay) {
+    public Mono<ClashTeam> createTeamAndAssignUser(Map<Role, String> positions, String teamName, String discordServerId, String tournamentName, String tournamentDay) {
         return tournamentService.isTournamentActive(tournamentName, tournamentDay)
-                        .flatMapMany(active -> {
-                            if (!active) {
-                                throw new ClashBotDbException("Tournament not found.", HttpStatus.BAD_REQUEST);
-                            } else {
-                                return Flux.fromIterable(positions.entrySet());
-                            }
-                        })
+                .flatMapMany(active -> {
+                    if (!active) {
+                        throw new ClashBotDbException("Tournament not found.", HttpStatus.BAD_REQUEST);
+                    } else {
+                        return Flux.fromIterable(positions.entrySet());
+                    }
+                })
                 .flatMap(entry -> this.userAssociationService
-                    .retrieveUsersTeamOrTentativeQueueForTournament(entry.getValue(), tournamentName, tournamentDay)
+                        .retrieveUsersTeamOrTentativeQueueForTournament(entry.getValue(), tournamentName, tournamentDay)
                         .flatMap(assc -> {
                             if (StringUtils.isNotBlank(assc.getTeamId())) {
                                 return teamService.removeUserFromTeam(assc.getTeamId(), assc.getUserAssociationKey().getDiscordId())
                                         .log()
+                                        .flatMap((teamRemovedFrom) -> teamSource.sendTeamUpdateEvent(
+                                                teamMapper.clashTeamToTeam(teamRemovedFrom),
+                                                assc.getUserAssociationKey().getDiscordId())
+                                        )
                                         .thenReturn(assc);
                             }
                             return tentativeService.removeUserFromTentativeQueue(assc.getUserAssociationKey().getDiscordId(), assc.getTentativeId())
                                     .log()
+                                    .flatMap((tentativeQueueRemovedFrom) -> teamSource.sendTentativeQueueUpdateEvent(
+                                            tentativeMapper.tentativeQueueToTentative(tentativeQueueRemovedFrom),
+                                            assc.getUserAssociationKey().getDiscordId()))
                                     .thenReturn(assc);
                         })
                         .defaultIfEmpty(buildBaseAssociation(discordServerId, tournamentName, tournamentDay, entry.getValue())))
                 .collectList()
                 .flatMap(assc -> teamService.createClashTeam(createNewTeam(positions, teamName, discordServerId, tournamentName, tournamentDay))
+                        .flatMap((createdTeam) -> {
+                            String causedBy = "0";
+                            Optional<Map.Entry<Role, BasePlayerRecord>> first = createdTeam.getPositions().entrySet().stream().findFirst();
+                            if (first.isPresent()) {
+                                causedBy = first.get().getValue().getDiscordId();
+                            }
+                            return teamSource.sendTeamCreateEvent(teamMapper.clashTeamToTeam(createdTeam), causedBy)
+                                    .thenReturn(createdTeam);
+                        })
                         .map(createdTeam -> associateUsersToTeam(assc, createdTeam)))
                 .flatMap(tuple -> Flux.fromIterable(tuple.getT2())
                         .flatMap(userAssociationService::save)
@@ -114,7 +167,7 @@ public class UserAssignmentService {
         return Tuples.of(createdTeam, updatedAssociations);
     }
 
-    private UserAssociation buildBaseAssociation(Integer discordServerId, String tournamentName, String tournamentDay, Integer id) {
+    private UserAssociation buildBaseAssociation(String discordServerId, String tournamentName, String tournamentDay, String id) {
         return UserAssociation.builder()
                 .userAssociationKey(UserAssociationKey.builder()
                         .discordId(id)
@@ -127,7 +180,7 @@ public class UserAssignmentService {
                 .build();
     }
 
-    private ClashTeam createNewTeam(Map<Role, Integer> positions, String teamName, Integer discordServerId, String tournamentName, String tournamentDay) {
+    private ClashTeam createNewTeam(Map<Role, String> positions, String teamName, String discordServerId, String tournamentName, String tournamentDay) {
         Map<Role, BasePlayerRecord> positionsMap = positions.entrySet()
                 .stream()
                 .collect(Collectors.toMap(
@@ -148,18 +201,20 @@ public class UserAssignmentService {
                 .build();
     }
 
-    public Mono<ClashTeam> findAndRemoveUserFromTeam(Integer discordId, String clashTeamId) {
+    public Mono<ClashTeam> findAndRemoveUserFromTeam(String discordId, String clashTeamId) {
         return teamService.findTeamById(clashTeamId)
                 .switchIfEmpty(Mono.error(new ClashBotDbException(MessageFormat.format("Team {0} does not exist.", clashTeamId), HttpStatus.NOT_FOUND)))
                 .flatMap(team -> removeUserFromTeam(discordId, team))
+                .log()
                 .flatMap(team -> userAssociationService.delete(UserAssociationKey.builder()
                                 .discordId(discordId)
                                 .tournamentId(team.getTeamId().getTournamentId())
-                        .build())
+                                .build())
+                        .flatMap(userAssociation -> teamSource.sendTeamUpdateEvent(teamMapper.clashTeamToTeam(team), discordId))
                         .thenReturn(team));
     }
 
-    private Mono<ClashTeam> removeUserFromTeam(Integer discordId, ClashTeam team) {
+    private Mono<ClashTeam> removeUserFromTeam(String discordId, ClashTeam team) {
         Optional<Role> role = team.getPositions().entrySet().stream().filter(entry -> discordId.equals(entry.getValue().getDiscordId()))
                 .map(Map.Entry::getKey).findFirst();
         if (role.isPresent()) {
@@ -170,7 +225,7 @@ public class UserAssignmentService {
         return teamService.upsertClashTeam(team);
     }
 
-    public Mono<TentativeQueue> createTentativeQueueAndAssignUser(Set<Integer> discordIds, Integer serverId, String tournamentName, String tournamentDay) {
+    public Mono<TentativeQueue> createTentativeQueueAndAssignUser(Set<String> discordIds, String serverId, String tournamentName, String tournamentDay) {
         TentativeQueue baseTentativeQueue = TentativeQueue.builder()
                 .tentativeId(TentativeId.builder()
                         .tournamentId(TournamentId.builder()
@@ -198,13 +253,16 @@ public class UserAssignmentService {
                                 id,
                                 tournamentName,
                                 tournamentDay)
+                        .log()
                         .flatMap(assc -> {
                             if (StringUtils.isNotBlank(assc.getTeamId())) {
                                 return teamService.removeUserFromTeam(assc.getTeamId(), id)
+                                        .flatMap((teamAfterUpdate) -> teamSource.sendTeamUpdateEvent(teamMapper.clashTeamToTeam(teamAfterUpdate), id))
                                         .thenReturn(assc);
                             }
                             return Mono.just(assc);
                         })
+                        .log()
                         .defaultIfEmpty(UserAssociation.builder()
                                 .serverId(serverId)
                                 .userAssociationKey(UserAssociationKey.builder()
@@ -216,6 +274,7 @@ public class UserAssignmentService {
                                         .build())
                                 .build()))
                 .collectList()
+                .log()
                 .flatMap(userAssociations -> tentativeService.createTentativeQueue(baseTentativeQueue)
                         .map(createdTentativeQueue -> {
                             List<UserAssociation> associations = userAssociations.stream()
@@ -228,22 +287,29 @@ public class UserAssignmentService {
                         }))
                 .flatMap(tuple -> Flux.fromIterable(tuple.getT2())
                         .flatMap(userAssociationService::save)
+                        .flatMap((userAssociation) -> teamSource.sendTentativeQueueCreateEvent(tentativeMapper.tentativeQueueToTentative(tuple.getT1()),
+                                        userAssociation.getUserAssociationKey().getDiscordId())
+                                .thenReturn(userAssociation))
                         .collectList()
+                        .log()
                         .thenReturn(tuple.getT1())
                 );
     }
 
-    public Mono<TentativeQueue> assignUserToTentativeQueue(Integer discordId, String tentativeQueueId) {
+    public Mono<TentativeQueue> assignUserToTentativeQueue(String discordId, String tentativeQueueId) {
         return this.tentativeService.findById(tentativeQueueId)
+                .log()
                 .switchIfEmpty(Mono.error(new ClashBotDbException("Tentative Queue does not exist.", HttpStatus.NOT_FOUND)))
                 .flatMap(tentativeQueue -> this.userAssociationService
                         .retrieveUsersTeamOrTentativeQueueForTournament(
                                 discordId,
                                 tentativeQueue.getTentativeId().getTournamentId().getTournamentName(),
                                 tentativeQueue.getTentativeId().getTournamentId().getTournamentDay())
+                        .log()
                         .flatMap(assc -> {
                             if (StringUtils.isNotBlank(assc.getTeamId())) {
                                 return teamService.removeUserFromTeam(assc.getTeamId(), discordId)
+                                        .flatMap(team -> teamSource.sendTeamUpdateEvent(teamMapper.clashTeamToTeam(team), discordId))
                                         .thenReturn(assc);
                             }
                             return Mono.just(assc);
@@ -264,10 +330,11 @@ public class UserAssignmentService {
                             return Tuples.of(updatedTentativeQueue, tuple.getT2());
                         }))
                 .flatMap(tuple -> this.userAssociationService.save(tuple.getT2())
+                        .flatMap((assc) -> teamSource.sendTentativeQueueUpdateEvent(tentativeMapper.tentativeQueueToTentative(tuple.getT1()), discordId))
                         .thenReturn(tuple.getT1()));
     }
 
-    public Mono<TentativeQueue> findAndRemoveUserFromTentativeQueue(Integer discordId, String tentativeQueueId) {
+    public Mono<TentativeQueue> findAndRemoveUserFromTentativeQueue(String discordId, String tentativeQueueId) {
         return this.tentativeService.findById(tentativeQueueId)
                 .switchIfEmpty(Mono.error(new ClashBotDbException("Tentative Queue does not exist.", HttpStatus.NOT_FOUND)))
                 .flatMap(tentativeQueue -> this.tentativeService.removeUserFromTentativeQueue(discordId, tentativeQueueId)
@@ -275,10 +342,15 @@ public class UserAssignmentService {
                             tentativeQueue.getDiscordIds().remove(discordId);
                             return tentativeQueue;
                         }))
+                .log()
                 .flatMap(tentativeQueue -> this.userAssociationService.delete(UserAssociationKey.builder()
                                 .tournamentId(tentativeQueue.getTentativeId().getTournamentId())
                                 .discordId(discordId)
-                        .build()).thenReturn(tentativeQueue));
+                                .build())
+                        .thenReturn(tentativeQueue))
+                .flatMap(tentativeQueue -> teamSource.sendTentativeQueueUpdateEvent(tentativeMapper.tentativeQueueToTentative(tentativeQueue), discordId)
+                        .thenReturn(tentativeQueue)
+                );
     }
 
 }

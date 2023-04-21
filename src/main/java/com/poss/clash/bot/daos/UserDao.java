@@ -8,12 +8,12 @@ import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Mono;
 
 @Repository
-public interface UserDao extends ReactiveCrudRepository<User, Integer> {
+public interface UserDao extends ReactiveCrudRepository<User, String> {
 
-    Mono<User> findUserByDiscordId(Integer id);
+    Mono<User> findUserByDiscordId(String id);
 
     @Query("{ 'discordId': ?0 }")
     @Update("{ '$set': { 'serverId': ?1 }}")
-    Mono<Long> updateUserDefaultServerId(Integer id, Integer serverId);
+    Mono<Long> updateUserDefaultServerId(String id, String serverId);
 
 }

@@ -54,7 +54,7 @@ public interface TentativeMapper {
     TentativePlayer userToTentativePlayer(User user);
 
     @Named("tentativePlayersToDiscordIds")
-    static Set<Integer> tentativePlayersToDiscordIds(List<TentativePlayer> tentativePlayerList) {
+    static Set<String> tentativePlayersToDiscordIds(List<TentativePlayer> tentativePlayerList) {
         if (!tentativePlayerList.isEmpty()) {
             return tentativePlayerList.stream().map(TentativePlayer::getDiscordId).collect(Collectors.toSet());
         }
@@ -62,7 +62,7 @@ public interface TentativeMapper {
     }
 
     @Named("discordIdsToTentativePlayers")
-    static List<TentativePlayer> discordIdsToTentativePlayers(Set<Integer> discordIds) {
+    static List<TentativePlayer> discordIdsToTentativePlayers(Set<String> discordIds) {
         if (null != discordIds && !discordIds.isEmpty()) {
             return discordIds.stream().map(id -> TentativePlayer.builder().discordId(id).build()).collect(Collectors.toList());
         }

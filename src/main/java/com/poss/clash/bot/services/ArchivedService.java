@@ -13,11 +13,11 @@ import reactor.core.publisher.Flux;
 @AllArgsConstructor
 public class ArchivedService {
 
-    public Flux<ArchivedTentativeQueue> retrieveArchivedTentativeQueues(Long discordId, Long serverId, String tournamentName, String tournamentDay) {
+    public Flux<ArchivedTentativeQueue> retrieveArchivedTentativeQueues(String discordId, String serverId, String tournamentName, String tournamentDay) {
         return Flux.error(new ClashBotControllerException("Not implemented yet.", HttpStatus.NOT_IMPLEMENTED));
     }
 
-    public Flux<ArchivedClashTeam> retrieveTeamBasedOnCriteria(Long discordId, Long serverId, String tournamentName, String tournamentDay) {
+    public Flux<ArchivedClashTeam> retrieveTeamBasedOnCriteria(String discordId, String serverId, String tournamentName, String tournamentDay) {
         return Flux.error(new ClashBotControllerException("Not implemented yet.", HttpStatus.NOT_IMPLEMENTED));
     }
 

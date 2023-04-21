@@ -54,7 +54,7 @@ class TournamentServiceTest {
                     .tournamentId(tournamentId)
                     .build()))
             ).thenReturn(Mono.just(List.of(clashTournament))
-                            .flatMapMany(Flux::fromIterable));
+                    .flatMapMany(Flux::fromIterable));
 
             StepVerifier
                     .create(tournamentService.retrieveTournamentsByTournamentOrDay(
@@ -72,7 +72,7 @@ class TournamentServiceTest {
 
             when(tournamentDao.findAll())
                     .thenReturn(Mono.just(List.of(clashTournament))
-                        .flatMapMany(Flux::fromIterable));
+                            .flatMapMany(Flux::fromIterable));
 
             StepVerifier
                     .create(tournamentService.retrieveAllTournaments(false))

@@ -1,6 +1,7 @@
 package com.poss.clash.bot.controllers;
 
 import com.poss.clash.bot.daos.models.LoLChampion;
+import com.poss.clash.bot.daos.models.User;
 import com.poss.clash.bot.enums.UserSubscription;
 import com.poss.clash.bot.exceptions.ClashBotControllerException;
 import com.poss.clash.bot.openapi.api.UsersApi;
@@ -32,12 +33,17 @@ public class UserController implements UsersApi {
     private final UserMapper userMapper;
 
     @Override
-    public Mono<ResponseEntity<Champions>> addToPreferredChampionsForUser(Long discordId, Mono<Champions> champions, ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Champions>> addToPreferredChampionsForUser(String discordId, Mono<Champions> champions, ServerWebExchange exchange) {
         return updateListOfPreferredChampionsForUser(champions, mergeListOfChampions(discordId));
     }
 
     @Override
-    public Mono<ResponseEntity<Champions>> createListOfPreferredChampionsForUser(Long discordId, Mono<Champions> champions, ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Servers>> addUsersSelectedServers(String discordId, Mono<Servers> servers, ServerWebExchange exchange) {
+        return updateListOfSelectedServersForUser(servers, mergeListOfServers(discordId));
+    }
+
+    @Override
+    public Mono<ResponseEntity<Champions>> createListOfPreferredChampionsForUser(String discordId, Mono<Champions> champions, ServerWebExchange exchange) {
         return updateListOfPreferredChampionsForUser(champions, createListOfPrefferedChampionsFunc(discordId));
     }
 
@@ -55,7 +61,12 @@ public class UserController implements UsersApi {
     }
 
     @Override
-    public Mono<ResponseEntity<Player>> getUser(Integer discordId, ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Servers>> createUsersSelectedServers(String discordId, Mono<Servers> servers, ServerWebExchange exchange) {
+        return updateListOfSelectedServersForUser(servers, createListOfAvailableServersFunc(discordId));
+    }
+
+    @Override
+    public Mono<ResponseEntity<Player>> getUser(String discordId, ServerWebExchange exchange) {
         return userService.retrieveUser(discordId)
                 .map(userMapper::userToPlayer)
                 .map(ResponseEntity::ok)
@@ -63,20 +74,20 @@ public class UserController implements UsersApi {
     }
 
     @Override
-    public Mono<ResponseEntity<Subscription>> isUserSubscribed(Long discordId, SubscriptionType subscription, ServerWebExchange exchange) {
-        return userService.retrieveUser(discordId.intValue())
+    public Mono<ResponseEntity<Subscription>> isUserSubscribed(String discordId, SubscriptionType subscription, ServerWebExchange exchange) {
+        return userService.retrieveUser(discordId)
                 .map(user -> Subscription.builder()
-                                .key(subscription)
-                                .isOn(user.getUserSubscriptions()
-                                        .get(UserSubscription
-                                                .fromValue(subscription.getValue())))
-                                .build()
+                        .key(subscription)
+                        .isOn(user.getUserSubscriptions()
+                                .get(UserSubscription
+                                        .fromValue(subscription.getValue())))
+                        .build()
                 ).map(ResponseEntity::ok)
                 .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 
     @Override
-    public Mono<ResponseEntity<Champions>> removePreferredChampionForUser(Long discordId, List<String> champions, ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Champions>> removePreferredChampionForUser(String discordId, List<String> champions, ServerWebExchange exchange) {
         Champions championsPayload = Champions
                 .builder()
                 .champions(champions.stream().map(name -> Champion.builder().name(name).build())
@@ -86,16 +97,37 @@ public class UserController implements UsersApi {
     }
 
     @Override
-    public Mono<ResponseEntity<Champions>> retrieveUsersPreferredChampions(Long discordId, ServerWebExchange exchange) {
-        return userService.retrieveUser(discordId.intValue())
+    public Mono<ResponseEntity<Servers>> removeUsersSelectedServers(String discordId, List<String> servers, ServerWebExchange exchange) {
+        Servers serversPayload = Servers
+                .builder()
+                .servers(servers.stream().map(name -> Server.builder().id(name).build())
+                        .collect(Collectors.toList()))
+                .build();
+        return updateListOfSelectedServersForUser(Mono.just(serversPayload), removeListOfAvailableServers(discordId));
+    }
+
+    @Override
+    public Mono<ResponseEntity<Champions>> retrieveUsersPreferredChampions(String discordId, ServerWebExchange exchange) {
+        return userService.retrieveUser(discordId)
                 .map(userMapper::userToPlayer)
                 .map(player -> ResponseEntity.ok(Champions.builder().champions(player.getChampions()).build()))
                 .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 
     @Override
-    public Mono<ResponseEntity<Subscription>> subscribeUser(Long discordId, SubscriptionType subscription, ServerWebExchange exchange) {
-        return userService.toggleUserSubscription(discordId.intValue(), UserSubscription.fromValue(subscription.getValue()), true)
+    public Mono<ResponseEntity<Servers>> retrieveUsersSelectedServers(String discordId, ServerWebExchange exchange) {
+        return userService.retrieveUser(discordId)
+                .map(User::getSelectedServers)
+                .map(listOfIds -> ResponseEntity.ok(Servers.builder().servers(listOfIds.stream()
+                                .map(id -> Server.builder().id(id).build())
+                                .collect(Collectors.toList()))
+                        .build()))
+                .defaultIfEmpty(ResponseEntity.notFound().build());
+    }
+
+    @Override
+    public Mono<ResponseEntity<Subscription>> subscribeUser(String discordId, SubscriptionType subscription, ServerWebExchange exchange) {
+        return userService.toggleUserSubscription(discordId, UserSubscription.fromValue(subscription.getValue()), true)
                 .map(subscriptionMap -> Subscription.builder()
                         .key(SubscriptionType.fromValue(subscription.getValue()))
                         .isOn(subscriptionMap.get(UserSubscription.fromValue(subscription.getValue())))
@@ -105,8 +137,8 @@ public class UserController implements UsersApi {
     }
 
     @Override
-    public Mono<ResponseEntity<Subscription>> unsubscribeUser(Long discordId, SubscriptionType subscription, ServerWebExchange exchange) {
-        return userService.toggleUserSubscription(discordId.intValue(), UserSubscription.fromValue(subscription.getValue()), false)
+    public Mono<ResponseEntity<Subscription>> unsubscribeUser(String discordId, SubscriptionType subscription, ServerWebExchange exchange) {
+        return userService.toggleUserSubscription(discordId, UserSubscription.fromValue(subscription.getValue()), false)
                 .map(subscriptionMap -> Subscription.builder()
                         .key(SubscriptionType.fromValue(subscription.getValue()))
                         .isOn(subscriptionMap.get(UserSubscription.fromValue(subscription.getValue())))
@@ -116,9 +148,9 @@ public class UserController implements UsersApi {
     }
 
     @Override
-    public Mono<ResponseEntity<Player>> updateUser(Long discordId, Mono<UpdateUserRequest> updateUserRequest, ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Player>> updateUser(String discordId, Mono<UpdateUserRequest> updateUserRequest, ServerWebExchange exchange) {
         return updateUserRequest
-                .flatMap(request -> userService.updateUserDefaultServerId(discordId.intValue(), request.getServerId()))
+                .flatMap(request -> userService.updateUserDefaultServerId(discordId, request.getServerId()))
                 .map(userMapper::userToPlayer)
                 .map(ResponseEntity::ok);
     }
@@ -140,16 +172,45 @@ public class UserController implements UsersApi {
                 .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 
-    private Function<Set<LoLChampion>, Publisher<? extends LoLChampion>> createListOfPrefferedChampionsFunc(Long discordId) {
-        return preferredChampions -> userService.createPreferredChampionsForUser(discordId.intValue(), preferredChampions);
+    private Function<Set<LoLChampion>, Publisher<? extends LoLChampion>> createListOfPrefferedChampionsFunc(String discordId) {
+        return preferredChampions -> userService.createPreferredChampionsForUser(discordId, preferredChampions);
     }
 
-    private Function<Set<LoLChampion>, Publisher<? extends LoLChampion>> mergeListOfChampions(Long discordId) {
-        return preferredChampions -> userService.mergePreferredChampionsForUser(discordId.intValue(), preferredChampions);
+    private Function<Set<LoLChampion>, Publisher<? extends LoLChampion>> mergeListOfChampions(String discordId) {
+        return preferredChampions -> userService.mergePreferredChampionsForUser(discordId, preferredChampions);
     }
 
-    private Function<Set<LoLChampion>, Publisher<? extends LoLChampion>> removeListOfChampions(Long discordId) {
-        return preferredChampions -> userService.removePreferredChampionsForUser(discordId.intValue(), preferredChampions);
+    private Function<Set<LoLChampion>, Publisher<? extends LoLChampion>> removeListOfChampions(String discordId) {
+        return preferredChampions -> userService.removePreferredChampionsForUser(discordId, preferredChampions);
+    }
+
+    private Mono<ResponseEntity<Servers>> updateListOfSelectedServersForUser(Mono<Servers> servers, Function<Set<String>, Publisher<? extends String>> handler) {
+        return servers
+                .flatMapIterable(Servers::getServers)
+                .map(Server::getId)
+                .collect(Collectors.toSet())
+                .log()
+                .flatMapMany(handler::apply)
+                .switchIfEmpty(Mono.error(new ClashBotControllerException("User not found.", HttpStatus.NOT_FOUND)))
+                .map(serverId -> Server.builder().id(serverId).build())
+                .collectList()
+                .map(listOfServers -> Servers.builder()
+                        .servers(listOfServers)
+                        .build())
+                .map(ResponseEntity::ok)
+                .defaultIfEmpty(ResponseEntity.notFound().build());
+    }
+
+    private Function<Set<String>, Publisher<? extends String>> createListOfAvailableServersFunc(String discordId) {
+        return servers -> userService.overwriteSelectedServers(discordId, servers);
+    }
+
+    private Function<Set<String>, Publisher<? extends String>> mergeListOfServers(String discordId) {
+        return servers -> userService.mergeSelectedServers(discordId, servers);
+    }
+
+    private Function<Set<String>, Publisher<? extends String>> removeListOfAvailableServers(String discordId) {
+        return servers -> userService.removeSelectedServers(discordId, servers);
     }
 
 }

@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+
 @ExtendWith(SpringExtension.class)
 @Import(ClashBotTestingConfig.class)
 class TentativeMapperTest {
@@ -38,24 +39,24 @@ class TentativeMapperTest {
     void test_tentativeToTentativeQueue() {
         String expectedTournamentName = "awesome_sauce";
         String expectedTournamentDay = "3";
-        Integer serverId = 1234;
+        String serverId = "1234";
         List<TentativePlayer> expectedTentativeQueue = new ArrayList<>();
         expectedTentativeQueue.add(TentativePlayer.builder()
-                                           .discordId(1)
-                                           .build());
+                .discordId("1")
+                .build());
         expectedTentativeQueue.add(TentativePlayer.builder()
-                                           .discordId(2)
-                                           .build());
+                .discordId("2")
+                .build());
         expectedTentativeQueue.add(TentativePlayer.builder()
-                                           .discordId(3)
-                                           .build());
+                .discordId("3")
+                .build());
         Tentative source = Tentative.builder()
                 .tentativePlayers(expectedTentativeQueue)
                 .serverId(serverId)
                 .tournamentDetails(BaseTournament.builder()
-                                           .tournamentName(expectedTournamentName)
-                                           .tournamentDay(expectedTournamentDay)
-                                           .build())
+                        .tournamentName(expectedTournamentName)
+                        .tournamentDay(expectedTournamentDay)
+                        .build())
                 .build();
 
         TentativeQueue target = TentativeQueue.builder()
@@ -63,9 +64,9 @@ class TentativeMapperTest {
                         TentativeId.builder()
                                 .serverId(serverId)
                                 .tournamentId(TournamentId.builder()
-                                                      .tournamentName(expectedTournamentName)
-                                                      .tournamentDay(expectedTournamentDay)
-                                                      .build())
+                                        .tournamentName(expectedTournamentName)
+                                        .tournamentDay(expectedTournamentDay)
+                                        .build())
                                 .build()
                 )
                 .discordIds(
@@ -80,24 +81,24 @@ class TentativeMapperTest {
     void test_tentativeQueueToTentative() {
         String expectedTournamentName = "awesome_sauce";
         String expectedTournamentDay = "3";
-        Integer serverId = 1234;
+        String serverId = "1234";
         List<TentativePlayer> expectedTentativeQueue = new ArrayList<>();
         expectedTentativeQueue.add(TentativePlayer.builder()
-                                           .discordId(1)
-                                           .build());
+                .discordId("1")
+                .build());
         expectedTentativeQueue.add(TentativePlayer.builder()
-                                           .discordId(2)
-                                           .build());
+                .discordId("2")
+                .build());
         expectedTentativeQueue.add(TentativePlayer.builder()
-                                           .discordId(3)
-                                           .build());
+                .discordId("3")
+                .build());
         Tentative target = Tentative.builder()
                 .tentativePlayers(expectedTentativeQueue)
                 .serverId(serverId)
                 .tournamentDetails(BaseTournament.builder()
-                                           .tournamentName(expectedTournamentName)
-                                           .tournamentDay(expectedTournamentDay)
-                                           .build())
+                        .tournamentName(expectedTournamentName)
+                        .tournamentDay(expectedTournamentDay)
+                        .build())
                 .build();
 
         TentativeQueue source = TentativeQueue.builder()
@@ -105,9 +106,9 @@ class TentativeMapperTest {
                         TentativeId.builder()
                                 .serverId(serverId)
                                 .tournamentId(TournamentId.builder()
-                                                      .tournamentName(expectedTournamentName)
-                                                      .tournamentDay(expectedTournamentDay)
-                                                      .build())
+                                        .tournamentName(expectedTournamentName)
+                                        .tournamentDay(expectedTournamentDay)
+                                        .build())
                                 .build()
                 )
                 .discordIds(

@@ -23,13 +23,13 @@ public class TeamMapperTest {
         String teamId = "ct-1234";
         String awesomeTeam = "Awesome Team";
         HashMap<Role, BasePlayerRecord> positions = new HashMap<>();
-        int discordId = 1;
-        int discordIdTwo = 2;
-        int discordIdThree = 3;
-        int discordIdFour = 4;
-        int discordIdFive = 5;
+        String discordId = "1";
+        String discordIdTwo = "2";
+        String discordIdThree = "3";
+        String discordIdFour = "4";
+        String discordIdFive = "5";
         positions.put(Role.TOP, BasePlayerRecord.builder()
-                        .discordId(discordId)
+                .discordId(discordId)
                 .build());
         positions.put(Role.JG, BasePlayerRecord.builder()
                 .discordId(discordIdTwo)
@@ -48,7 +48,7 @@ public class TeamMapperTest {
                 .tournamentName("awesome_sauce")
                 .tournamentDay("1")
                 .build();
-        int serverId = 1234;
+        String serverId = "1234";
         ClashTeam clashTeamEntity = ClashTeam.builder()
                 .teamId(TeamId.builder()
                         .id(teamId)

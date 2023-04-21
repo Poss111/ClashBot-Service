@@ -80,11 +80,11 @@ class TentativeServiceTest {
         @Test
         @DisplayName("retrieveTentativeQueues - Filter by Discord Id")
         void test_retrieveTentativeQueues_ifDiscordIdIsPassed_shouldInvokeFilterByDiscordId() {
-            Long discordId = 1L;
+            String discordId = easyRandom.nextObject(String.class);
 
             List<TentativeQueue> tentativeQueues = List.of(easyRandom.nextObject(TentativeQueue.class));
 
-            when(tentativeDao.findByDiscordIdsContaining(discordId.intValue()))
+            when(tentativeDao.findByDiscordIdsContaining(discordId))
                     .thenReturn(Mono.just(tentativeQueues).flatMapMany(Flux::fromIterable));
 
             StepVerifier
@@ -93,24 +93,24 @@ class TentativeServiceTest {
                     .verifyComplete();
 
             verify(tentativeDao, times(1))
-                    .findByDiscordIdsContaining(discordId.intValue());
+                    .findByDiscordIdsContaining(discordId);
         }
 
         @Test
         @DisplayName("retrieveTentativeQueues - Filter by Discord Id, Server Id, Tournament name and Tournament day")
         void test_retrieveTentativeQueues_ifDiscordIdServerIdTournamentNameAndTournamentDayArePassed_shouldInvokeFilterByDiscordIdServerIdTournamentNameAndTournamentDay() {
-            Long discordId = 1L;
-            Long serverId = 1234L;
+            String discordId = easyRandom.nextObject(String.class);
+            String serverId = easyRandom.nextObject(String.class);
 
             List<TentativeQueue> tentativeQueues = List.of(easyRandom.nextObject(TentativeQueue.class));
 
             TournamentId tournamentId = tentativeQueues.get(0).getTentativeId().getTournamentId();
 
             when(tentativeDao.findByTentativeId_ServerId_AndTentativeId_TournamentId_TournamentName_AndTentativeId_TournamentId_TournamentDay_AndDiscordIdsContaining(
-                    serverId.intValue(),
+                    serverId,
                     tournamentId.getTournamentName(),
                     tournamentId.getTournamentDay(),
-                    discordId.intValue()))
+                    discordId))
                     .thenReturn(Mono.just(tentativeQueues).flatMapMany(Flux::fromIterable));
 
             StepVerifier
@@ -120,18 +120,18 @@ class TentativeServiceTest {
 
             verify(tentativeDao, times(1))
                     .findByTentativeId_ServerId_AndTentativeId_TournamentId_TournamentName_AndTentativeId_TournamentId_TournamentDay_AndDiscordIdsContaining(
-                            serverId.intValue(),
+                            serverId,
                             tournamentId.getTournamentName(),
                             tournamentId.getTournamentDay(),
-                            discordId.intValue()
+                            discordId
                     );
         }
 
         @Test
         @DisplayName("retrieveTentativeQueues - Filter by Discord Id, Tournament name and Tournament day")
         void test_retrieveTentativeQueues_ifDiscordIdTournamentNameAndTournamentDayArePassed_shouldInvokeFilterByDiscordIdTournamentNameAndTournamentDay() {
-            Long discordId = 1L;
-            Long serverId = 1234L;
+            String discordId = easyRandom.nextObject(String.class);
+            String serverId = easyRandom.nextObject(String.class);
 
             List<TentativeQueue> tentativeQueues = List.of(easyRandom.nextObject(TentativeQueue.class));
 
@@ -140,7 +140,7 @@ class TentativeServiceTest {
             when(tentativeDao.findByTentativeId_TournamentId_TournamentName_AndTentativeId_TournamentId_TournamentDay_AndDiscordIdsContaining(
                     tournamentId.getTournamentName(),
                     tournamentId.getTournamentDay(),
-                    discordId.intValue()))
+                    discordId))
                     .thenReturn(Mono.just(tentativeQueues).flatMapMany(Flux::fromIterable));
 
             StepVerifier
@@ -152,24 +152,24 @@ class TentativeServiceTest {
                     .findByTentativeId_TournamentId_TournamentName_AndTentativeId_TournamentId_TournamentDay_AndDiscordIdsContaining(
                             tournamentId.getTournamentName(),
                             tournamentId.getTournamentDay(),
-                            discordId.intValue()
+                            discordId
                     );
         }
 
         @Test
         @DisplayName("retrieveTentativeQueues - Filter by Discord Id, Server Id and Tournament day")
         void test_retrieveTentativeQueues_ifDiscordIdServerIdAndTournamentDayArePassed_shouldInvokeFilterByDiscordIdServerIdAndTournamentDay() {
-            Long discordId = 1L;
-            Long serverId = 1234L;
+            String discordId = easyRandom.nextObject(String.class);
+            String serverId = easyRandom.nextObject(String.class);
 
             List<TentativeQueue> tentativeQueues = List.of(easyRandom.nextObject(TentativeQueue.class));
 
             TournamentId tournamentId = tentativeQueues.get(0).getTentativeId().getTournamentId();
 
             when(tentativeDao.findByTentativeId_ServerId_AndTentativeId_TournamentId_TournamentDay_AndDiscordIdsContaining(
-                    serverId.intValue(),
+                    serverId,
                     tournamentId.getTournamentDay(),
-                    discordId.intValue()))
+                    discordId))
                     .thenReturn(Mono.just(tentativeQueues)
                             .flatMapMany(Flux::fromIterable));
 
@@ -180,26 +180,26 @@ class TentativeServiceTest {
 
             verify(tentativeDao, times(1))
                     .findByTentativeId_ServerId_AndTentativeId_TournamentId_TournamentDay_AndDiscordIdsContaining(
-                            serverId.intValue(),
+                            serverId,
                             tournamentId.getTournamentDay(),
-                            discordId.intValue()
+                            discordId
                     );
         }
 
         @Test
         @DisplayName("retrieveTentativeQueues - Filter by Discord Id, Server Id and Tournament name")
         void test_retrieveTentativeQueues_ifDiscordIdServerIdAndTournamentNameArePassed_shouldInvokeFilterByDiscordIdServerIdAndTournamentName() {
-            Long discordId = 1L;
-            Long serverId = 1234L;
+            String discordId = easyRandom.nextObject(String.class);
+            String serverId = easyRandom.nextObject(String.class);
 
             List<TentativeQueue> tentativeQueues = List.of(easyRandom.nextObject(TentativeQueue.class));
 
             TournamentId tournamentId = tentativeQueues.get(0).getTentativeId().getTournamentId();
 
             when(tentativeDao.findByTentativeId_ServerId_AndTentativeId_TournamentId_TournamentName_AndDiscordIdsContaining(
-                    serverId.intValue(),
+                    serverId,
                     tournamentId.getTournamentName(),
-                    discordId.intValue()))
+                    discordId))
                     .thenReturn(Mono.just(tentativeQueues).flatMapMany(Flux::fromIterable));
 
             StepVerifier
@@ -209,22 +209,22 @@ class TentativeServiceTest {
 
             verify(tentativeDao, times(1))
                     .findByTentativeId_ServerId_AndTentativeId_TournamentId_TournamentName_AndDiscordIdsContaining(
-                            serverId.intValue(),
+                            serverId,
                             tournamentId.getTournamentName(),
-                            discordId.intValue()
+                            discordId
                     );
         }
 
         @Test
         @DisplayName("retrieveTentativeQueues - Filter by Discord Id and Server Id")
         void test_retrieveTentativeQueues_ifDiscordIdAndServerIdArePassed_shouldInvokeFilterByDiscordIdAndServerId() {
-            Long discordId = 1L;
-            Long serverId = 1234L;
+            String discordId = easyRandom.nextObject(String.class);
+            String serverId = easyRandom.nextObject(String.class);
 
             List<TentativeQueue> tentativeQueues = List.of(easyRandom.nextObject(TentativeQueue.class));
             when(tentativeDao.findByTentativeId_ServerId_AndDiscordIdsContaining(
-                    serverId.intValue(),
-                    discordId.intValue()))
+                    serverId,
+                    discordId))
                     .thenReturn(Mono.just(tentativeQueues).flatMapMany(Flux::fromIterable));
 
             StepVerifier
@@ -234,15 +234,15 @@ class TentativeServiceTest {
 
             verify(tentativeDao, times(1))
                     .findByTentativeId_ServerId_AndDiscordIdsContaining(
-                            serverId.intValue(),
-                            discordId.intValue()
+                            serverId,
+                            discordId
                     );
         }
 
         @Test
         @DisplayName("retrieveTentativeQueues - Filter by Discord Id and Tournament name")
         void test_retrieveTentativeQueues_ifDiscordIdAndTournamentNameArePassed_shouldInvokeFilterByDiscordIdAndTournamentName() {
-            Long discordId = 1L;
+            String discordId = easyRandom.nextObject(String.class);
 
             List<TentativeQueue> tentativeQueues = List.of(easyRandom.nextObject(TentativeQueue.class));
 
@@ -250,7 +250,7 @@ class TentativeServiceTest {
 
             when(tentativeDao.findByTentativeId_TournamentId_TournamentName_AndDiscordIdsContaining(
                     tournamentId.getTournamentName(),
-                    discordId.intValue()))
+                    discordId))
                     .thenReturn(Mono.just(tentativeQueues).flatMapMany(Flux::fromIterable));
 
             StepVerifier
@@ -261,14 +261,14 @@ class TentativeServiceTest {
             verify(tentativeDao, times(1))
                     .findByTentativeId_TournamentId_TournamentName_AndDiscordIdsContaining(
                             tournamentId.getTournamentName(),
-                            discordId.intValue()
+                            discordId
                     );
         }
 
         @Test
         @DisplayName("retrieveTentativeQueues - Filter by Discord Id and Tournament day")
         void test_retrieveTentativeQueues_ifDiscordIdAndTournamentDayArePassed_shouldInvokeFilterByDiscordIdAndTournamentDay() {
-            Long discordId = 1L;
+            String discordId = easyRandom.nextObject(String.class);
 
             List<TentativeQueue> tentativeQueues = List.of(easyRandom.nextObject(TentativeQueue.class));
 
@@ -276,7 +276,7 @@ class TentativeServiceTest {
 
             when(tentativeDao.findByTentativeId_TournamentId_TournamentDay_AndDiscordIdsContaining(
                     tournamentId.getTournamentDay(),
-                    discordId.intValue()))
+                    discordId))
                     .thenReturn(Mono.just(tentativeQueues).flatMapMany(Flux::fromIterable));
 
             StepVerifier
@@ -287,20 +287,20 @@ class TentativeServiceTest {
             verify(tentativeDao, times(1))
                     .findByTentativeId_TournamentId_TournamentDay_AndDiscordIdsContaining(
                             tournamentId.getTournamentDay(),
-                            discordId.intValue()
+                            discordId
                     );
         }
 
         @Test
         @DisplayName("retrieveTentativeQueues - Filter by Server Id, Tournament name and Tournament day")
         void test_retrieveTentativeQueues_ifServerIdTournamentNameAndTournamentDayArePassed_shouldInvokeFilterByServerIdTournamentNameAndTournamentDay() {
-            Long serverId = 1L;
+            String serverId = easyRandom.nextObject(String.class);
 
             List<TentativeQueue> tentativeQueues = List.of(easyRandom.nextObject(TentativeQueue.class));
 
             TournamentId tournamentId = tentativeQueues.get(0).getTentativeId().getTournamentId();
             when(tentativeDao.findByTentativeId_ServerId_AndTentativeId_TournamentId_TournamentName_AndTentativeId_TournamentId_TournamentDay(
-                    serverId.intValue(),
+                    serverId,
                     tournamentId.getTournamentName(),
                     tournamentId.getTournamentDay()))
                     .thenReturn(Mono.just(tentativeQueues).flatMapMany(Flux::fromIterable));
@@ -312,7 +312,7 @@ class TentativeServiceTest {
 
             verify(tentativeDao, times(1))
                     .findByTentativeId_ServerId_AndTentativeId_TournamentId_TournamentName_AndTentativeId_TournamentId_TournamentDay(
-                            serverId.intValue(),
+                            serverId,
                             tournamentId.getTournamentName(),
                             tournamentId.getTournamentDay()
                     );
@@ -321,13 +321,13 @@ class TentativeServiceTest {
         @Test
         @DisplayName("retrieveTentativeQueues - Filter by Server Id and Tournament name")
         void test_retrieveTentativeQueues_ifServerIdAndTournamentNameArePassed_shouldInvokeFilterByServerIdAndTournamentName() {
-            Long serverId = 1L;
+            String serverId = easyRandom.nextObject(String.class);
 
             List<TentativeQueue> tentativeQueues = List.of(easyRandom.nextObject(TentativeQueue.class));
 
             TournamentId tournamentId = tentativeQueues.get(0).getTentativeId().getTournamentId();
             when(tentativeDao.findByTentativeId_ServerId_AndTentativeId_TournamentId_TournamentName(
-                    serverId.intValue(),
+                    serverId,
                     tournamentId.getTournamentName()))
                     .thenReturn(Mono.just(tentativeQueues).flatMapMany(Flux::fromIterable));
 
@@ -338,7 +338,7 @@ class TentativeServiceTest {
 
             verify(tentativeDao, times(1))
                     .findByTentativeId_ServerId_AndTentativeId_TournamentId_TournamentName(
-                            serverId.intValue(),
+                            serverId,
                             tournamentId.getTournamentName()
                     );
         }
@@ -346,13 +346,13 @@ class TentativeServiceTest {
         @Test
         @DisplayName("retrieveTentativeQueues - Filter by Server Id and Tournament day")
         void test_retrieveTentativeQueues_ifServerIdAndTournamentDayArePassed_shouldInvokeFilterByServerIdAndTournamentDay() {
-            Long serverId = 1L;
+            String serverId = easyRandom.nextObject(String.class);
 
             List<TentativeQueue> tentativeQueues = List.of(easyRandom.nextObject(TentativeQueue.class));
 
             TournamentId tournamentId = tentativeQueues.get(0).getTentativeId().getTournamentId();
             when(tentativeDao.findByTentativeId_ServerId_AndTentativeId_TournamentId_TournamentDay(
-                    serverId.intValue(),
+                    serverId,
                     tournamentId.getTournamentDay()))
                     .thenReturn(Mono.just(tentativeQueues).flatMapMany(Flux::fromIterable));
 
@@ -363,7 +363,7 @@ class TentativeServiceTest {
 
             verify(tentativeDao, times(1))
                     .findByTentativeId_ServerId_AndTentativeId_TournamentId_TournamentDay(
-                            serverId.intValue(),
+                            serverId,
                             tournamentId.getTournamentDay()
                     );
         }
@@ -394,12 +394,12 @@ class TentativeServiceTest {
         @Test
         @DisplayName("retrieveTentativeQueues - Filter by Server Id")
         void test_retrieveTentativeQueues_ifServerIdIsPassed_shouldInvokeFilterByServerId() {
-            Long serverId = 1L;
+            String serverId = easyRandom.nextObject(String.class);
 
             List<TentativeQueue> tentativeQueues = List.of(easyRandom.nextObject(TentativeQueue.class));
 
             when(tentativeDao.findByTentativeId_ServerId(
-                    serverId.intValue()))
+                    serverId))
                     .thenReturn(Mono.just(tentativeQueues).flatMapMany(Flux::fromIterable));
 
             StepVerifier
@@ -408,7 +408,7 @@ class TentativeServiceTest {
                     .verifyComplete();
 
             verify(tentativeDao, times(1))
-                    .findByTentativeId_ServerId(serverId.intValue());
+                    .findByTentativeId_ServerId(serverId);
         }
 
         @Test
@@ -473,11 +473,11 @@ class TentativeServiceTest {
         @Test
         @DisplayName("assignUserToTentativeQueue - If id does not belong on Tentative Queue then assign id to set of Discord Ids.")
         void test_assignUserToTentativeQueue_ifIdDoesNotExistOnTentativeQueueListThenInvokeUpdate() {
-            Integer discordId = 1;
+            String discordId = easyRandom.nextObject(String.class);
             TentativeQueue tentativeQueue = easyRandom.nextObject(TentativeQueue.class);
             tentativeQueue.getDiscordIds()
-                            .clear();
-            tentativeQueue.getDiscordIds().add(2);
+                    .clear();
+            tentativeQueue.getDiscordIds().add("2");
             when(tentativeDao.updateByTentativeId_TentativeId(tentativeQueue.getTentativeId().getTentativeId(), discordId))
                     .thenReturn(Mono.just(1L));
 
@@ -490,7 +490,7 @@ class TentativeServiceTest {
         @Test
         @DisplayName("removeUserFromTentativeQueue - If id belongs on Tentative Queue then remove the id from the set of Discord Ids.")
         void test_removeUserFromTentativeQueue_ifIdDoesExistOnTentativeQueueListThenInvokeUpdate() {
-            Integer discordId = 1;
+            String discordId = easyRandom.nextObject(String.class);
             TentativeQueue tentativeQueue = easyRandom.nextObject(TentativeQueue.class);
             tentativeQueue.getDiscordIds()
                     .clear();
@@ -508,7 +508,7 @@ class TentativeServiceTest {
 
             StepVerifier
                     .create(tentativeService.removeUserFromTentativeQueue(discordId, tentativeQueue.getTentativeId().getTentativeId()))
-                    .expectNext(1L)
+                    .expectNext(tentativeQueue)
                     .verifyComplete();
         }
 

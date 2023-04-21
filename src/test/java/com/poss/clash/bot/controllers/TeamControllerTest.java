@@ -10,6 +10,7 @@ import com.poss.clash.bot.openapi.model.*;
 import com.poss.clash.bot.services.ArchivedService;
 import com.poss.clash.bot.services.TeamService;
 import com.poss.clash.bot.services.UserAssignmentService;
+import com.poss.clash.bot.services.UserService;
 import com.poss.clash.bot.utils.TeamMapper;
 import org.jeasy.random.EasyRandom;
 import org.junit.jupiter.api.DisplayName;
@@ -50,6 +51,9 @@ public class TeamControllerTest {
     @Mock
     ArchivedService archivedService;
 
+    @Mock
+    UserService userService;
+
     @Spy
     TeamMapper teamMapper = Mappers.getMapper(TeamMapper.class);
 
@@ -63,7 +67,7 @@ public class TeamControllerTest {
         @Test
         @DisplayName("200 - Should successfully create a Team if there is a valid User position detail ")
         void test_createTeam_shouldCreateATeam() {
-            Integer serverId = 1234;
+            String serverId = easyRandom.nextObject(String.class);
             String name = "Charizard";
 
             BaseTournament baseTournament = easyRandom.nextObject(BaseTournament.class);
@@ -76,7 +80,7 @@ public class TeamControllerTest {
                     .tournament(baseTournament)
                     .build();
 
-            Map<Role, Integer> roleToIdMap = Map.of(
+            Map<Role, String> roleToIdMap = Map.of(
                     Role.TOP, playerDetails.getTop().getDiscordId(),
                     Role.JG, playerDetails.getJg().getDiscordId(),
                     Role.MID, playerDetails.getMid().getDiscordId(),
@@ -95,10 +99,10 @@ public class TeamControllerTest {
             ClashTeam clashTeam = teamMapper.teamRequiredToClashTeam(requestedTeamToCreate);
             clashTeam.setPositions(roleToBasePlayer);
             when(userAssignmentService.createTeamAndAssignUser(roleToIdMap,
-                name,
-                serverId,
-                baseTournament.getTournamentName(),
-                baseTournament.getTournamentDay())
+                    name,
+                    serverId,
+                    baseTournament.getTournamentName(),
+                    baseTournament.getTournamentDay())
             ).thenReturn(Mono.just(clashTeam));
 
             StepVerifier
@@ -110,7 +114,7 @@ public class TeamControllerTest {
         @Test
         @DisplayName("400 - If the payload does not have any position details then it should return with a bad request.")
         void test_createTeam_shouldValidateThatThereIsAtLeastOnePosition() {
-            Integer serverId = 1234;
+            String serverId = easyRandom.nextObject(String.class);
             String name = "Charizard";
 
             BaseTournament baseTournament = easyRandom.nextObject(BaseTournament.class);
@@ -142,11 +146,11 @@ public class TeamControllerTest {
         @DisplayName("Should invoke assign user to team and map to a Team object")
         void test1() {
             String teamId = "ct-1234";
-            long discordId = 1L;
+            String discordId = easyRandom.nextObject(String.class);
             Mono<PositionDetails> positionDetailsMono = Mono.just(PositionDetails.builder().role(Role.TOP).build());
 
             ClashTeam clashTeamToBeReturned = easyRandom.nextObject(ClashTeam.class);
-            when(userAssignmentService.assignUserToTeam(1, Role.TOP, teamId))
+            when(userAssignmentService.assignUserToTeam(discordId, Role.TOP, teamId))
                     .thenReturn(Mono.just(clashTeamToBeReturned));
 
             StepVerifier
@@ -165,10 +169,10 @@ public class TeamControllerTest {
         @DisplayName("Should invoke remove user from Team")
         void test() {
             String teamId = "ct-1234";
-            long discordId = 1L;
+            String discordId = easyRandom.nextObject(String.class);
 
             ClashTeam clashTeamToBeReturned = easyRandom.nextObject(ClashTeam.class);
-            when(userAssignmentService.findAndRemoveUserFromTeam(1, teamId))
+            when(userAssignmentService.findAndRemoveUserFromTeam(discordId, teamId))
                     .thenReturn(Mono.just(clashTeamToBeReturned));
 
             StepVerifier
@@ -205,8 +209,8 @@ public class TeamControllerTest {
         @Test
         @DisplayName("If looking to retrieve active Teams, then it should query active teams filter passed on passed details")
         void test() {
-            int discordId = 1;
-            int serverId = 1234;
+            String discordId = easyRandom.nextObject(String.class);
+            String serverId = easyRandom.nextObject(String.class);
             TournamentId tournamentId = easyRandom.nextObject(TournamentId.class);
             ClashTeam clashTeam = easyRandom.nextObject(ClashTeam.class);
             ClashTeam clashTeam2 = easyRandom.nextObject(ClashTeam.class);
@@ -224,6 +228,8 @@ public class TeamControllerTest {
                     tournamentId.getTournamentName(),
                     tournamentId.getTournamentDay())
             ).thenReturn(Mono.just(filteredClashTeams).flatMapMany(Flux::fromIterable));
+            when(userService.enrichClashTeamWithUserDetails(filteredClashTeams))
+                    .thenReturn(Mono.just(filteredClashTeams).flatMapMany(Flux::fromIterable));
 
             Teams expectedResponse = Teams.builder()
                     .teams(filteredClashTeams.stream().map(teamMapper::clashTeamToTeam).collect(Collectors.toList()))
@@ -233,8 +239,8 @@ public class TeamControllerTest {
             StepVerifier
                     .create(teamController.retrieveTeams(
                             false,
-                                    Integer.toUnsignedLong(discordId),
-                            Integer.toUnsignedLong(serverId),
+                            discordId,
+                            serverId,
                             tournamentId.getTournamentName(),
                             tournamentId.getTournamentDay(),
                             null)
@@ -245,8 +251,8 @@ public class TeamControllerTest {
         @Test
         @DisplayName("If looking to retrieve inactive Teams, then it should query inactive teams filter passed on passed details")
         void test2() {
-            long discordId = 1;
-            long serverId = 1234;
+            String discordId = easyRandom.nextObject(String.class);
+            String serverId = easyRandom.nextObject(String.class);
             TournamentId tournamentId = easyRandom.nextObject(TournamentId.class);
             ArchivedClashTeam clashTeam = easyRandom.nextObject(ArchivedClashTeam.class);
             ArchivedClashTeam clashTeam2 = easyRandom.nextObject(ArchivedClashTeam.class);

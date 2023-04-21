@@ -5,12 +5,14 @@ import com.poss.clash.bot.daos.UserAssociationDao;
 import com.poss.clash.bot.daos.models.TournamentId;
 import com.poss.clash.bot.daos.models.UserAssociation;
 import com.poss.clash.bot.daos.models.UserAssociationKey;
+import org.jeasy.random.EasyRandom;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import reactor.core.publisher.Mono;
@@ -28,6 +30,9 @@ class UserAssociationServiceTest {
     @Mock
     UserAssociationDao userAssociationDaoMock;
 
+    @Autowired
+    EasyRandom easyRandom;
+
     @Nested
     @DisplayName("Check If User Exists On Team Or Tentative Queue")
     class CheckIfUserExistsOnTeamOrTentativeQueue {
@@ -35,8 +40,8 @@ class UserAssociationServiceTest {
         @Test
         @DisplayName("If a User exists on a Team or Tentative Queue for a Tournament, then it should be returned.")
         void test_retrieveUsersTeamOrTentativeQueueForTournament_ifUserBelongsToTeam_then_returnTeamId() {
-            int discordId = 1;
-            int serverId = 123;
+            String discordId = easyRandom.nextObject(String.class);
+            String serverId = easyRandom.nextObject(String.class);
             String tournamentName = "awesome_sauce";
             String tournamentDay = "1";
 

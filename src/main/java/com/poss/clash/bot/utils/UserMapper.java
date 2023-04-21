@@ -51,10 +51,10 @@ public interface UserMapper {
         List<Subscription> subscriptions = new ArrayList<>();
         if (!CollectionUtils.isEmpty(userSubscriptions)) {
             userSubscriptions.forEach((key, value) ->
-                subscriptions.add(Subscription.builder()
-                        .key(SubscriptionType.fromValue(key.getValue()))
-                        .isOn(value)
-                        .build())
+                    subscriptions.add(Subscription.builder()
+                            .key(SubscriptionType.fromValue(key.getValue()))
+                            .isOn(value)
+                            .build())
             );
         }
         return subscriptions;

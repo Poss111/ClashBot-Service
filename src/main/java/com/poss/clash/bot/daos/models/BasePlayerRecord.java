@@ -1,6 +1,5 @@
 package com.poss.clash.bot.daos.models;
 
-import com.poss.clash.bot.openapi.model.Champion;
 import lombok.*;
 
 import java.util.Set;
@@ -12,7 +11,8 @@ import java.util.Set;
 @Builder
 public class BasePlayerRecord {
 
-    private Integer discordId;
-    private Set<Champion> championsToPlay;
+    private String discordId;
+    private Set<LoLChampion> championsToPlay;
+    private String name;
 
 }

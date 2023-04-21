@@ -20,7 +20,7 @@ public class ClashTeam extends AuditEntity {
     @Id
     private TeamId teamId;
     private String teamName;
-    private Integer serverId;
+    private String serverId;
     private String teamIconLink;
     private Map<Role, BasePlayerRecord> positions;
 

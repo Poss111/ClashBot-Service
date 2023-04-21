@@ -6,7 +6,10 @@ import com.poss.clash.bot.daos.models.BasePlayerRecord;
 import com.poss.clash.bot.daos.models.ClashTeam;
 import com.poss.clash.bot.daos.models.TeamId;
 import com.poss.clash.bot.daos.models.TournamentId;
+import com.poss.clash.bot.openapi.model.Event;
 import com.poss.clash.bot.openapi.model.Role;
+import com.poss.clash.bot.openapi.model.Team;
+import com.poss.clash.bot.source.TeamSource;
 import com.poss.clash.bot.utils.IdUtils;
 import com.poss.clash.bot.utils.TeamMapper;
 import org.jeasy.random.EasyRandom;
@@ -24,9 +27,12 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.PublisherProbe;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(SpringExtension.class)
@@ -42,6 +48,9 @@ public class TeamServiceTest {
     @Mock
     IdUtils idUtils;
 
+    @Mock
+    TeamSource teamSource;
+
     @Spy
     TeamMapper teamMapper = Mappers.getMapper(TeamMapper.class);
 
@@ -49,7 +58,10 @@ public class TeamServiceTest {
     EasyRandom easyRandom;
 
     @Captor
-    private ArgumentCaptor<TournamentId> tournamentIdCaptor;
+    private ArgumentCaptor<Team> teamEventArgumentCaptor;
+
+    @Captor
+    private ArgumentCaptor<String> causedByCaptor;
 
     @Nested
     @DisplayName("Create")
@@ -59,9 +71,9 @@ public class TeamServiceTest {
         @DisplayName("When a Team is created, a user association should be created as well.")
         void test_createClashTeam() {
             String clashTeamId = "ct-12345";
-            int discordId = 1;
+            String discordId = "1";
             Map<Role, BasePlayerRecord> positionDetailMap = Map.of(Role.TOP, BasePlayerRecord.builder().discordId(discordId).build());
-            int serverId = 1234;
+            String serverId = "1234";
             TournamentId tournamentId = easyRandom.nextObject(TournamentId.class);
             ClashTeam teamToPersist = ClashTeam.builder()
                     .teamName("RandomTeamName")
@@ -86,7 +98,6 @@ public class TeamServiceTest {
                     .thenReturn(clashTeamId);
             when(teamDao.save(teamAfterSave))
                     .thenReturn(Mono.just(teamAfterSave));
-
 
             StepVerifier
                     .create(teamService.createClashTeam(teamToPersist))
@@ -125,9 +136,33 @@ public class TeamServiceTest {
         }
 
         @Test
+        @DisplayName("Find All - When empty arguments are passed")
+        void test_retrieveTeamBasedOnCriteria_shouldQueryForAll_empty() {
+            List<ClashTeam> clashTeams = List.of(
+                    easyRandom.nextObject(ClashTeam.class),
+                    easyRandom.nextObject(ClashTeam.class),
+                    easyRandom.nextObject(ClashTeam.class)
+            );
+
+            when(teamDao.findAll())
+                    .thenReturn(Mono.just(clashTeams)
+                            .flatMapMany(Flux::fromIterable));
+
+            StepVerifier
+                    .create(teamService.retrieveTeamBasedOnCriteria("", "", "", ""))
+                    .expectNext(clashTeams.get(0))
+                    .expectNext(clashTeams.get(1))
+                    .expectNext(clashTeams.get(2))
+                    .verifyComplete();
+
+            verify(teamDao, times(1))
+                    .findAll();
+        }
+
+        @Test
         @DisplayName("Find by User's Discord Id - When a User's Discord Id is passed")
         void test_retrieveTeamBasedOnCriteria_shouldQueryForAllTeamsIncludingADiscordId() {
-            int discordId = 1;
+            String discordId = "1";
             List<ClashTeam> clashTeams = List.of(
                     easyRandom.nextObject(ClashTeam.class),
                     easyRandom.nextObject(ClashTeam.class),
@@ -151,7 +186,7 @@ public class TeamServiceTest {
         @Test
         @DisplayName("Find By Server id - When a Server Id is passed")
         void test_retrieveTeamBasedOnCriteria_shouldQueryForAllTeamsIncludingAServerId() {
-            int serverId = 1234;
+            String serverId = "1234";
             List<ClashTeam> clashTeams = List.of(
                     easyRandom.nextObject(ClashTeam.class),
                     easyRandom.nextObject(ClashTeam.class),
@@ -225,7 +260,7 @@ public class TeamServiceTest {
         @Test
         @DisplayName("Find By Server Id, Tournament Name and Day")
         void test6() {
-            int serverId = 1234;
+            String serverId = "1234";
             String tournamentName = "awesome_sauce";
             String tournamentDay = "1";
             List<ClashTeam> clashTeams = List.of(
@@ -239,7 +274,7 @@ public class TeamServiceTest {
                     tournamentName,
                     tournamentDay
             )).thenReturn(Mono.just(clashTeams)
-                            .flatMapMany(Flux::fromIterable));
+                    .flatMapMany(Flux::fromIterable));
 
             StepVerifier
                     .create(teamService.retrieveTeamBasedOnCriteria(null, serverId, tournamentName, tournamentDay))
@@ -290,7 +325,7 @@ public class TeamServiceTest {
         @Test
         @DisplayName("Find By Server Id and Tournament Name")
         void test8() {
-            Integer serverId = 1234;
+            String serverId = "1234";
             String tournamentName = "awesome_sauce";
             List<ClashTeam> clashTeams = List.of(
                     easyRandom.nextObject(ClashTeam.class),
@@ -321,7 +356,7 @@ public class TeamServiceTest {
         @Test
         @DisplayName("Find By Server Id and Tournament Day")
         void test9() {
-            Integer serverId = 1234;
+            String serverId = "1234";
             String tournamentDay = "1";
             List<ClashTeam> clashTeams = List.of(
                     easyRandom.nextObject(ClashTeam.class),
@@ -368,6 +403,8 @@ public class TeamServiceTest {
                     .thenReturn(Mono.just(clashTeam));
             when(teamDao.updateTeamName(clashTeamId, newTeamName))
                     .thenReturn(publisherProbe.mono());
+            when(teamSource.sendTeamUpdateEvent(teamEventArgumentCaptor.capture(), causedByCaptor.capture()))
+                    .thenReturn(Mono.just(Event.builder().build()));
 
             StepVerifier
                     .create(teamService.updateTeamName(clashTeamId, newTeamName))
@@ -378,6 +415,54 @@ public class TeamServiceTest {
                     .findByTeamId_Id(clashTeamId);
             verify(teamDao, times(1))
                     .updateTeamName(clashTeamId, newTeamName);
+            verify(teamSource, times(1))
+                    .sendTeamUpdateEvent(any(Team.class), anyString());
+
+            assertAll(() -> {
+                assertEquals(1, teamEventArgumentCaptor.getAllValues().size());
+                assertEquals(1, causedByCaptor.getAllValues().size());
+                Team updatedTeamEvent = teamEventArgumentCaptor.getAllValues().get(0);
+                assertEquals(clashTeam.getServerId(), updatedTeamEvent.getServerId());
+                assertEquals(teamMapper.clashTeamToTeam(clashTeam), updatedTeamEvent);
+                assertEquals("0", causedByCaptor.getAllValues().get(0));
+            });
+        }
+
+        @Test
+        @DisplayName("Remove User")
+        void test2() {
+            String clashTeamId = "ct-1234";
+            String discordId = easyRandom.nextObject(String.class);
+
+            HashMap<Role, BasePlayerRecord> positions = new HashMap<>();
+            positions.put(Role.TOP, BasePlayerRecord.builder()
+                    .discordId(discordId)
+                    .build());
+            positions.put(Role.BOT, BasePlayerRecord.builder()
+                    .discordId("2")
+                    .build());
+            ClashTeam clashTeam = easyRandom.nextObject(ClashTeam.class);
+            clashTeam.setPositions(positions);
+
+            HashMap<Role, BasePlayerRecord> expectedPositions = new HashMap<>();
+            expectedPositions.put(Role.BOT, BasePlayerRecord.builder()
+                    .discordId("2")
+                    .build());
+            ClashTeam updatedClashTeam = teamMapper.clone(clashTeam);
+            updatedClashTeam.setPositions(expectedPositions);
+
+            when(teamDao.findByTeamId_Id(clashTeamId))
+                    .thenReturn(Mono.just(clashTeam));
+            when(teamDao.save(updatedClashTeam))
+                    .thenReturn(Mono.just(updatedClashTeam));
+
+            StepVerifier
+                    .create(teamService.removeUserFromTeam(clashTeamId, discordId))
+                    .expectNext(updatedClashTeam)
+                    .verifyComplete();
+
+            verify(teamDao, times(1))
+                    .findByTeamId_Id(clashTeamId);
         }
     }
 

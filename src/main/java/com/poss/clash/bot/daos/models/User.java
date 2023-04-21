@@ -21,9 +21,10 @@ import java.util.Set;
 public class User extends AuditEntity {
 
     @Id
-    private Integer discordId;
+    private String discordId;
     private String name;
-    private Integer serverId;
+    private String serverId;
+    private Set<String> selectedServers;
     private Role defaultRole;
     private Map<UserSubscription, Boolean> userSubscriptions;
     private Set<LoLChampion> preferredChampions;

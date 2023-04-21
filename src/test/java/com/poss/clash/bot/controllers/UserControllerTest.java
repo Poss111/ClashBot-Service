@@ -18,6 +18,7 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import reactor.core.publisher.Flux;
@@ -54,32 +55,7 @@ public class UserControllerTest {
         @Test
         @DisplayName("200 - Should take in a list of champions and should invoke to merge the User's list and finally return an updated champions object")
         void test() {
-            Long discordId = 1L;
-            Champions championsListToAdd = easyRandom.nextObject(Champions.class);
-
-            Set<LoLChampion> setOfLolChampions = championsListToAdd.getChampions()
-                    .stream()
-                    .map(userMapper::championToLoLChampions)
-                    .collect(Collectors.toSet());
-            championsListToAdd.setChampions(setOfLolChampions.stream()
-                            .map(userMapper::loLChampionToChampion)
-                            .collect(Collectors.toList()));
-
-            when(userService.mergePreferredChampionsForUser(discordId.intValue(), setOfLolChampions))
-                    .thenReturn(Mono.just(setOfLolChampions).flatMapMany(Flux::fromIterable));
-
-            StepVerifier
-                    .create(userController.addToPreferredChampionsForUser(discordId, Mono.just(championsListToAdd), null))
-                    .expectNextMatches(response ->
-                            championsListToAdd.getChampions().size() == response.getBody().getChampions().size()
-                            && 200 == response.getStatusCodeValue())
-                    .verifyComplete();
-        }
-
-        @Test
-        @DisplayName("404 - Should return with 404 if the flux returned is empty")
-        void test2() {
-            Long discordId = 1L;
+            String discordId = easyRandom.nextObject(String.class);
             Champions championsListToAdd = easyRandom.nextObject(Champions.class);
 
             Set<LoLChampion> setOfLolChampions = championsListToAdd.getChampions()
@@ -90,7 +66,32 @@ public class UserControllerTest {
                     .map(userMapper::loLChampionToChampion)
                     .collect(Collectors.toList()));
 
-            when(userService.mergePreferredChampionsForUser(discordId.intValue(), setOfLolChampions))
+            when(userService.mergePreferredChampionsForUser(discordId, setOfLolChampions))
+                    .thenReturn(Mono.just(setOfLolChampions).flatMapMany(Flux::fromIterable));
+
+            StepVerifier
+                    .create(userController.addToPreferredChampionsForUser(discordId, Mono.just(championsListToAdd), null))
+                    .expectNextMatches(response ->
+                            championsListToAdd.getChampions().size() == response.getBody().getChampions().size()
+                                    && 200 == response.getStatusCodeValue())
+                    .verifyComplete();
+        }
+
+        @Test
+        @DisplayName("404 - Should return with 404 if the flux returned is empty")
+        void test2() {
+            String discordId = easyRandom.nextObject(String.class);
+            Champions championsListToAdd = easyRandom.nextObject(Champions.class);
+
+            Set<LoLChampion> setOfLolChampions = championsListToAdd.getChampions()
+                    .stream()
+                    .map(userMapper::championToLoLChampions)
+                    .collect(Collectors.toSet());
+            championsListToAdd.setChampions(setOfLolChampions.stream()
+                    .map(userMapper::loLChampionToChampion)
+                    .collect(Collectors.toList()));
+
+            when(userService.mergePreferredChampionsForUser(discordId, setOfLolChampions))
                     .thenReturn(Flux.empty());
 
             StepVerifier
@@ -108,7 +109,7 @@ public class UserControllerTest {
         @Test
         @DisplayName("200 - Should return with the new list of champions passed")
         void test() {
-            Long discordId = 1L;
+            String discordId = easyRandom.nextObject(String.class);
             Champions championsListToAdd = easyRandom.nextObject(Champions.class);
 
             Set<LoLChampion> setOfLolChampions = championsListToAdd.getChampions()
@@ -119,7 +120,7 @@ public class UserControllerTest {
                     .map(userMapper::loLChampionToChampion)
                     .collect(Collectors.toList()));
 
-            when(userService.createPreferredChampionsForUser(discordId.intValue(), setOfLolChampions))
+            when(userService.createPreferredChampionsForUser(discordId, setOfLolChampions))
                     .thenReturn(Mono.just(setOfLolChampions).flatMapMany(Flux::fromIterable));
 
             StepVerifier
@@ -133,7 +134,7 @@ public class UserControllerTest {
         @Test
         @DisplayName("404 - Should return with 404 if the flux returned is empty")
         void test2() {
-            Long discordId = 1L;
+            String discordId = easyRandom.nextObject(String.class);
             Champions championsListToAdd = easyRandom.nextObject(Champions.class);
 
             Set<LoLChampion> setOfLolChampions = championsListToAdd.getChampions()
@@ -144,7 +145,7 @@ public class UserControllerTest {
                     .map(userMapper::loLChampionToChampion)
                     .collect(Collectors.toList()));
 
-            when(userService.createPreferredChampionsForUser(discordId.intValue(), setOfLolChampions))
+            when(userService.createPreferredChampionsForUser(discordId, setOfLolChampions))
                     .thenReturn(Flux.empty());
 
             StepVerifier
@@ -162,7 +163,7 @@ public class UserControllerTest {
         @Test
         @DisplayName("200 - Should return with the updated list after champions are removed")
         void test() {
-            Long discordId = 1L;
+            String discordId = easyRandom.nextObject(String.class);
             Champions championsListToAdd = easyRandom.nextObject(Champions.class);
             List<String> listOfNames = championsListToAdd.getChampions().stream().map(Champion::getName).collect(Collectors.toList());
 
@@ -174,7 +175,7 @@ public class UserControllerTest {
                     .map(userMapper::loLChampionToChampion)
                     .collect(Collectors.toList()));
 
-            when(userService.removePreferredChampionsForUser(discordId.intValue(), setOfLolChampions))
+            when(userService.removePreferredChampionsForUser(discordId, setOfLolChampions))
                     .thenReturn(Mono.just(setOfLolChampions).flatMapMany(Flux::fromIterable));
 
             StepVerifier
@@ -188,7 +189,7 @@ public class UserControllerTest {
         @Test
         @DisplayName("404 - Should return with 404 if the flux returned is empty")
         void test2() {
-            Long discordId = 1L;
+            String discordId = easyRandom.nextObject(String.class);
             Champions championsListToAdd = easyRandom.nextObject(Champions.class);
             List<String> listOfNames = championsListToAdd.getChampions().stream().map(Champion::getName).collect(Collectors.toList());
 
@@ -200,7 +201,7 @@ public class UserControllerTest {
                     .map(userMapper::loLChampionToChampion)
                     .collect(Collectors.toList()));
 
-            when(userService.removePreferredChampionsForUser(discordId.intValue(), setOfLolChampions))
+            when(userService.removePreferredChampionsForUser(discordId, setOfLolChampions))
                     .thenReturn(Flux.empty());
 
             StepVerifier
@@ -226,7 +227,7 @@ public class UserControllerTest {
             Player player = userMapper.userToPlayer(user);
 
             StepVerifier
-                    .create(userController.retrieveUsersPreferredChampions(Long.valueOf(user.getDiscordId()), null))
+                    .create(userController.retrieveUsersPreferredChampions(user.getDiscordId(), null))
                     .expectNext(ResponseEntity.ok(Champions.builder().champions(player.getChampions()).build()))
                     .verifyComplete();
         }
@@ -242,7 +243,7 @@ public class UserControllerTest {
             Player player = userMapper.userToPlayer(user);
 
             StepVerifier
-                    .create(userController.retrieveUsersPreferredChampions(Long.valueOf(user.getDiscordId()), null))
+                    .create(userController.retrieveUsersPreferredChampions(user.getDiscordId(), null))
                     .expectNext(ResponseEntity.notFound().build())
                     .verifyComplete();
         }
@@ -299,11 +300,11 @@ public class UserControllerTest {
         @Test
         @DisplayName("200 - Should take in a create user request and invoke an update")
         void test() {
-            Long discordId = 1L;
+            String discordId = easyRandom.nextObject(String.class);
             UpdateUserRequest request = easyRandom.nextObject(UpdateUserRequest.class);
             User user = easyRandom.nextObject(User.class);
 
-            when(userService.updateUserDefaultServerId(discordId.intValue(), request.getServerId()))
+            when(userService.updateUserDefaultServerId(discordId, request.getServerId()))
                     .thenReturn(Mono.just(user));
             StepVerifier
                     .create(userController.updateUser(discordId, Mono.just(request), null))
@@ -331,7 +332,7 @@ public class UserControllerTest {
                     .thenReturn(Mono.just(Map.of(UserSubscription.DISCORD_MONDAY_NOTIFICATION, true)));
 
             StepVerifier
-                    .create(userController.subscribeUser(user.getDiscordId().longValue(), SubscriptionType.DISCORD_MONDAY_NOTIFICATION, null))
+                    .create(userController.subscribeUser(user.getDiscordId(), SubscriptionType.DISCORD_MONDAY_NOTIFICATION, null))
                     .expectNext(ResponseEntity.ok(expectedSubscription))
                     .verifyComplete();
         }
@@ -345,7 +346,7 @@ public class UserControllerTest {
                     .thenReturn(Mono.empty());
 
             StepVerifier
-                    .create(userController.subscribeUser(user.getDiscordId().longValue(), SubscriptionType.DISCORD_MONDAY_NOTIFICATION, null))
+                    .create(userController.subscribeUser(user.getDiscordId(), SubscriptionType.DISCORD_MONDAY_NOTIFICATION, null))
                     .expectNext(ResponseEntity.notFound().build())
                     .verifyComplete();
         }
@@ -370,7 +371,7 @@ public class UserControllerTest {
                     .thenReturn(Mono.just(Map.of(UserSubscription.DISCORD_MONDAY_NOTIFICATION, false)));
 
             StepVerifier
-                    .create(userController.unsubscribeUser(user.getDiscordId().longValue(), SubscriptionType.DISCORD_MONDAY_NOTIFICATION, null))
+                    .create(userController.unsubscribeUser(user.getDiscordId(), SubscriptionType.DISCORD_MONDAY_NOTIFICATION, null))
                     .expectNext(ResponseEntity.ok(expectedSubscription))
                     .verifyComplete();
         }
@@ -384,7 +385,7 @@ public class UserControllerTest {
                     .thenReturn(Mono.empty());
 
             StepVerifier
-                    .create(userController.unsubscribeUser(user.getDiscordId().longValue(), SubscriptionType.DISCORD_MONDAY_NOTIFICATION, null))
+                    .create(userController.unsubscribeUser(user.getDiscordId(), SubscriptionType.DISCORD_MONDAY_NOTIFICATION, null))
                     .expectNext(ResponseEntity.notFound().build())
                     .verifyComplete();
         }
@@ -411,7 +412,7 @@ public class UserControllerTest {
 
             StepVerifier
                     .create(userController.isUserSubscribed(
-                            user.getDiscordId().longValue(),
+                            user.getDiscordId(),
                             SubscriptionType.DISCORD_MONDAY_NOTIFICATION,
                             null))
                     .expectNext(ResponseEntity.ok(subscription))
@@ -434,13 +435,224 @@ public class UserControllerTest {
 
             StepVerifier
                     .create(userController.isUserSubscribed(
-                            user.getDiscordId().longValue(),
+                            user.getDiscordId(),
                             SubscriptionType.DISCORD_MONDAY_NOTIFICATION,
                             null))
                     .expectNext(ResponseEntity.notFound().build())
                     .verifyComplete();
         }
 
+    }
+
+    @Nested
+    @DisplayName("POST - createUsersSelectedServers")
+    class PostUserSelectedServers {
+
+        @Test
+        @DisplayName("200 - User's list of selected servers should be saved")
+        void test1() {
+            String discordId = easyRandom.nextObject(String.class);
+            Servers servers = Servers.builder().servers(List.of(
+                    easyRandom.nextObject(Server.class),
+                    easyRandom.nextObject(Server.class),
+                    easyRandom.nextObject(Server.class)
+            )).build();
+
+            Set<String> setOfServers = servers.getServers()
+                    .stream()
+                    .map(Server::getId)
+                    .collect(Collectors.toSet());
+            List<Server> expectedServers = servers.getServers()
+                    .stream()
+                    .map(Server::getId)
+                    .map(serverId -> Server.builder().id(serverId).build())
+                    .collect(Collectors.toList());
+
+            when(userService.overwriteSelectedServers(discordId, setOfServers))
+                    .thenReturn(Mono.just(setOfServers).flatMapMany(Flux::fromIterable));
+
+            StepVerifier
+                    .create(userController.createUsersSelectedServers(discordId, Mono.just(servers), null))
+                    .expectNextMatches(response -> HttpStatus.OK.value() == response.getStatusCodeValue()
+                            && null != response.getBody()
+                            && response.getBody().getServers().containsAll(expectedServers))
+                    .verifyComplete();
+        }
+
+        @Test
+        @DisplayName("404 - User is not found")
+        void test2() {
+            String discordId = easyRandom.nextObject(String.class);
+            Servers servers = easyRandom.nextObject(Servers.class);
+
+            Set<String> setOfServers = servers.getServers()
+                    .stream()
+                    .map(Server::getId)
+                    .collect(Collectors.toSet());
+
+            when(userService.overwriteSelectedServers(discordId, setOfServers))
+                    .thenReturn(Flux.empty());
+
+            StepVerifier
+                    .create(userController.createUsersSelectedServers(discordId, Mono.just(servers), null))
+                    .expectErrorMessage("User not found.")
+                    .verify();
+        }
+    }
+
+    @Nested
+    @DisplayName("PATCH - addUsersSelectedServers")
+    class PatchUserSelectedServers {
+
+        @Test
+        @DisplayName("200 - User's list of selected servers should be added to")
+        void test1() {
+            String discordId = easyRandom.nextObject(String.class);
+            Servers servers = easyRandom.nextObject(Servers.class);
+
+            Set<String> setOfServers = servers.getServers()
+                    .stream()
+                    .map(Server::getId)
+                    .collect(Collectors.toSet());
+
+            List<Server> expectedServers = servers.getServers()
+                    .stream()
+                    .map(Server::getId)
+                    .map(serverId -> Server.builder().id(serverId).build())
+                    .collect(Collectors.toList());
+
+            when(userService.mergeSelectedServers(discordId, setOfServers))
+                    .thenReturn(Mono.just(setOfServers).flatMapMany(Flux::fromIterable));
+
+            StepVerifier
+                    .create(userController.addUsersSelectedServers(discordId, Mono.just(servers), null))
+                    .expectNextMatches(response -> HttpStatus.OK.value() == response.getStatusCodeValue()
+                            && null != response.getBody()
+                            && response.getBody().getServers().containsAll(expectedServers))
+                    .verifyComplete();
+        }
+
+        @Test
+        @DisplayName("404 - User is not found")
+        void test2() {
+            String discordId = easyRandom.nextObject(String.class);
+            Servers servers = easyRandom.nextObject(Servers.class);
+
+            Set<String> setOfServers = servers.getServers()
+                    .stream()
+                    .map(Server::getId)
+                    .collect(Collectors.toSet());
+
+            when(userService.mergeSelectedServers(discordId, setOfServers))
+                    .thenReturn(Flux.empty());
+
+            StepVerifier
+                    .create(userController.addUsersSelectedServers(discordId, Mono.just(servers), null))
+                    .expectErrorMessage("User not found.")
+                    .verify();
+        }
+    }
+
+    @Nested
+    @DisplayName("DELETE - removeUsersSelectedServers")
+    class DeleteUserSelectedServers {
+
+        @Test
+        @DisplayName("200 - User's list of selected servers should be removed")
+        void test1() {
+            String discordId = easyRandom.nextObject(String.class);
+            List<String> ids = List.of(
+                    easyRandom.nextObject(String.class),
+                    easyRandom.nextObject(String.class),
+                    easyRandom.nextObject(String.class)
+            );
+
+            List<Server> listOfServers = ids.stream()
+                    .map(id -> Server.builder().id(id).build())
+                    .collect(Collectors.toList());
+            Set<String> set = ids.parallelStream().collect(Collectors.toSet());
+
+            when(userService.removeSelectedServers(discordId, set))
+                    .thenReturn(Mono.just(set).flatMapMany(Flux::fromIterable));
+
+            StepVerifier
+                    .create(userController.removeUsersSelectedServers(discordId, ids, null))
+                    .expectNextMatches(response -> HttpStatus.OK.value() == response.getStatusCodeValue()
+                            && null != response.getBody()
+                            && response.getBody().getServers().containsAll(listOfServers))
+                    .verifyComplete();
+        }
+
+        @Test
+        @DisplayName("404 - User is not found")
+        void test2() {
+            String discordId = easyRandom.nextObject(String.class);
+            Servers servers = easyRandom.nextObject(Servers.class);
+
+            Set<String> setOfServers = servers.getServers()
+                    .stream()
+                    .map(Server::getId)
+                    .collect(Collectors.toSet());
+            List<String> serversIdList = servers.getServers()
+                    .stream()
+                    .map(Server::getId)
+                    .collect(Collectors.toList());
+
+            when(userService.removeSelectedServers(discordId, setOfServers))
+                    .thenReturn(Flux.empty());
+
+            StepVerifier
+                    .create(userController.removeUsersSelectedServers(discordId, serversIdList, null))
+                    .expectErrorMessage("User not found.")
+                    .verify();
+        }
+    }
+
+    @Nested
+    @DisplayName("GET - retrieveUsersSelectedServers")
+    class GetUserSelectedServers {
+
+        @Test
+        @DisplayName("200 - Should return a list of the User's selected servers")
+        void test1() {
+            String discordId = easyRandom.nextObject(String.class);
+            Servers servers = easyRandom.nextObject(Servers.class);
+            User user = easyRandom.nextObject(User.class);
+            user.setDiscordId(discordId);
+
+            Set<String> serversIdList = servers.getServers()
+                    .stream()
+                    .map(Server::getId)
+                    .collect(Collectors.toSet());
+            List<Server> serverIds = serversIdList.stream()
+                    .map(id -> Server.builder().id(id).build())
+                    .distinct()
+                    .collect(Collectors.toList());
+
+            user.setSelectedServers(serversIdList);
+
+            when(userService.retrieveUser(discordId))
+                    .thenReturn(Mono.just(user));
+
+            servers.servers(serverIds);
+
+            StepVerifier
+                    .create(userController.retrieveUsersSelectedServers(discordId, null))
+                    .expectNext(ResponseEntity.ok(servers))
+                    .verifyComplete();
+        }
+
+        @Test
+        @DisplayName("404 - User is not found")
+        void test2() {
+            String discordId = easyRandom.nextObject(String.class);
+            when(userService.retrieveUser(discordId))
+                    .thenReturn(Mono.empty());
+            StepVerifier
+                    .create(userController.retrieveUsersSelectedServers(discordId, null))
+                    .expectNext(ResponseEntity.notFound().build())
+                    .verifyComplete();
+        }
     }
 
 }

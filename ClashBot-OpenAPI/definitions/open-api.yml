@@ -54,11 +54,55 @@ components:
       type: object
       properties:
         id:
-          type: integer
           description: The unique identifier for a Discord Server.
-        name:
           type: string
+        name:
           description: The Discord Server name associated to the id.
+          type: string
+    Event:
+      description: A websocket event to be published.
+      type: object
+      required:
+        - id
+        - teamEvent
+        - serverId
+      properties:
+        id:
+          description: The unique identifier for the event.
+          type: string
+        teamEvent:
+          $ref: '#/components/schemas/TeamEvent'
+        serverId:
+          description: The Discord server id attached to the event.
+          type: string
+        causedBy:
+          description: Who the event was caused by.
+          type: string
+    TeamEvent:
+      type: object
+      required:
+        - eventType
+      properties:
+        team:
+          $ref: '#/components/schemas/Team'
+        tentative:
+          $ref: '#/components/schemas/Tentative'
+        eventType:
+          $ref: '#/components/schemas/EventType'
+    EventType:
+      description: The type of event.
+      type: string
+      enum:
+        - CREATED
+        - UPDATED
+        - DELETED
+    Servers:
+      description: A list of the Player's selected Server
+      properties:
+        servers:
+          type: array
+          items:
+            $ref: '#/components/schemas/Server'
     Team:
       description: A League of Legends Clash Team
       type: object
@@ -85,9 +129,13 @@ components:
               $ref: '#/components/schemas/TeamPlayer'
         serverId:
           description: The Discord server id that the Team belongs to.
-          type: integer
+          type: string
         tournament:
           $ref: '#/components/schemas/BaseTournament'
+        lastUpdatedAt:
+          description: The timestamp that the object was updated at
+          type: string
+          format: date-time
     TeamRequired:
       allOf:
         - $ref: '#/components/schemas/Team'
@@ -162,7 +210,7 @@ components:
           type: string
         serverId:
           description: The default Discord Server id for the player to use.
-          type: integer
+          type: string
         tournamentDetails:
           $ref: '#/components/schemas/BaseTournament'
         tentativePlayers:
@@ -192,7 +240,7 @@ components:
       properties:
         discordId:
           description: Discord Id for the Player
-          type: integer
+          type: string
         name:
           description: The Players discord name
           type: string
@@ -209,14 +257,19 @@ components:
             $ref: '#/components/schemas/Subscription'
         serverId:
           description: The Discord Server id that the User is defaulted to.
-          type: integer
+          type: string
+        selectedServers:
+          description: The list of available Discord Servers for the player to filter by.
+          type: array
+          items:
+            type: string
     TeamPlayer:
       description: A Player record with a subset of Player information for usage with Teams.
       type: object
       properties:
         discordId:
           description: Discord Id for the Player
-          type: integer
+          type: string
         name:
           description: The Players discord name
           type: string
@@ -231,7 +284,7 @@ components:
       properties:
         discordId:
           description: Discord Id for the Player
-          type: integer
+          type: string
         name:
           description: The Players discord name
           type: string
@@ -300,7 +353,7 @@ components:
       properties:
         discordId:
           description: The user's Discord Id.
-          type: integer
+          type: string
         tournamentName:
           description: The Clash Tournament's name.
         tournamentDay:
@@ -331,40 +384,36 @@ components:
     DiscordIdPathParam:
       name: discordId
       in: path
-      description: The discord id of the Player
+      description: The Discord id of the Player
       required: true
       schema:
-        type: integer
-        format: int64
+        type: string
     DiscordIdQueryParam:
       name: discordId
       in: query
-      description: The discord id of the Player
+      description: The Discord id of the Player
       schema:
-        type: integer
-        format: int64
+        type: string
     ServerIdPathParam:
       name: serverId
       in: path
-      description: The discord id of the Discord Server
+      description: The Discord id of the Discord Server
       required: true
       schema:
-        type: integer
-        format: int64
+        type: string
     ServerIdQueryParam:
       name: serverId
       in: query
-      description: The discord id of the Discord Server
+      description: The Discord id of the Discord Server
       schema:
-        type: integer
-        format: int64
+        type: string
     SubscriptionPathParam:
       name: subscription
       description: The subscription type.
       in: path
       required: true
       schema:
-        $ref: SubscriptionType
+        $ref: '#/components/schemas/SubscriptionType'
     TeamIdPathParam:
       name: teamId
       in: path
@@ -466,10 +515,18 @@ components:
             properties:
               discordId:
                 description: The Discord id of the player
-                type: integer
+                type: string
+              name:
+                description: The Clash Bot User's name
+                type: string
               serverId:
                 description: The Discord Server that the player is using by default.
-                type: integer
+                type: string
+              selectedGuilds:
+                description: The list of available Discord Servers for the player to filter by.
+                type: array
+                items:
+                  type: string
     UpdatePlayerBody:
       description: All necessary parameters to update an existing Player
       content:
@@ -481,13 +538,20 @@ components:
             properties:
               serverId:
                 description: The Discord Server that the player is using by default.
-                type: integer
+                type: string
     ChampionRequestBody:
       description: A list of champions.
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Champions'
+    ServerRequestBody:
+      description: A list of Discord Servers.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Servers'
+
   responses:
     ArchiveResponse:
       description: The metadata regarding the archive process.
@@ -534,6 +598,12 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/Champions"
+    SelectedServersResponse:
+      description: List of selected Servers for a Player
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Servers"
     NotFound:
       description: Unable to find requested resource
       content:
@@ -563,7 +633,7 @@ components:
         {
           "playerDetails": {
             "Top": {
-              "discordId": 1,
+              "discordId": "1",
             }
           },
           "serverId": 123,
@@ -633,7 +703,7 @@ components:
           },
           "tentativePlayers": [
             {
-              "discordId": 1,
+              "discordId": "1",
               "role": "Top"
             }
           ]
@@ -648,7 +718,7 @@ components:
           "name": "A simple team",
           "playerDetails": {
             "Top": {
-              "discordId": 1234,
+              "discordId": "1234",
               "name": "Player 1",
               "champions": [
                 {
@@ -657,7 +727,7 @@ components:
               ]
             },
             "Mid": {
-              "discordId": 1235,
+              "discordId": "1235",
               "name": "Player 2",
               "champions": [
                 {
@@ -686,7 +756,7 @@ components:
           },
           "tentativePlayers": [
             {
-              "discordId": 1,
+              "discordId": "1",
               "name": "Player One",
               "champions": [
                 {
@@ -947,12 +1017,7 @@ paths:
       description: Retrieve a Clash Bot Player Details
       operationId: getUser
       parameters:
-        - name: discordId
-          description: The Discord id of the user to retrieve.
-          in: query
-          required: true
-          schema:
-            type: integer
+        - $ref: '#/components/parameters/DiscordIdQueryParam'
       tags:
         - User
       responses:
@@ -1149,6 +1214,82 @@ paths:
       responses:
         200:
           $ref: '#/components/responses/ChampionListResponse'
+        400:
+          $ref: '#/components/responses/BadInput'
+        404:
+          $ref: '#/components/responses/NotFound'
+        5XX:
+          $ref: '#/components/schemas/Error'
+  /users/{discordId}/servers:
+    parameters:
+      - $ref: '#/components/parameters/DiscordIdPathParam'
+    get:
+      description: Returns a list of selected servers that the User has.
+      operationId: retrieveUsersSelectedServers
+      tags:
+        - User
+      responses:
+        200:
+          $ref: '#/components/responses/SelectedServersResponse'
+        400:
+          $ref: '#/components/responses/BadInput'
+        404:
+          $ref: '#/components/responses/NotFound'
+        5XX:
+          $ref: '#/components/schemas/Error'
+    post:
+      description: Updates the users selected servers with an entirely new list. Cannot be greater than a length of 5.
+      operationId: createUsersSelectedServers
+      tags:
+        - User
+      requestBody:
+        $ref: '#/components/requestBodies/ServerRequestBody'
+      responses:
+        200:
+          $ref: '#/components/responses/SelectedServersResponse'
+        204:
+          $ref: '#/components/responses/NoneFound'
+        400:
+          $ref: '#/components/responses/BadInput'
+        404:
+          $ref: '#/components/responses/NotFound'
+        5XX:
+          $ref: '#/components/schemas/Error'
+    patch:
+      description: Adds the selected server to the users selected servers. Cannot be greater than a length of 5.
+      operationId: addUsersSelectedServers
+      tags:
+        - User
+      requestBody:
+        $ref: '#/components/requestBodies/ServerRequestBody'
+      responses:
+        200:
+          $ref: '#/components/responses/SelectedServersResponse'
+        204:
+          $ref: '#/components/responses/NoneFound'
+        400:
+          $ref: '#/components/responses/BadInput'
+        404:
+          $ref: '#/components/responses/NotFound'
+        5XX:
+          $ref: '#/components/schemas/Error'
+    delete:
+      description: Removes the selected server to the users selected servers.
+      operationId: removeUsersSelectedServers
+      tags:
+        - User
+      parameters:
+        - name: champions
+          description: The list of selected servers to remove from the user's list of champions
+          in: query
+          required: true
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        200:
+          $ref: '#/components/responses/SelectedServersResponse'
         400:
           $ref: '#/components/responses/BadInput'
         404:

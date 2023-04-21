@@ -6,6 +6,7 @@ spring:
       ddl-auto: update
 logging:
   level:
-    root: ERROR
-    com.poss: INFO
-    org.springframework: ERROR
+    root: DEBUG
+    com.poss: DEBUG
+    org.springframework: DEBUG
+    reactor.core.publisher: TRACE

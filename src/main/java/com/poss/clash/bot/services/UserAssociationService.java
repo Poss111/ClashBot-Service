@@ -16,14 +16,14 @@ public class UserAssociationService {
 
     private final UserAssociationDao userAssociationDao;
 
-    public Mono<UserAssociation> retrieveUsersTeamOrTentativeQueueForTournament(int discordId, String tournamentName, String tournamentDay) {
+    public Mono<UserAssociation> retrieveUsersTeamOrTentativeQueueForTournament(String discordId, String tournamentName, String tournamentDay) {
         return userAssociationDao.findById(UserAssociationKey.builder()
                         .discordId(discordId)
                         .tournamentId(TournamentId.builder()
                                 .tournamentName(tournamentName)
                                 .tournamentDay(tournamentDay)
                                 .build())
-                .build())
+                        .build())
                 .log();
     }
 

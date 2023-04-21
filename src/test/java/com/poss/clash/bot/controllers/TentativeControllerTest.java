@@ -34,8 +34,7 @@ import reactor.util.function.Tuples;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 
 @ExtendWith({SpringExtension.class})
@@ -94,29 +93,50 @@ class TentativeControllerTest {
             Tentative tentativeTwo = easyRandom.nextObject(Tentative.class);
             Tentative tentativeThree = easyRandom.nextObject(Tentative.class);
             List<Tentative> listOfTentative = List.of(tentativeOne,
-                                                      tentativeTwo,
-                                                      tentativeThree);
-            Tuple2<Tentatives, Set<Integer>> tuple = tentativeController.buildTupleOfTentativesAndSetOfDiscordIds(
+                    tentativeTwo,
+                    tentativeThree);
+            Tuple2<Tentatives, Set<String>> tuple = tentativeController.buildTupleOfTentativesAndSetOfDiscordIds(
                     listOfTentative);
             Tentatives expectedTentatives = Tentatives.builder()
                     .queues(listOfTentative)
                     .build();
-            Set<Integer> expectedSetOfDiscordIds = tentativeOne
+            Set<String> expectedSetOfDiscordIds = tentativeOne
                     .getTentativePlayers()
                     .stream()
                     .map(TentativePlayer::getDiscordId)
                     .collect(Collectors.toSet());
             expectedSetOfDiscordIds
                     .addAll(tentativeTwo.getTentativePlayers()
-                                    .stream()
-                                    .map(TentativePlayer::getDiscordId)
-                                    .collect(Collectors.toSet()));
+                            .stream()
+                            .map(TentativePlayer::getDiscordId)
+                            .collect(Collectors.toSet()));
             expectedSetOfDiscordIds
                     .addAll(tentativeThree.getTentativePlayers().stream().map(TentativePlayer::getDiscordId)
-                                    .collect(Collectors.toSet()));
+                            .collect(Collectors.toSet()));
 
             assertEquals(expectedTentatives, tuple.getT1());
             assertEquals(expectedSetOfDiscordIds, tuple.getT2());
+        }
+
+        @Test
+        @DisplayName("buildTupleOfTentativeAndSetOfDiscordIds - tentativeQueue has no players")
+        void test_buildTupleOfTentativeAndSetOfDiscordIds_emptyTentativePlayersList() {
+            Tentative tentativeOne = easyRandom.nextObject(Tentative.class);
+            tentativeOne.setTentativePlayers(null);
+            Tentative tentativeTwo = easyRandom.nextObject(Tentative.class);
+            tentativeTwo.setTentativePlayers(null);
+            Tentative tentativeThree = easyRandom.nextObject(Tentative.class);
+            tentativeThree.setTentativePlayers(null);
+            List<Tentative> listOfTentative = List.of(tentativeOne,
+                    tentativeTwo,
+                    tentativeThree);
+            Tuple2<Tentatives, Set<String>> tuple = tentativeController.buildTupleOfTentativesAndSetOfDiscordIds(
+                    listOfTentative);
+            Tentatives expectedTentatives = Tentatives.builder()
+                    .queues(listOfTentative)
+                    .build();
+            assertEquals(expectedTentatives, tuple.getT1());
+            assertTrue(tuple.getT2().isEmpty(), "Set of Discord Ids is not empty");
         }
 
         @Test
@@ -132,12 +152,12 @@ class TentativeControllerTest {
             TentativePlayer tentativePlayerTwo = tentativeMapper.userToTentativePlayer(playerTwo);
             TentativePlayer tentativePlayerThree = tentativeMapper.userToTentativePlayer(playerThree);
 
-            Set<Integer> discordIds = Set.of(
+            Set<String> discordIds = Set.of(
                     playerOne.getDiscordId(),
                     playerTwo.getDiscordId(),
                     playerThree.getDiscordId());
 
-            HashMap<Integer, TentativePlayer> integerTentativePlayerHashMap = new HashMap<>();
+            HashMap<String, TentativePlayer> integerTentativePlayerHashMap = new HashMap<>();
             integerTentativePlayerHashMap.put(playerOne.getDiscordId(), tentativePlayerOne);
             integerTentativePlayerHashMap.put(playerTwo.getDiscordId(), tentativePlayerTwo);
             integerTentativePlayerHashMap.put(playerThree.getDiscordId(), tentativePlayerThree);
@@ -172,10 +192,10 @@ class TentativeControllerTest {
                     .discordId(playerThree.getDiscordId())
                     .build();
 
-            Set<Integer> discordIds = Set.of(playerOne.getDiscordId(), playerTwo.getDiscordId(),
-                                             playerThree.getDiscordId());
+            Set<String> discordIds = Set.of(playerOne.getDiscordId(), playerTwo.getDiscordId(),
+                    playerThree.getDiscordId());
 
-            HashMap<Integer, TentativePlayer> integerTentativePlayerHashMap = new HashMap<>();
+            HashMap<String, TentativePlayer> integerTentativePlayerHashMap = new HashMap<>();
             integerTentativePlayerHashMap.put(playerOne.getDiscordId(), tentativePlayerOne);
             integerTentativePlayerHashMap.put(playerTwo.getDiscordId(), tentativePlayerTwo);
             integerTentativePlayerHashMap.put(playerThree.getDiscordId(), tentativePlayerThree);
@@ -204,11 +224,11 @@ class TentativeControllerTest {
         @DisplayName("200 - A tentative queue was found and the id was added")
         void test_assignUserToATentativeQueue_successfullyAddedUserToTentativeQueue() {
             String tqId = "tq1234";
-            Long discordId = 1L;
+            String discordId = easyRandom.nextObject(String.class);
 
             TentativeQueue tentativeQueue = easyRandom.nextObject(TentativeQueue.class);
 
-            when(userAssignmentService.assignUserToTentativeQueue(discordId.intValue(), tqId))
+            when(userAssignmentService.assignUserToTentativeQueue(discordId, tqId))
                     .thenReturn(Mono.just(tentativeQueue));
 
             StepVerifier
@@ -227,11 +247,11 @@ class TentativeControllerTest {
         @DisplayName("200 - A tentative queue was found and the id was removed")
         void test_removeUserFromTentativeQueue_successfullyRemovedUserFromTentativeQueue() {
             String tqId = "tq1234";
-            Long discordId = 1L;
+            String discordId = easyRandom.nextObject(String.class);
 
             TentativeQueue tentativeQueue = easyRandom.nextObject(TentativeQueue.class);
 
-            when(userAssignmentService.findAndRemoveUserFromTentativeQueue(discordId.intValue(), tqId))
+            when(userAssignmentService.findAndRemoveUserFromTentativeQueue(discordId, tqId))
                     .thenReturn(Mono.just(tentativeQueue));
 
             StepVerifier
@@ -249,8 +269,8 @@ class TentativeControllerTest {
         @Test
         @DisplayName("Should create a Tentative Queue based on the Server, Tournament Name, and Day if one does not already exist.")
         void test_createTentativeQueueBasedOnServerAndTournamentAndDay_shouldCreateATentativeQueueAndSaveIt() {
-            int discordId = 1;
-            int serverId = 2;
+            String discordId = easyRandom.nextObject(String.class);
+            String serverId = easyRandom.nextObject(String.class);
 
             TournamentId tournamentId = easyRandom.nextObject(TournamentId.class);
             TentativeRequired tentativePayload = TentativeRequired.builder()
@@ -288,7 +308,7 @@ class TentativeControllerTest {
         void test_createTentativeQueueBasedOnServerAndTournamentAndDay_shouldNotCreateATentativeQueueAndSaveItIfNoTentativePlayers() {
             String tournamentName = "awesome_sauce";
             String tournamentDay = "1";
-            int serverId = 2;
+            String serverId = easyRandom.nextObject(String.class);
 
             TentativeRequired tentativePayload = TentativeRequired.builder()
                     .serverId(serverId)
@@ -315,7 +335,7 @@ class TentativeControllerTest {
         @Test
         @DisplayName("200 - Return all Tentative Queues")
         void test_retrieveTentativeQueues_mapTentativeQueuesAndPlayerDetails() {
-            Integer serverId = 1;
+            String serverId = easyRandom.nextObject(String.class);
             String tournamentName = "awesome_sauce";
             String tournamentDay = "1";
             String tentativeQueueId = "abcd";
@@ -323,7 +343,7 @@ class TentativeControllerTest {
             User playerTwo = easyRandom.nextObject(User.class);
             User playerThree = easyRandom.nextObject(User.class);
 
-            Map<Integer, User> discordIdToUser = Map.of(
+            Map<String, User> discordIdToUser = Map.of(
                     playerOne.getDiscordId(), playerOne,
                     playerTwo.getDiscordId(), playerTwo,
                     playerThree.getDiscordId(), playerThree);
@@ -333,7 +353,7 @@ class TentativeControllerTest {
                     .tournamentDay(tournamentDay)
                     .build();
             ArrayList<TentativeQueue> tentativeQueues = new ArrayList<>();
-            Set<Integer> discordIds = Set.of(
+            Set<String> discordIds = Set.of(
                     playerOne.getDiscordId(),
                     playerTwo.getDiscordId(),
                     playerThree.getDiscordId()
@@ -347,7 +367,7 @@ class TentativeControllerTest {
             tentativeQueues.add(queue);
             when(tentativeService.retrieveTentativeQueues(null, null, null, null))
                     .thenReturn(Mono.just(tentativeQueues)
-                                        .flatMapIterable(tentatives -> tentatives));
+                            .flatMapIterable(tentatives -> tentatives));
             when(userService.retrieveUser(playerOne.getDiscordId()))
                     .thenReturn(Mono.just(playerOne));
             when(userService.retrieveUser(playerTwo.getDiscordId()))
@@ -356,16 +376,16 @@ class TentativeControllerTest {
                     .thenReturn(Mono.just(playerThree));
 
             List<TentativePlayer> tentativePlayerList = discordIds.stream().map(id ->
-                tentativeMapper.userToTentativePlayer(discordIdToUser.get(id)))
+                            tentativeMapper.userToTentativePlayer(discordIdToUser.get(id)))
                     .collect(Collectors.toList());
 
             Tentatives tentatives = Tentatives.builder()
                     .queues(List.of(Tentative.builder()
-                                            .serverId(serverId)
-                                            .tournamentDetails(baseTournament)
-                                            .tentativePlayers(tentativePlayerList)
-                                            .id(tentativeQueueId)
-                                            .build()))
+                            .serverId(serverId)
+                            .tournamentDetails(baseTournament)
+                            .tentativePlayers(tentativePlayerList)
+                            .id(tentativeQueueId)
+                            .build()))
                     .count(1)
                     .build();
 
@@ -378,7 +398,7 @@ class TentativeControllerTest {
         @Test
         @DisplayName("200 - Return all Tentative Queues that have been archived")
         void test_retrieveTentativeQueues_mapTentativeQueuesAndPlayerDetails_onlyActiveTournaments() {
-            Integer serverId = 1;
+            String serverId = easyRandom.nextObject(String.class);
             String tournamentName = "awesome_sauce";
             String tournamentDay = "1";
             String tentativeQueueId = "abcd";
@@ -386,7 +406,7 @@ class TentativeControllerTest {
             User playerTwo = easyRandom.nextObject(User.class);
             User playerThree = easyRandom.nextObject(User.class);
 
-            Map<Integer, User> discordIdToUser = Map.of(
+            Map<String, User> discordIdToUser = Map.of(
                     playerOne.getDiscordId(), playerOne,
                     playerTwo.getDiscordId(), playerTwo,
                     playerThree.getDiscordId(), playerThree);
@@ -396,7 +416,7 @@ class TentativeControllerTest {
                     .tournamentDay(tournamentDay)
                     .build();
             ArrayList<ArchivedTentativeQueue> tentativeQueues = new ArrayList<>();
-            Set<Integer> discordIds = Set.of(
+            Set<String> discordIds = Set.of(
                     playerOne.getDiscordId(),
                     playerTwo.getDiscordId(),
                     playerThree.getDiscordId()

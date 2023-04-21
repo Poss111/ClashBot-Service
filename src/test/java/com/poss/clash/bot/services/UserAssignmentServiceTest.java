@@ -4,14 +4,20 @@ package com.poss.clash.bot.services;
 import com.poss.clash.bot.ClashBotTestingConfig;
 import com.poss.clash.bot.daos.models.*;
 import com.poss.clash.bot.exceptions.ClashBotDbException;
+import com.poss.clash.bot.openapi.model.Event;
 import com.poss.clash.bot.openapi.model.Role;
+import com.poss.clash.bot.openapi.model.Team;
+import com.poss.clash.bot.openapi.model.Tentative;
+import com.poss.clash.bot.source.TeamSource;
+import com.poss.clash.bot.utils.TeamMapper;
+import com.poss.clash.bot.utils.TentativeMapper;
 import org.jeasy.random.EasyRandom;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
+import org.mapstruct.factory.Mappers;
+import org.mockito.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -23,8 +29,7 @@ import java.text.MessageFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(SpringExtension.class)
@@ -46,12 +51,30 @@ public class UserAssignmentServiceTest {
     @Mock
     TournamentService tournamentService;
 
+    @Mock
+    TeamSource teamSource;
+
+    @Spy
+    TeamMapper teamMapper = Mappers.getMapper(TeamMapper.class);
+
+    @Spy
+    TentativeMapper tentativeMapper = Mappers.getMapper(TentativeMapper.class);
+
+    @Captor
+    ArgumentCaptor<Team> teamSourceArgumentCaptor;
+
+    @Captor
+    ArgumentCaptor<Tentative> tentativeArgumentCaptor;
+
+    @Captor
+    ArgumentCaptor<String> causedByCaptor;
+
     @Autowired
     EasyRandom easyRandom;
 
     @Nested
     @DisplayName("Team Interactions")
-    class Team {
+    class TeamInteractions {
 
         @Nested
         @DisplayName("Assign to Team")
@@ -60,8 +83,8 @@ public class UserAssignmentServiceTest {
             @Test
             @DisplayName("Nothing -> Team - Assign User to Team when they do not belong to any Team or Tentative Queue for a Tournament")
             void test_assignUserToTeam_userDoesNotExistOnOtherTeamOrTentativeQueues() {
-                Integer discordId = 1;
-                Integer serverId = 1234;
+                String discordId = "1";
+                String serverId = "1234";
                 String clashTeamId = "ct-1234";
                 String teamName = "Some Random Name";
 
@@ -107,6 +130,8 @@ public class UserAssignmentServiceTest {
                         .thenReturn(Mono.empty());
                 when(userAssociationService.save(expectedUserAssociation))
                         .thenReturn(Mono.just(expectedUserAssociation));
+                when(teamSource.sendTeamUpdateEvent(teamSourceArgumentCaptor.capture(), causedByCaptor.capture()))
+                        .thenReturn(Mono.just(Event.builder().build()));
 
                 StepVerifier
                         .create(userAssignmentService.assignUserToTeam(discordId, Role.TOP, clashTeamId))
@@ -121,13 +146,19 @@ public class UserAssignmentServiceTest {
                         .retrieveUsersTeamOrTentativeQueueForTournament(discordId, tournamentId.getTournamentName(), tournamentId.getTournamentDay());
                 verify(userAssociationService, times(1))
                         .save(expectedUserAssociation);
+
+                assertAll(() -> {
+                    assertEquals(1, teamSourceArgumentCaptor.getAllValues().size(), "More events executed than expected");
+                    assertEquals(1, causedByCaptor.getAllValues().size(), "More events executed than expected");
+                    verifyTeamEvent(discordId, serverId, returnedClashTeam, teamSourceArgumentCaptor.getAllValues().get(0), causedByCaptor.getAllValues().get(0));
+                });
             }
 
             @Test
             @DisplayName("Another Team -> Team - Assign User to Team when they belong to another Team for a Tournament")
             void test_assignUserToTeam_userExistsOnAnotherTeam() {
-                Integer discordId = 1;
-                Integer serverId = 1234;
+                String discordId = "1";
+                String serverId = "1234";
                 String clashTeamId = "ct-1234";
                 String currentlyAssignedClashTeamId = "ct-4321";
                 String teamName = "Some Random Name";
@@ -172,6 +203,15 @@ public class UserAssignmentServiceTest {
                                 .build())
                         .build();
 
+                ClashTeam teamAfterRemoval = ClashTeam.builder()
+                        .serverId(serverId)
+                        .teamId(TeamId.builder()
+                                .id(currentlyAssignedClashTeamId)
+                                .tournamentId(tournamentId)
+                                .build())
+                        .positions(new HashMap<>())
+                        .build();
+
                 when(teamService.findTeamById(clashTeamId))
                         .thenReturn(Mono.just(retrievedTeam));
                 when(teamService.addUserToTeam(discordId, Role.TOP, retrievedTeam))
@@ -181,12 +221,11 @@ public class UserAssignmentServiceTest {
                 when(userAssociationService.retrieveUsersTeamOrTentativeQueueForTournament(discordId, tournamentId.getTournamentName(), tournamentId.getTournamentDay()))
                         .thenReturn(Mono.just(otherTeamUserAssociation));
                 when(teamService.removeUserFromTeam(currentlyAssignedClashTeamId, discordId))
-                        .thenReturn(Mono.just(ClashTeam.builder().teamId(TeamId.builder()
-                                .id(currentlyAssignedClashTeamId)
-                                .tournamentId(tournamentId)
-                                .build()).build()));
+                        .thenReturn(Mono.just(teamAfterRemoval));
                 when(userAssociationService.save(expectedUserAssociation))
                         .thenReturn(Mono.just(expectedUserAssociation));
+                when(teamSource.sendTeamUpdateEvent(teamSourceArgumentCaptor.capture(), causedByCaptor.capture()))
+                        .thenReturn(Mono.just(Event.builder().build()));
 
                 StepVerifier
                         .create(userAssignmentService.assignUserToTeam(discordId, Role.TOP, clashTeamId))
@@ -203,13 +242,116 @@ public class UserAssignmentServiceTest {
                         .removeUserFromTeam(currentlyAssignedClashTeamId, discordId);
                 verify(userAssociationService, times(1))
                         .save(expectedUserAssociation);
+                verify(teamSource, times(2))
+                        .sendTeamUpdateEvent(any(Team.class), anyString());
+
+                assertAll(() -> {
+                    assertEquals(2, teamSourceArgumentCaptor.getAllValues().size(), "More events executed than expected");
+                    assertEquals(2, causedByCaptor.getAllValues().size(), "More events executed than expected");
+                    verifyTeamEvent(discordId, serverId, teamAfterRemoval, teamSourceArgumentCaptor.getAllValues().get(0), causedByCaptor.getAllValues().get(0));
+                    verifyTeamEvent(discordId, serverId, returnedClashTeam, teamSourceArgumentCaptor.getAllValues().get(1), causedByCaptor.getAllValues().get(1));
+                });
+            }
+
+            @Test
+            @DisplayName("Same Team -> Same Team - Assign User to Team when they belong to the same Team for a Tournament")
+            void test_assignUserToTeam_swapRoleOnTeam() {
+                String discordId = "1";
+                String serverId = "1234";
+                String currentlyAssignedClashTeamId = "ct-4321";
+                String teamName = "Some Random Name";
+
+                TournamentId tournamentId = easyRandom.nextObject(TournamentId.class);
+                TeamId teamId = TeamId.builder()
+                        .id(currentlyAssignedClashTeamId)
+                        .tournamentId(tournamentId)
+                        .build();
+
+                ClashTeam retrievedTeam = ClashTeam.builder()
+                        .teamId(teamId)
+                        .teamName(teamName)
+                        .serverId(serverId)
+                        .positions(new HashMap<>())
+                        .build();
+
+                ClashTeam returnedClashTeam = ClashTeam.builder()
+                        .teamId(teamId)
+                        .teamName(teamName)
+                        .serverId(serverId)
+                        .positions(Map.of(Role.TOP, BasePlayerRecord.builder()
+                                .discordId(discordId)
+                                .build()))
+                        .build();
+
+                UserAssociation otherTeamUserAssociation = UserAssociation.builder()
+                        .teamId(currentlyAssignedClashTeamId)
+                        .serverId(serverId)
+                        .userAssociationKey(UserAssociationKey.builder()
+                                .discordId(discordId)
+                                .tournamentId(tournamentId)
+                                .build())
+                        .build();
+
+                UserAssociation expectedUserAssociation = UserAssociation.builder()
+                        .teamId(currentlyAssignedClashTeamId)
+                        .serverId(serverId)
+                        .userAssociationKey(UserAssociationKey.builder()
+                                .discordId(discordId)
+                                .tournamentId(tournamentId)
+                                .build())
+                        .build();
+
+                ClashTeam teamAfterRemoval = ClashTeam.builder()
+                        .serverId(serverId)
+                        .teamId(TeamId.builder()
+                                .id(currentlyAssignedClashTeamId)
+                                .tournamentId(tournamentId)
+                                .build())
+                        .positions(new HashMap<>())
+                        .build();
+
+                when(teamService.findTeamById(currentlyAssignedClashTeamId))
+                        .thenReturn(Mono.just(retrievedTeam));
+                when(teamService.addUserToTeam(discordId, Role.TOP, retrievedTeam))
+                        .thenReturn(returnedClashTeam);
+                when(teamService.upsertClashTeam(returnedClashTeam))
+                        .thenReturn(Mono.just(returnedClashTeam));
+                when(userAssociationService.retrieveUsersTeamOrTentativeQueueForTournament(discordId, tournamentId.getTournamentName(), tournamentId.getTournamentDay()))
+                        .thenReturn(Mono.just(otherTeamUserAssociation));
+                when(teamService.removeUserFromTeam(currentlyAssignedClashTeamId, discordId))
+                        .thenReturn(Mono.just(teamAfterRemoval));
+                when(userAssociationService.save(expectedUserAssociation))
+                        .thenReturn(Mono.just(expectedUserAssociation));
+                when(teamSource.sendTeamUpdateEvent(teamSourceArgumentCaptor.capture(), causedByCaptor.capture()))
+                        .thenReturn(Mono.just(Event.builder().build()));
+
+                StepVerifier
+                        .create(userAssignmentService.assignUserToTeam(discordId, Role.TOP, currentlyAssignedClashTeamId))
+                        .expectNext(returnedClashTeam)
+                        .verifyComplete();
+
+                verify(teamService, times(0))
+                        .addUserToTeam(discordId, Role.TOP, retrievedTeam);
+                verify(teamService, times(1))
+                        .upsertClashTeam(returnedClashTeam);
+                verify(userAssociationService, times(1))
+                        .retrieveUsersTeamOrTentativeQueueForTournament(discordId, tournamentId.getTournamentName(), tournamentId.getTournamentDay());
+                verify(teamService, times(0))
+                        .removeUserFromTeam(currentlyAssignedClashTeamId, discordId);
+                verify(userAssociationService, times(0))
+                        .save(expectedUserAssociation);
+
+                assertAll(() -> {
+                    assertEquals(1, teamSourceArgumentCaptor.getAllValues().size(), "More events executed than expected");
+                    verifyTeamEvent(discordId, serverId, returnedClashTeam, teamSourceArgumentCaptor.getAllValues().get(0), discordId);
+                });
             }
 
             @Test
             @DisplayName("Tentative Queue -> Team - Assign User to Team when they belong to Tentative Queue for a Tournament")
             void test_assignUserToTeam_userExistsOnATentativeQueue() {
-                Integer discordId = 1;
-                Integer serverId = 1234;
+                String discordId = "1";
+                String serverId = "1234";
                 String clashTeamId = "ct-1234";
                 String tentativeQueueId = "tq-1234";
                 String teamName = "Some Random Name";
@@ -255,6 +397,9 @@ public class UserAssignmentServiceTest {
                                 .build())
                         .build();
 
+                TentativeQueue updatedTentativeQueue = easyRandom.nextObject(TentativeQueue.class);
+                updatedTentativeQueue.getTentativeId().setServerId(serverId);
+
                 when(teamService.findTeamById(clashTeamId))
                         .thenReturn(Mono.just(retrievedTeam));
                 when(teamService.addUserToTeam(discordId, Role.TOP, retrievedTeam))
@@ -264,9 +409,13 @@ public class UserAssignmentServiceTest {
                 when(userAssociationService.retrieveUsersTeamOrTentativeQueueForTournament(discordId, tournamentId.getTournamentName(), tournamentId.getTournamentDay()))
                         .thenReturn(Mono.just(otherTentativeQueueUserAssociation));
                 when(tentativeService.removeUserFromTentativeQueue(discordId, tentativeQueueId))
-                        .thenReturn(Mono.just(1L));
+                        .thenReturn(Mono.just(updatedTentativeQueue));
                 when(userAssociationService.save(expectedUserAssociation))
                         .thenReturn(Mono.just(expectedUserAssociation));
+                when(teamSource.sendTentativeQueueUpdateEvent(tentativeArgumentCaptor.capture(), causedByCaptor.capture()))
+                        .thenReturn(Mono.just(Event.builder().build()));
+                when(teamSource.sendTeamUpdateEvent(teamSourceArgumentCaptor.capture(), causedByCaptor.capture()))
+                        .thenReturn(Mono.just(Event.builder().build()));
 
                 StepVerifier
                         .create(userAssignmentService.assignUserToTeam(discordId, Role.TOP, clashTeamId))
@@ -282,16 +431,27 @@ public class UserAssignmentServiceTest {
                 verify(tentativeService, times(1))
                         .removeUserFromTentativeQueue(discordId, tentativeQueueId);
                 verify(teamService, times(0))
-                        .removeUserFromTeam(anyString(), anyInt());
+                        .removeUserFromTeam(anyString(), anyString());
                 verify(userAssociationService, times(1))
                         .save(expectedUserAssociation);
+                verify(teamSource, times(1))
+                        .sendTentativeQueueUpdateEvent(any(Tentative.class), any());
+                verify(teamSource, times(1))
+                        .sendTeamUpdateEvent(any(Team.class), any());
+
+                assertAll(() -> {
+                    assertEquals(1, tentativeArgumentCaptor.getAllValues().size(), "More Tentative events executed than expected");
+                    assertEquals(1, teamSourceArgumentCaptor.getAllValues().size(), "More Team events executed than expected");
+                    verifyTentativeEvent(discordId, serverId, updatedTentativeQueue, tentativeArgumentCaptor.getAllValues().get(0), discordId);
+                    verifyTeamEvent(discordId, serverId, returnedClashTeam, teamSourceArgumentCaptor.getAllValues().get(0), discordId);
+                });
             }
 
             @Test
             @DisplayName("(Error) assignUserToTeam - Role already taken")
             void test_assignUserToTeam_error_roleIsAlreadyTakenForATeam() {
-                Integer discordId = 1;
-                Integer serverId = 1234;
+                String discordId = "1";
+                String serverId = "1234";
                 String clashTeamId = "ct-1234";
                 String teamName = "Some Random Name";
 
@@ -306,7 +466,7 @@ public class UserAssignmentServiceTest {
                         .teamName(teamName)
                         .serverId(serverId)
                         .positions(Map.of(Role.TOP, BasePlayerRecord.builder()
-                                .discordId(2)
+                                .discordId("2")
                                 .build()))
                         .build();
 
@@ -327,7 +487,7 @@ public class UserAssignmentServiceTest {
             @Test
             @DisplayName("(Error) validateTeamAvailability - Role already taken")
             void test_validateTeamAvailability_error_roleIsAlreadyTakenForATeam() {
-                Integer serverId = 1234;
+                String serverId = "1234";
                 String clashTeamId = "ct-1234";
                 String teamName = "Some Random Name";
 
@@ -342,7 +502,7 @@ public class UserAssignmentServiceTest {
                         .teamName(teamName)
                         .serverId(serverId)
                         .positions(Map.of(Role.TOP, BasePlayerRecord.builder()
-                                .discordId(2)
+                                .discordId("2")
                                 .build()))
                         .build();
 
@@ -354,8 +514,8 @@ public class UserAssignmentServiceTest {
             @Test
             @DisplayName("(Error) Target Team does not exist")
             void test_assignUserToTeam_error_teamDoesNotExist() {
-                Integer discordId = 1;
-                Integer serverId = 1234;
+                String discordId = "1";
+                String serverId = "1234";
                 String clashTeamId = "ct-1234";
                 String teamName = "Some Random Name";
 
@@ -395,9 +555,9 @@ public class UserAssignmentServiceTest {
             @Test
             @DisplayName("Nothing -> Team - User does not belong on anything before creating a Team")
             void test_createTeamAndAssignUser_userDoesNotExistOnAnything() {
-                int discordId = 1;
+                String discordId = "1";
+                String discordServerId = "123";
                 String teamName = "team name";
-                int discordServerId = 123;
                 String createdTeamId = "ct-1234";
 
                 TournamentId tournamentId = easyRandom.nextObject(TournamentId.class);
@@ -405,7 +565,7 @@ public class UserAssignmentServiceTest {
                 positions.put(Role.TOP, BasePlayerRecord.builder()
                         .discordId(discordId)
                         .build());
-                HashMap<Role, Integer> roleToIdMap = new HashMap<>();
+                HashMap<Role, String> roleToIdMap = new HashMap<>();
                 roleToIdMap.put(Role.TOP, discordId);
                 ClashTeam expectedTeamToCreate = ClashTeam.builder()
                         .teamId(TeamId.builder()
@@ -445,6 +605,8 @@ public class UserAssignmentServiceTest {
                         .thenReturn(Mono.just(createdTeam));
                 when(userAssociationService.save(createTeamUA))
                         .thenReturn(Mono.just(createTeamUA));
+                when(teamSource.sendTeamCreateEvent(teamSourceArgumentCaptor.capture(), causedByCaptor.capture()))
+                        .thenReturn(Mono.just(Event.builder().build()));
 
                 StepVerifier
                         .create(userAssignmentService.createTeamAndAssignUser(roleToIdMap,
@@ -463,14 +625,21 @@ public class UserAssignmentServiceTest {
                                 tournamentId.getTournamentDay());
                 verify(userAssociationService, times(1))
                         .save(createTeamUA);
+                verify(teamSource, times(1))
+                        .sendTeamCreateEvent(any(Team.class), any());
+
+                assertAll(() -> {
+                    assertEquals(1, teamSourceArgumentCaptor.getAllValues().size(), "More events executed than expected");
+                    verifyTeamEvent(discordId, discordServerId, createdTeam, teamSourceArgumentCaptor.getAllValues().get(0), discordId);
+                });
             }
 
             @Test
             @DisplayName("Another Team -> Team - User belongs on another Team, they should be removed before creating a Team")
             void test_createTeamAndAssignUser_userDoesExistsOnAnotherTeam() {
-                int discordId = 1;
+                String discordId = "1";
+                String discordServerId = "123";
                 String teamName = "team name";
-                int discordServerId = 123;
                 String createdTeamId = "ct-1234";
                 String otherTeamId = "ct-54321";
 
@@ -479,7 +648,7 @@ public class UserAssignmentServiceTest {
                 positions.put(Role.TOP, BasePlayerRecord.builder()
                         .discordId(discordId)
                         .build());
-                HashMap<Role, Integer> roleToIdMap = new HashMap<>();
+                HashMap<Role, String> roleToIdMap = new HashMap<>();
                 roleToIdMap.put(Role.TOP, discordId);
                 ClashTeam expectedTeamToCreate = ClashTeam.builder()
                         .teamId(TeamId.builder()
@@ -522,15 +691,22 @@ public class UserAssignmentServiceTest {
                                         .build())
                                 .serverId(discordServerId)
                                 .build()));
-                when(teamService.removeUserFromTeam(otherTeamId, discordId))
-                        .thenReturn(Mono.just(ClashTeam.builder().teamId(TeamId.builder()
+                ClashTeam teamToBeRemovedFrom = ClashTeam.builder().teamId(TeamId.builder()
                                 .id(otherTeamId)
                                 .tournamentId(tournamentId)
-                                .build()).build()));
+                                .build())
+                        .serverId(discordServerId)
+                        .build();
+                when(teamService.removeUserFromTeam(otherTeamId, discordId))
+                        .thenReturn(Mono.just(teamToBeRemovedFrom));
                 when(teamService.createClashTeam(expectedTeamToCreate))
                         .thenReturn(Mono.just(createdTeam));
                 when(userAssociationService.save(createTeamUA))
                         .thenReturn(Mono.just(createTeamUA));
+                when(teamSource.sendTeamUpdateEvent(teamSourceArgumentCaptor.capture(), causedByCaptor.capture()))
+                        .thenReturn(Mono.just(Event.builder().build()));
+                when(teamSource.sendTeamCreateEvent(teamSourceArgumentCaptor.capture(), causedByCaptor.capture()))
+                        .thenReturn(Mono.just(Event.builder().build()));
 
                 StepVerifier
                         .create(userAssignmentService.createTeamAndAssignUser(roleToIdMap,
@@ -551,19 +727,27 @@ public class UserAssignmentServiceTest {
                         .removeUserFromTeam(otherTeamId, discordId);
                 verify(userAssociationService, times(1))
                         .save(createTeamUA);
+                verify(teamSource, times(1))
+                        .sendTeamUpdateEvent(any(Team.class), anyString());
+                verify(teamSource, times(1))
+                        .sendTeamCreateEvent(any(Team.class), anyString());
+
+                assertEquals(2, teamSourceArgumentCaptor.getAllValues().size(), "More events executed than expected");
+                verifyTeamEvent(discordId, discordServerId, teamToBeRemovedFrom, teamSourceArgumentCaptor.getAllValues().get(0), causedByCaptor.getAllValues().get(0));
+                verifyTeamEvent(discordId, discordServerId, createdTeam, teamSourceArgumentCaptor.getAllValues().get(1), causedByCaptor.getAllValues().get(1));
             }
 
             @Test
             @DisplayName("Nothing -> Team - All 5 positions, Users do not belong on anything before creating a Team")
             void test_createTeamAndAssignUser_allPositions_usersDoNotExistOnAnything() {
-                int discordId = 1;
-                int discordIdTwo = 2;
-                int discordIdThree = 3;
-                int discordIdFour = 4;
-                int discordIdFive = 5;
-                List<Integer> discordIds = List.of(discordId, discordIdTwo, discordIdThree, discordIdFour, discordIdFive);
+                String discordId = "1";
+                String discordIdTwo = "2";
+                String discordIdThree = "3";
+                String discordIdFour = "4";
+                String discordIdFive = "5";
+                List<String> discordIds = List.of(discordId, discordIdTwo, discordIdThree, discordIdFour, discordIdFive);
                 String teamName = "team name";
-                int discordServerId = 123;
+                String discordServerId = "123";
                 String createdTeamId = "ct-1234";
 
                 TournamentId tournamentId = easyRandom.nextObject(TournamentId.class);
@@ -583,7 +767,7 @@ public class UserAssignmentServiceTest {
                 positions.put(Role.SUPP, BasePlayerRecord.builder()
                         .discordId(discordIdFive)
                         .build());
-                HashMap<Role, Integer> roleToIdMap = new HashMap<>();
+                HashMap<Role, String> roleToIdMap = new HashMap<>();
                 roleToIdMap.put(Role.TOP, discordId);
                 roleToIdMap.put(Role.JG, discordIdTwo);
                 roleToIdMap.put(Role.MID, discordIdThree);
@@ -625,7 +809,7 @@ public class UserAssignmentServiceTest {
                         .thenReturn(Mono.just(createdTeam));
 
 
-                when(userAssociationService.retrieveUsersTeamOrTentativeQueueForTournament(anyInt(),
+                when(userAssociationService.retrieveUsersTeamOrTentativeQueueForTournament(anyString(),
                         anyString(),
                         anyString()))
                         .thenReturn(Mono.empty());
@@ -634,7 +818,8 @@ public class UserAssignmentServiceTest {
                     when(userAssociationService.save(expectedUserAssociation))
                             .thenReturn(Mono.just(expectedUserAssociation));
                 }
-
+                when(teamSource.sendTeamCreateEvent(teamSourceArgumentCaptor.capture(), causedByCaptor.capture()))
+                        .thenReturn(Mono.just(Event.builder().build()));
 
                 StepVerifier
                         .create(userAssignmentService.createTeamAndAssignUser(roleToIdMap,
@@ -647,7 +832,7 @@ public class UserAssignmentServiceTest {
 
                 verify(teamService, times(1))
                         .createClashTeam(expectedTeamToCreate);
-                for (Integer id : discordIds) {
+                for (String id : discordIds) {
                     verify(userAssociationService, times(1))
                             .retrieveUsersTeamOrTentativeQueueForTournament(id,
                                     tournamentId.getTournamentName(),
@@ -656,22 +841,23 @@ public class UserAssignmentServiceTest {
                 for (UserAssociation expectedUserAssociation : expectedUserAssociations) {
                     verify(userAssociationService, times(1))
                             .save(expectedUserAssociation);
-
                 }
 
+                assertEquals(1, teamSourceArgumentCaptor.getAllValues().size(), "More events executed than expected");
+                verifyTeamEvent(discordIdFive, discordServerId, createdTeam, teamSourceArgumentCaptor.getAllValues().get(0), discordIdFive);
             }
 
             @Test
             @DisplayName("Other Teams -> Team - All 5 positions, Users belong on other Teams before creating a Team")
             void test_createTeamAndAssignUser_allPositions_usersDoExistOnOtherTeams() {
-                int discordId = 1;
-                int discordIdTwo = 2;
-                int discordIdThree = 3;
-                int discordIdFour = 4;
-                int discordIdFive = 5;
-                List<Integer> discordIds = List.of(discordId, discordIdTwo, discordIdThree, discordIdFour, discordIdFive);
+                String discordId = "1";
+                String discordIdTwo = "2";
+                String discordIdThree = "3";
+                String discordIdFour = "4";
+                String discordIdFive = "5";
+                List<String> discordIds = List.of(discordId, discordIdTwo, discordIdThree, discordIdFour, discordIdFive);
                 String teamName = "team name";
-                int discordServerId = 123;
+                String discordServerId = "123";
                 String createdTeamId = "ct-1234";
                 String otherTeamId = "ct-54321";
 
@@ -692,7 +878,7 @@ public class UserAssignmentServiceTest {
                 positions.put(Role.SUPP, BasePlayerRecord.builder()
                         .discordId(discordIdFive)
                         .build());
-                HashMap<Role, Integer> roleToIdMap = new HashMap<>();
+                HashMap<Role, String> roleToIdMap = new HashMap<>();
                 roleToIdMap.put(Role.TOP, discordId);
                 roleToIdMap.put(Role.JG, discordIdTwo);
                 roleToIdMap.put(Role.MID, discordIdThree);
@@ -733,7 +919,15 @@ public class UserAssignmentServiceTest {
                 when(teamService.createClashTeam(expectedTeamToCreate))
                         .thenReturn(Mono.just(createdTeam));
 
-                for (Integer id : discordIds) {
+                ClashTeam teamToBeRemovedFrom = ClashTeam.builder()
+                        .teamId(TeamId.builder()
+                                .id(otherTeamId)
+                                .tournamentId(tournamentId)
+                                .build())
+                        .serverId(discordServerId)
+                        .build();
+
+                for (String id : discordIds) {
                     when(userAssociationService.retrieveUsersTeamOrTentativeQueueForTournament(id,
                             tournamentId.getTournamentName(),
                             tournamentId.getTournamentDay()))
@@ -746,19 +940,17 @@ public class UserAssignmentServiceTest {
                                             .build())
                                     .build()));
                     when(teamService.removeUserFromTeam(otherTeamId, id))
-                            .thenReturn(Mono.just(ClashTeam.builder()
-                                    .teamId(TeamId.builder()
-                                            .id(otherTeamId)
-                                            .tournamentId(tournamentId)
-                                            .build())
-                                    .build()));
+                            .thenReturn(Mono.just(teamToBeRemovedFrom));
                 }
 
                 for (UserAssociation expectedUserAssociation : expectedUserAssociations) {
                     when(userAssociationService.save(expectedUserAssociation))
                             .thenReturn(Mono.just(expectedUserAssociation));
                 }
-
+                when(teamSource.sendTeamUpdateEvent(teamSourceArgumentCaptor.capture(), causedByCaptor.capture()))
+                        .thenReturn(Mono.just(Event.builder().build()));
+                when(teamSource.sendTeamCreateEvent(teamSourceArgumentCaptor.capture(), causedByCaptor.capture()))
+                        .thenReturn(Mono.just(Event.builder().build()));
 
                 StepVerifier
                         .create(userAssignmentService.createTeamAndAssignUser(roleToIdMap,
@@ -771,7 +963,7 @@ public class UserAssignmentServiceTest {
 
                 verify(teamService, times(1))
                         .createClashTeam(expectedTeamToCreate);
-                for (Integer id : discordIds) {
+                for (String id : discordIds) {
                     verify(userAssociationService, times(1))
                             .retrieveUsersTeamOrTentativeQueueForTournament(id,
                                     tournamentId.getTournamentName(),
@@ -782,16 +974,35 @@ public class UserAssignmentServiceTest {
                 for (UserAssociation expectedUserAssociation : expectedUserAssociations) {
                     verify(userAssociationService, times(1))
                             .save(expectedUserAssociation);
-
                 }
+                verify(teamSource, times(5))
+                        .sendTeamUpdateEvent(any(Team.class), anyString());
+                verify(teamSource, times(1))
+                        .sendTeamCreateEvent(any(Team.class), anyString());
+
+                assertEquals(6, teamSourceArgumentCaptor.getAllValues().size(), "More events executed than expected");
+
+                List<String> idsToCheck = new ArrayList<>(discordIds);
+                for (int i = 0; i < 5; i++) {
+                    var team = teamSourceArgumentCaptor.getAllValues().get(i);
+                    idsToCheck.remove(causedByCaptor.getAllValues().remove(i));
+                    assertNotNull(team);
+                    assertEquals(discordServerId, team.getServerId());
+                    assertEquals(teamMapper.clashTeamToTeam(teamToBeRemovedFrom), team);
+                }
+
+                assertEquals(0, idsToCheck.size(), "Not all caused by discord ids where used.");
+                assertNotNull(teamSourceArgumentCaptor.getAllValues().get(5).getId());
+                assertEquals(discordServerId, teamSourceArgumentCaptor.getAllValues().get(5).getServerId());
+                assertEquals(teamMapper.clashTeamToTeam(createdTeam), teamSourceArgumentCaptor.getAllValues().get(5));
             }
 
             @Test
             @DisplayName("Another Tentative Queue -> Team - User belongs on another Tentative Queue, they should be removed before creating a Team")
             void test_createTeamAndAssignUser_userDoesExistsOnAnotherTentativeQueue() {
-                int discordId = 1;
+                String discordId = "1";
                 String teamName = "team name";
-                int discordServerId = 123;
+                String discordServerId = "123";
                 String createdTeamId = "ct-1234";
                 String otherTentativeQueue = "tq-1234";
 
@@ -800,7 +1011,7 @@ public class UserAssignmentServiceTest {
                 positions.put(Role.TOP, BasePlayerRecord.builder()
                         .discordId(discordId)
                         .build());
-                HashMap<Role, Integer> roleToIdMap = new HashMap<>();
+                HashMap<Role, String> roleToIdMap = new HashMap<>();
                 roleToIdMap.put(Role.TOP, discordId);
                 ClashTeam expectedTeamToCreate = ClashTeam.builder()
                         .teamId(TeamId.builder()
@@ -829,6 +1040,7 @@ public class UserAssignmentServiceTest {
                         .teamId(createdTeamId)
                         .serverId(discordServerId)
                         .build();
+                TentativeQueue tentativeQueueToBeRemovedFrom = easyRandom.nextObject(TentativeQueue.class);
 
                 when(tournamentService.isTournamentActive(tournamentId.getTournamentName(), tournamentId.getTournamentDay()))
                         .thenReturn(Mono.just(true));
@@ -844,11 +1056,15 @@ public class UserAssignmentServiceTest {
                                 .serverId(discordServerId)
                                 .build()));
                 when(tentativeService.removeUserFromTentativeQueue(discordId, otherTentativeQueue))
-                        .thenReturn(Mono.just(1L));
+                        .thenReturn(Mono.just(tentativeQueueToBeRemovedFrom));
                 when(teamService.createClashTeam(expectedTeamToCreate))
                         .thenReturn(Mono.just(createdTeam));
                 when(userAssociationService.save(createTeamUA))
                         .thenReturn(Mono.just(createTeamUA));
+                when(teamSource.sendTentativeQueueUpdateEvent(tentativeArgumentCaptor.capture(), causedByCaptor.capture()))
+                        .thenReturn(Mono.just(Event.builder().build()));
+                when(teamSource.sendTeamCreateEvent(teamSourceArgumentCaptor.capture(), causedByCaptor.capture()))
+                        .thenReturn(Mono.just(Event.builder().build()));
 
                 StepVerifier
                         .create(userAssignmentService.createTeamAndAssignUser(roleToIdMap,
@@ -869,14 +1085,23 @@ public class UserAssignmentServiceTest {
                         .removeUserFromTentativeQueue(discordId, otherTentativeQueue);
                 verify(userAssociationService, times(1))
                         .save(createTeamUA);
+                verify(teamSource, times(1))
+                        .sendTentativeQueueUpdateEvent(any(Tentative.class), anyString());
+                verify(teamSource, times(1))
+                        .sendTeamCreateEvent(any(Team.class), anyString());
+
+                assertEquals(1, tentativeArgumentCaptor.getAllValues().size(), "More Tentative events executed than expected");
+                assertEquals(1, teamSourceArgumentCaptor.getAllValues().size(), "More Team events executed than expected");
+                verifyTentativeEvent(discordId, tentativeQueueToBeRemovedFrom.getTentativeId().getServerId(), tentativeQueueToBeRemovedFrom, tentativeArgumentCaptor.getAllValues().get(0), discordId);
+                verifyTeamEvent(discordId, discordServerId, createdTeam, teamSourceArgumentCaptor.getAllValues().get(0), discordId);
             }
 
             @Test
             @DisplayName("(Error) The tournament passed does not exist")
             void test6() {
-                int discordId = 1;
+                String discordId = "1";
                 String teamName = "team name";
-                int discordServerId = 123;
+                String discordServerId = "123";
                 String createdTeamId = "ct-1234";
                 String otherTentativeQueue = "tq-1234";
 
@@ -885,7 +1110,7 @@ public class UserAssignmentServiceTest {
                 positions.put(Role.TOP, BasePlayerRecord.builder()
                         .discordId(discordId)
                         .build());
-                HashMap<Role, Integer> roleToIdMap = new HashMap<>();
+                HashMap<Role, String> roleToIdMap = new HashMap<>();
                 roleToIdMap.put(Role.TOP, discordId);
                 ClashTeam expectedTeamToCreate = ClashTeam.builder()
                         .teamId(TeamId.builder()
@@ -914,6 +1139,7 @@ public class UserAssignmentServiceTest {
                         .teamId(createdTeamId)
                         .serverId(discordServerId)
                         .build();
+                TentativeQueue tentativeQueueToBeRemovedFrom = easyRandom.nextObject(TentativeQueue.class);
 
                 when(tournamentService.isTournamentActive(tournamentId.getTournamentName(), tournamentId.getTournamentDay()))
                         .thenReturn(Mono.just(false));
@@ -929,7 +1155,7 @@ public class UserAssignmentServiceTest {
                                 .serverId(discordServerId)
                                 .build()));
                 when(tentativeService.removeUserFromTentativeQueue(discordId, otherTentativeQueue))
-                        .thenReturn(Mono.just(1L));
+                        .thenReturn(Mono.just(tentativeQueueToBeRemovedFrom));
                 when(teamService.createClashTeam(expectedTeamToCreate))
                         .thenReturn(Mono.just(createdTeam));
                 when(userAssociationService.save(createTeamUA))
@@ -965,10 +1191,10 @@ public class UserAssignmentServiceTest {
             @Test
             @DisplayName("Team -> Nothing - If a user belongs to a Team, they should be removed and their association should be removed")
             void test_removeUserFromTeam() {
-                Integer discordId = 1;
+                String discordId = "1";
                 String clashTeamId = "ct-1234";
+                String serverId = "1234";
 
-                int serverId = 1234;
                 HashMap<Role, BasePlayerRecord> positions = new HashMap<>();
                 positions.put(Role.TOP, BasePlayerRecord.builder()
                         .discordId(discordId)
@@ -1020,10 +1246,10 @@ public class UserAssignmentServiceTest {
             @Test
             @DisplayName("(Error) User is not on the Team passed")
             void test_removeUserFromTeam_userDoesNotBelongOnTheTeam() {
-                Integer discordId = 1;
+                String discordId = "1";
                 String clashTeamId = "ct-1234";
+                String serverId = "1234";
 
-                int serverId = 1234;
                 HashMap<Role, BasePlayerRecord> positions = new HashMap<>();
                 TournamentId tournamentId = easyRandom.nextObject(TournamentId.class);
                 ClashTeam teamToBeRemovedFrom = ClashTeam.builder()
@@ -1072,10 +1298,10 @@ public class UserAssignmentServiceTest {
             @Test
             @DisplayName("(Error) Team does not exist")
             void test_removeUserFromTeam_theTeamDoesNotExist() {
-                Integer discordId = 1;
+                String discordId = "1";
                 String clashTeamId = "ct-1234";
+                String serverId = "1234";
 
-                int serverId = 1234;
                 TournamentId tournamentId = easyRandom.nextObject(TournamentId.class);
                 ClashTeam teamAfterUpdate = ClashTeam.builder()
                         .teamId(TeamId.builder()
@@ -1113,6 +1339,20 @@ public class UserAssignmentServiceTest {
         }
     }
 
+    private void verifyTentativeEvent(String discordId, String serverId, TentativeQueue updatedTentativeQueue, Tentative updatedTentative, String actualCausedBy) {
+        assertNotNull(updatedTentative.getId());
+        assertEquals(discordId, actualCausedBy);
+        assertEquals(serverId, updatedTentative.getServerId());
+        assertEquals(tentativeMapper.tentativeQueueToTentative(updatedTentativeQueue), updatedTentative);
+    }
+
+    private void verifyTeamEvent(String discordId, String discordServerId, ClashTeam createdTeam, Team updateEventSubmitted, String actualCausedBy) {
+        assertNotNull(updateEventSubmitted.getId());
+        assertEquals(discordId, actualCausedBy);
+        assertEquals(discordServerId, updateEventSubmitted.getServerId());
+        assertEquals(teamMapper.clashTeamToTeam(createdTeam), updateEventSubmitted);
+    }
+
     @Nested
     @DisplayName("Tentative Queue Interaction")
     class TentativeQueues {
@@ -1124,9 +1364,9 @@ public class UserAssignmentServiceTest {
             @Test
             @DisplayName("Nothing -> Tentative Queue - If a User does not belong to anything and is requesting to be assigned to a Tentative Queue")
             void test() {
-                int discordId = 1;
+                String discordId = "1";
                 String tentativeQueueId = "tq-1234";
-                int serverId = 1234;
+                String serverId = "1234";
 
                 TournamentId tournamentId = easyRandom.nextObject(TournamentId.class);
                 TentativeQueue tentativeQueueToBeAssignedTo = TentativeQueue.builder()
@@ -1167,6 +1407,8 @@ public class UserAssignmentServiceTest {
                         .thenReturn(Mono.just(tentativeQueueAfterAssignment));
                 when(userAssociationService.save(userAssociationToSave))
                         .thenReturn(Mono.just(userAssociationToSave));
+                when(teamSource.sendTentativeQueueUpdateEvent(tentativeArgumentCaptor.capture(), causedByCaptor.capture()))
+                        .thenReturn(Mono.just(Event.builder().build()));
 
                 StepVerifier
                         .create(userAssignmentService.assignUserToTentativeQueue(discordId, tentativeQueueId))
@@ -1185,14 +1427,19 @@ public class UserAssignmentServiceTest {
                         .assignUserToTentativeQueue(discordId, tentativeQueueToBeAssignedTo);
                 verify(userAssociationService, times(1))
                         .save(userAssociationToSave);
+                verify(teamSource, times(1))
+                        .sendTentativeQueueUpdateEvent(any(Tentative.class), anyString());
+
+                assertEquals(1, tentativeArgumentCaptor.getAllValues().size());
+                verifyTentativeEvent(discordId, serverId, tentativeQueueAfterAssignment, tentativeArgumentCaptor.getAllValues().get(0), discordId);
             }
 
             @Test
             @DisplayName("Another Team -> Tentative Queue - If a User belongs to a Team and is requesting to be assigned to a Tentative Queue, they should be removed and assigned to the Queue")
             void test2() {
-                int discordId = 1;
+                String discordId = "1";
                 String tentativeQueueId = "tq-1234";
-                int serverId = 1234;
+                String serverId = "1234";
                 String clashTeamId = "ct-12345";
                 TournamentId tournamentId = easyRandom.nextObject(TournamentId.class);
 
@@ -1249,6 +1496,10 @@ public class UserAssignmentServiceTest {
                         .thenReturn(Mono.just(tentativeQueueAfterAssignment));
                 when(userAssociationService.save(userAssociationToSave))
                         .thenReturn(Mono.just(userAssociationToSave));
+                when(teamSource.sendTeamUpdateEvent(teamSourceArgumentCaptor.capture(), causedByCaptor.capture()))
+                        .thenReturn(Mono.just(Event.builder().build()));
+                when(teamSource.sendTentativeQueueUpdateEvent(tentativeArgumentCaptor.capture(), causedByCaptor.capture()))
+                        .thenReturn(Mono.just(Event.builder().build()));
 
                 StepVerifier
                         .create(userAssignmentService.assignUserToTentativeQueue(discordId, tentativeQueueId))
@@ -1269,14 +1520,18 @@ public class UserAssignmentServiceTest {
                         .assignUserToTentativeQueue(discordId, tentativeQueueToBeAssignedTo);
                 verify(userAssociationService, times(1))
                         .save(userAssociationToSave);
+                verify(teamSource, times(1))
+                        .sendTeamUpdateEvent(any(Team.class), anyString());
+                verify(teamSource, times(1))
+                        .sendTentativeQueueUpdateEvent(any(Tentative.class), anyString());
             }
 
             @Test
             @DisplayName("(Error) Tentative Queue does not exist")
             void test3() {
-                int discordId = 1;
+                String discordId = "1";
                 String tentativeQueueId = "tq-1234";
-                int serverId = 1234;
+                String serverId = "1234";
                 String clashTeamId = "ct-12345";
                 TournamentId tournamentId = easyRandom.nextObject(TournamentId.class);
 
@@ -1364,8 +1619,8 @@ public class UserAssignmentServiceTest {
             @Test
             @DisplayName("Nothing -> Tentative Queue - A User is not assigned to anything before and wants to create a Tentative Queue")
             void test() {
-                int discordId = 1;
-                int serverId = 1234;
+                String discordId = "1";
+                String serverId = "1234";
                 String tentativeId = "tq-12345";
                 TournamentId tournamentId = easyRandom.nextObject(TournamentId.class);
                 TentativeQueue tentativeQueueToCreate = TentativeQueue.builder()
@@ -1407,6 +1662,8 @@ public class UserAssignmentServiceTest {
                         .thenReturn(Mono.just(createdTentativeQueue));
                 when(userAssociationService.save(createdUserAssociation))
                         .thenReturn(Mono.just(createdUserAssociation));
+                when(teamSource.sendTentativeQueueCreateEvent(tentativeArgumentCaptor.capture(), causedByCaptor.capture()))
+                        .thenReturn(Mono.just(Event.builder().build()));
 
                 StepVerifier
                         .create(userAssignmentService.createTentativeQueueAndAssignUser(
@@ -1435,13 +1692,18 @@ public class UserAssignmentServiceTest {
                         .createTentativeQueue(tentativeQueueToCreate);
                 verify(userAssociationService, times(1))
                         .save(createdUserAssociation);
+                verify(teamSource, times(1))
+                        .sendTentativeQueueCreateEvent(any(Tentative.class), anyString());
+
+                assertEquals(1, tentativeArgumentCaptor.getAllValues().size());
+                verifyTentativeEvent(discordId, serverId, createdTentativeQueue, tentativeArgumentCaptor.getAllValues().get(0), discordId);
             }
 
             @Test
             @DisplayName("Team -> Tentative Queue - A User is assigned to a Team and wants to create a Tentative Queue")
             void test2() {
-                int discordId = 1;
-                int serverId = 1234;
+                String discordId = "1";
+                String serverId = "1234";
                 String tentativeId = "tq-12345";
                 String clashTeamId = "ct-12345";
                 TournamentId tournamentId = easyRandom.nextObject(TournamentId.class);
@@ -1481,6 +1743,7 @@ public class UserAssignmentServiceTest {
                                 .id(clashTeamId)
                                 .tournamentId(tournamentId)
                                 .build())
+                        .serverId("1234")
                         .build();
 
                 when(tournamentService.isTournamentActive(tournamentId.getTournamentName(), tournamentId.getTournamentDay()))
@@ -1500,6 +1763,10 @@ public class UserAssignmentServiceTest {
                         .thenReturn(Mono.just(createdTentativeQueue));
                 when(userAssociationService.save(createdUserAssociation))
                         .thenReturn(Mono.just(createdUserAssociation));
+                when(teamSource.sendTeamUpdateEvent(teamSourceArgumentCaptor.capture(), causedByCaptor.capture()))
+                        .thenReturn(Mono.just(Event.builder().build()));
+                when(teamSource.sendTentativeQueueCreateEvent(tentativeArgumentCaptor.capture(), causedByCaptor.capture()))
+                        .thenReturn(Mono.just(Event.builder().build()));
 
                 StepVerifier
                         .create(userAssignmentService.createTentativeQueueAndAssignUser(
@@ -1530,13 +1797,29 @@ public class UserAssignmentServiceTest {
                         .createTentativeQueue(tentativeQueueToCreate);
                 verify(userAssociationService, times(1))
                         .save(createdUserAssociation);
+
+                assertAll(() -> {
+                    assertEquals(1, teamSourceArgumentCaptor.getAllValues().size());
+                    Team updateEventSubmitted = teamSourceArgumentCaptor.getAllValues().get(0);
+                    assertNotNull(updateEventSubmitted.getId());
+                    assertEquals(discordId, causedByCaptor.getAllValues().get(0));
+                    assertEquals(serverId, updateEventSubmitted.getServerId());
+                    assertEquals(teamMapper.clashTeamToTeam(returnedClashTeam), updateEventSubmitted);
+
+                    assertEquals(1, tentativeArgumentCaptor.getAllValues().size());
+                    Tentative createEventSubmitted = tentativeArgumentCaptor.getAllValues().get(0);
+                    assertNotNull(createEventSubmitted.getId());
+                    assertEquals(discordId, causedByCaptor.getAllValues().get(1));
+                    assertEquals(serverId, createEventSubmitted.getServerId());
+                    assertEquals(tentativeMapper.tentativeQueueToTentative(createdTentativeQueue), createEventSubmitted);
+                });
             }
 
             @Test
             @DisplayName("(Error) Tournament not found")
             void test3() {
-                int discordId = 1;
-                int serverId = 1234;
+                String discordId = "1";
+                String serverId = "1234";
                 String tentativeId = "tq-12345";
                 TournamentId tournamentId = easyRandom.nextObject(TournamentId.class);
                 TentativeQueue tentativeQueueToCreate = TentativeQueue.builder()
@@ -1612,8 +1895,8 @@ public class UserAssignmentServiceTest {
             @Test
             @DisplayName("(Error) Tentative Queue already exists")
             void test4() {
-                int discordId = 1;
-                int serverId = 1234;
+                String discordId = "1";
+                String serverId = "1234";
                 String tentativeId = "tq-12345";
                 TournamentId tournamentId = easyRandom.nextObject(TournamentId.class);
                 TentativeQueue tentativeQueueToCreate = TentativeQueue.builder()
@@ -1694,13 +1977,13 @@ public class UserAssignmentServiceTest {
             @Test
             @DisplayName("Tentative Queue -> Nothing - A User wants to remove themselves from a Tentative Queue")
             void test() {
-                int discordId = 1;
+                String discordId = "1";
                 String tentativeQueueId = "tq-1234";
-                int serverId = 1234;
+                String serverId = "1234";
 
                 TournamentId tournamentId = easyRandom.nextObject(TournamentId.class);
-                HashSet<Integer> discordIds = new HashSet<>();
-                discordIds.add(1);
+                HashSet<String> discordIds = new HashSet<>();
+                discordIds.add("1");
                 TentativeQueue tentativeQueueToBeRemovedFrom = TentativeQueue.builder()
                         .discordIds(discordIds)
                         .tentativeId(TentativeId.builder()
@@ -1727,14 +2010,15 @@ public class UserAssignmentServiceTest {
                         .serverId(serverId)
                         .build();
 
-
                 when(tentativeService.findById(tentativeQueueId))
                         .thenReturn(Mono.just(tentativeQueueToBeRemovedFrom));
                 when(tentativeService.removeUserFromTentativeQueue(discordId, tentativeQueueId))
-                        .thenReturn(Mono.just(1L));
+                        .thenReturn(Mono.just(tentativeQueueToBeRemovedFrom));
                 PublisherProbe<Void> publisherProbe = PublisherProbe.empty();
                 when(userAssociationService.delete(userAssociationToSave.getUserAssociationKey()))
                         .thenReturn(publisherProbe.mono());
+                when(teamSource.sendTentativeQueueUpdateEvent(tentativeArgumentCaptor.capture(), causedByCaptor.capture()))
+                        .thenReturn(Mono.just(Event.builder().build()));
 
                 StepVerifier
                         .create(userAssignmentService.findAndRemoveUserFromTentativeQueue(discordId, tentativeQueueId))
@@ -1747,14 +2031,19 @@ public class UserAssignmentServiceTest {
                         .removeUserFromTentativeQueue(discordId, tentativeQueueId);
                 verify(userAssociationService, times(1))
                         .delete(userAssociationToSave.getUserAssociationKey());
+
+                assertAll(() -> {
+                    Tentative removeEventSubmitted = tentativeArgumentCaptor.getAllValues().get(0);
+                    verifyTentativeEvent(discordId, serverId, tentativeQueueToBeRemovedFrom, removeEventSubmitted, discordId);
+                });
             }
 
             @Test
             @DisplayName("(Error) Tentative Queue does not exist")
             void test2() {
-                int discordId = 1;
+                String discordId = "1";
                 String tentativeQueueId = "tq-1234";
-                int serverId = 1234;
+                String serverId = "1234";
 
                 TournamentId tournamentId = easyRandom.nextObject(TournamentId.class);
 
@@ -1766,12 +2055,12 @@ public class UserAssignmentServiceTest {
                         .tentativeId(tentativeQueueId)
                         .serverId(serverId)
                         .build();
-
+                TentativeQueue tentativeQueueToBeRemovedFrom = easyRandom.nextObject(TentativeQueue.class);
 
                 when(tentativeService.findById(tentativeQueueId))
                         .thenReturn(Mono.empty());
                 when(tentativeService.removeUserFromTentativeQueue(discordId, tentativeQueueId))
-                        .thenReturn(Mono.just(1L));
+                        .thenReturn(Mono.just(tentativeQueueToBeRemovedFrom));
                 PublisherProbe<Void> publisherProbe = PublisherProbe.empty();
                 when(userAssociationService.delete(userAssociationToSave.getUserAssociationKey()))
                         .thenReturn(publisherProbe.mono());

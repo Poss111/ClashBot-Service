@@ -1,0 +1,60 @@
+asyncapi: '2.4.0'
+info:
+  title: 'clash-bot-webapp-service'
+  description: Clash Bot Webapp Socket Service to support League of Legends Clash tournament scheduling with Discord.
+  contact:
+    name: ClashBot-API-Support
+    email: rixxroid@gmail.com
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+  version: 1.0.0
+servers:
+  localhost:
+    url: localhost:8082/api/v1
+    description: Local Server
+    protocol: STOMP
+    protocolVersion: 13.0.0
+channels:
+  /teams:
+    description: A realtime subscription to deal with changes with League of Legends Clash Bot Teams based on Discord servers.
+    bindings:
+      STOMP:
+        method: GET
+        query:
+          schema:
+            type: object
+            required:
+              - serverName
+            properties:
+              serverName:
+                description: The Discord server to watch Clash Team events for.
+                type: string
+    subscribe:
+      description: To recieve Team events based on a server.
+      operationId: subscribeToTeamEventsBasedOnServer
+      tags:
+        - name: Team
+      message:
+        title: Team Update
+        description: A single Clash Team event.
+        messageId: teamsUpdate
+        correlationId:
+          description: Default Correlation ID
+          location: $message.header#/correlationId
+        payload:
+          $ref: '#/components/schemas/Team'
+    publish:
+      description: To publish Team events based on a server.
+      operationId: publishTeamEventBasedOnServer
+      tags:
+        - name: Team
+      message:
+        title: Team Update
+        description: A single Clash Team event to propagate.
+        messageId: teamEvent
+        correlationId:
+          description: Default Correlation ID
+          location: $message.header#/correlationId
+        payload:
+          $ref: '#/components/schemas/Team'

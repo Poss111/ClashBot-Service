@@ -11,10 +11,10 @@ import java.io.Serializable;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class  TentativeId implements Serializable {
+public class TentativeId implements Serializable {
 
     private String tentativeId;
     private TournamentId tournamentId;
-    private Integer serverId;
+    private String serverId;
 
 }

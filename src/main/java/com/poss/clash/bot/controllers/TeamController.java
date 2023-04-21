@@ -6,16 +6,17 @@ import com.poss.clash.bot.openapi.model.*;
 import com.poss.clash.bot.services.ArchivedService;
 import com.poss.clash.bot.services.TeamService;
 import com.poss.clash.bot.services.UserAssignmentService;
+import com.poss.clash.bot.services.UserService;
 import com.poss.clash.bot.utils.TeamMapper;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebExchange;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.HashMap;
+import java.util.List;
 
 @RestController
 @AllArgsConstructor
@@ -25,11 +26,12 @@ public class TeamController implements TeamsApi {
     private final TeamService teamService;
     private final ArchivedService archivedService;
     private final TeamMapper teamMapper;
+    private final UserService userService;
 
     @Override
-    public Mono<ResponseEntity<Team>> assignUserToTeam(String teamId, Long discordId, Mono<PositionDetails> positionDetails, ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Team>> assignUserToTeam(String teamId, String discordId, Mono<PositionDetails> positionDetails, ServerWebExchange exchange) {
         return positionDetails
-                .flatMap(details -> userAssignmentService.assignUserToTeam(discordId.intValue(), details.getRole(), teamId))
+                .flatMap(details -> userAssignmentService.assignUserToTeam(discordId, details.getRole(), teamId))
                 .map(teamMapper::clashTeamToTeam)
                 .map(ResponseEntity::ok);
     }
@@ -39,32 +41,36 @@ public class TeamController implements TeamsApi {
         return teamRequired
                 .flatMap(this::validatePlayerDetails)
                 .flatMap(teamDetails -> {
-                    HashMap<Role, Integer> roleToId = new HashMap<>();
-                    if (null != teamDetails.getPlayerDetails().getTop()) {
-                        roleToId.put(Role.TOP, teamDetails.getPlayerDetails().getTop().getDiscordId());
-                    } if (null != teamDetails.getPlayerDetails().getJg()) {
-                        roleToId.put(Role.JG, teamDetails.getPlayerDetails().getJg().getDiscordId());
-                    } if (null != teamDetails.getPlayerDetails().getMid()) {
-                        roleToId.put(Role.MID, teamDetails.getPlayerDetails().getMid().getDiscordId());
-                    } if (null != teamDetails.getPlayerDetails().getBot()) {
-                        roleToId.put(Role.BOT, teamDetails.getPlayerDetails().getBot().getDiscordId());
-                    } if (null != teamDetails.getPlayerDetails().getSupp()){
-                        roleToId.put(Role.SUPP, teamDetails.getPlayerDetails().getSupp().getDiscordId());
-                    }
-                    return userAssignmentService.createTeamAndAssignUser(roleToId,
-                            teamDetails.getName(),
-                            teamDetails.getServerId(),
-                            teamDetails.getTournament().getTournamentName(),
-                            teamDetails.getTournament().getTournamentDay());
-                    }
+                            HashMap<Role, String> roleToId = new HashMap<>();
+                            if (null != teamDetails.getPlayerDetails().getTop()) {
+                                roleToId.put(Role.TOP, teamDetails.getPlayerDetails().getTop().getDiscordId());
+                            }
+                            if (null != teamDetails.getPlayerDetails().getJg()) {
+                                roleToId.put(Role.JG, teamDetails.getPlayerDetails().getJg().getDiscordId());
+                            }
+                            if (null != teamDetails.getPlayerDetails().getMid()) {
+                                roleToId.put(Role.MID, teamDetails.getPlayerDetails().getMid().getDiscordId());
+                            }
+                            if (null != teamDetails.getPlayerDetails().getBot()) {
+                                roleToId.put(Role.BOT, teamDetails.getPlayerDetails().getBot().getDiscordId());
+                            }
+                            if (null != teamDetails.getPlayerDetails().getSupp()) {
+                                roleToId.put(Role.SUPP, teamDetails.getPlayerDetails().getSupp().getDiscordId());
+                            }
+                            return userAssignmentService.createTeamAndAssignUser(roleToId,
+                                    teamDetails.getName(),
+                                    teamDetails.getServerId(),
+                                    teamDetails.getTournament().getTournamentName(),
+                                    teamDetails.getTournament().getTournamentDay());
+                        }
                 )
                 .map(teamMapper::clashTeamToTeam)
                 .map(ResponseEntity::ok);
     }
 
     @Override
-    public Mono<ResponseEntity<Team>> removeUserFromTeam(String teamId, Long discordId, ServerWebExchange exchange) {
-        return userAssignmentService.findAndRemoveUserFromTeam(discordId.intValue(), teamId)
+    public Mono<ResponseEntity<Team>> removeUserFromTeam(String teamId, String discordId, ServerWebExchange exchange) {
+        return userAssignmentService.findAndRemoveUserFromTeam(discordId, teamId)
                 .map(teamMapper::clashTeamToTeam)
                 .map(ResponseEntity::ok);
     }
@@ -77,25 +83,28 @@ public class TeamController implements TeamsApi {
     }
 
     @Override
-    public Mono<ResponseEntity<Teams>> retrieveTeams(Boolean archived, Long discordId, Long serverId, String tournamentName, String tournamentDay, ServerWebExchange exchange) {
-        Flux<Team> fluxOfTeams = null;
+    public Mono<ResponseEntity<Teams>> retrieveTeams(Boolean archived, String discordId, String serverId, String tournamentName, String tournamentDay, ServerWebExchange exchange) {
+        Mono<List<Team>> monoOfTeams = null;
         if (archived) {
-            fluxOfTeams = archivedService.retrieveTeamBasedOnCriteria(
+            monoOfTeams = archivedService.retrieveTeamBasedOnCriteria(
                             discordId,
                             serverId,
                             tournamentName,
                             tournamentDay)
-                    .map(teamMapper::archivedClashTeamToTeam);
+                    .map(teamMapper::archivedClashTeamToTeam)
+                    .collectList();
         } else {
-            fluxOfTeams = teamService.retrieveTeamBasedOnCriteria(
-                            null != discordId ? discordId.intValue() : null,
-                            null != serverId ? serverId.intValue() : null,
+            monoOfTeams = teamService.retrieveTeamBasedOnCriteria(
+                            discordId,
+                            serverId,
                             tournamentName,
                             tournamentDay)
-                    .map(teamMapper::clashTeamToTeam);
+                    .collectList()
+                    .flatMapMany(userService::enrichClashTeamWithUserDetails)
+                    .map(teamMapper::clashTeamToTeam)
+                    .collectList();
         }
-        return fluxOfTeams
-                .collectList()
+        return monoOfTeams
                 .map(list -> Teams.builder()
                         .count(list.size())
                         .teams(list)

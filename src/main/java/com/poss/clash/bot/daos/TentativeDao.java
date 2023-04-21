@@ -12,45 +12,46 @@ import reactor.core.publisher.Mono;
 @Repository
 public interface TentativeDao extends ReactiveCrudRepository<TentativeQueue, TentativeId> {
 
-    Mono<Boolean> existsByTentativeIdServerId_AndTentativeIdTournamentIdTournamentName_AndTentativeIdTournamentIdTournamentDay(Integer serverId, String tournamentName, String tournamentDay);
+    Mono<Boolean> existsByTentativeIdServerId_AndTentativeIdTournamentIdTournamentName_AndTentativeIdTournamentIdTournamentDay(String serverId, String tournamentName, String tournamentDay);
 
     Mono<TentativeQueue> findByTentativeId_TentativeId(String tentativeId);
 
-    Flux<TentativeQueue> findByDiscordIdsContaining(Integer discordId);
+    Flux<TentativeQueue> findByDiscordIdsContaining(String discordId);
 
-    Flux<TentativeQueue> findByTentativeId_ServerId_AndTentativeId_TournamentId_TournamentName_AndTentativeId_TournamentId_TournamentDay_AndDiscordIdsContaining(Integer serverId, String tournamentName, String tournamentDay, Integer discordId);
+    Flux<TentativeQueue> findByTentativeId_ServerId_AndTentativeId_TournamentId_TournamentName_AndTentativeId_TournamentId_TournamentDay_AndDiscordIdsContaining(String serverId, String tournamentName, String tournamentDay, String discordId);
 
-    Flux<TentativeQueue> findByTentativeId_ServerId(Integer serverId);
+    Flux<TentativeQueue> findByTentativeId_ServerId(String serverId);
 
     Flux<TentativeQueue> findByTentativeId_TournamentId_TournamentName(String tournamentName);
+
     Flux<TentativeQueue> findByTentativeId_TournamentId_TournamentDay(String tournamentDay);
 
     Flux<TentativeQueue> findByTentativeId_TournamentId_TournamentName_AndTentativeId_TournamentId_TournamentDay(String tournamentName, String tournamentDay);
 
-    Flux<TentativeQueue> findByTentativeId_ServerId_AndTentativeId_TournamentId_TournamentName_AndTentativeId_TournamentId_TournamentDay(Integer serverId, String tournamentName, String tournamentDay);
+    Flux<TentativeQueue> findByTentativeId_ServerId_AndTentativeId_TournamentId_TournamentName_AndTentativeId_TournamentId_TournamentDay(String serverId, String tournamentName, String tournamentDay);
 
-    Flux<TentativeQueue> findByTentativeId_ServerId_AndTentativeId_TournamentId_TournamentName(Integer serverId, String tournamentName);
+    Flux<TentativeQueue> findByTentativeId_ServerId_AndTentativeId_TournamentId_TournamentName(String serverId, String tournamentName);
 
-    Flux<TentativeQueue> findByTentativeId_ServerId_AndTentativeId_TournamentId_TournamentDay(Integer serverId, String tournamentDay);
+    Flux<TentativeQueue> findByTentativeId_ServerId_AndTentativeId_TournamentId_TournamentDay(String serverId, String tournamentDay);
 
-    Flux<TentativeQueue> findByTentativeId_TournamentId_TournamentName_AndTentativeId_TournamentId_TournamentDay_AndDiscordIdsContaining(String tournamentName, String tournamentDay, Integer discordId);
+    Flux<TentativeQueue> findByTentativeId_TournamentId_TournamentName_AndTentativeId_TournamentId_TournamentDay_AndDiscordIdsContaining(String tournamentName, String tournamentDay, String discordId);
 
-    Flux<TentativeQueue> findByTentativeId_ServerId_AndTentativeId_TournamentId_TournamentDay_AndDiscordIdsContaining(Integer serverId, String tournamentDay, Integer discordId);
+    Flux<TentativeQueue> findByTentativeId_ServerId_AndTentativeId_TournamentId_TournamentDay_AndDiscordIdsContaining(String serverId, String tournamentDay, String discordId);
 
-    Flux<TentativeQueue> findByTentativeId_ServerId_AndTentativeId_TournamentId_TournamentName_AndDiscordIdsContaining(Integer serverId, String tournamentName, Integer discordId);
+    Flux<TentativeQueue> findByTentativeId_ServerId_AndTentativeId_TournamentId_TournamentName_AndDiscordIdsContaining(String serverId, String tournamentName, String discordId);
 
-    Flux<TentativeQueue> findByTentativeId_ServerId_AndDiscordIdsContaining(Integer serverId, Integer discordId);
+    Flux<TentativeQueue> findByTentativeId_ServerId_AndDiscordIdsContaining(String serverId, String discordId);
 
-    Flux<TentativeQueue> findByTentativeId_TournamentId_TournamentName_AndDiscordIdsContaining(String tournamentName, Integer discordId);
+    Flux<TentativeQueue> findByTentativeId_TournamentId_TournamentName_AndDiscordIdsContaining(String tournamentName, String discordId);
 
-    Flux<TentativeQueue> findByTentativeId_TournamentId_TournamentDay_AndDiscordIdsContaining(String tournamentDay, Integer discordId);
+    Flux<TentativeQueue> findByTentativeId_TournamentId_TournamentDay_AndDiscordIdsContaining(String tournamentDay, String discordId);
 
     @Query("{ 'tentativeId.tentativeId' : ?0 }")
     @Update("{ '$push' : { 'discordIds' : ?1 } }")
-    Mono<Long> updateByTentativeId_TentativeId(String tentativeId, Integer discordId);
+    Mono<Long> updateByTentativeId_TentativeId(String tentativeId, String discordId);
 
     @Query("{ 'tentativeId.tentativeId' : ?0 }")
     @Update("{ '$pull' : { 'discordIds' : ?1 } }")
-    Mono<Long> removeByTentativeId_TentativeId(String tentativeId, Integer discordId);
+    Mono<Long> removeByTentativeId_TentativeId(String tentativeId, String discordId);
 
 }
