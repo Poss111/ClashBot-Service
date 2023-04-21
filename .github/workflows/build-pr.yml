@@ -1,5 +1,6 @@
 name: Build - Clash Bot WebApp
 
+on: push
 #on:
 #  pull_request:
 #    branches:
