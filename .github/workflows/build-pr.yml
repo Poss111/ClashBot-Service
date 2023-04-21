@@ -22,4 +22,6 @@ jobs:
         uses: gradle/gradle-build-action@v2
 
       - name: Gradle build
-        run: CI=true ./gradlew clean build
+        run: |
+          ls -lha
+          CI=true ./gradlew clean build
