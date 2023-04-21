@@ -15,17 +15,6 @@ plugins {
     id 'org.asciidoctor.convert' version '2.4.0'
     id 'org.openapi.generator' version '6.1.0'
     id 'org.unbroken-dome.test-sets' version '4.0.0'
-    id 'com.gradle.enterprise' version '3.9'
-}
-
-gradleEnterprise {
-    if (System.getenv("CI") != null) {
-        buildScan {
-            publishAlways()
-            termsOfServiceUrl = "https://gradle.com/terms-of-service"
-            termsOfServiceAgree = "yes"
-        }
-    }
 }
 
 group = 'com.poss.clash-bot'
