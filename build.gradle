@@ -14,6 +14,18 @@ plugins {
     id 'io.spring.dependency-management' version '1.1.0'
     id 'org.asciidoctor.convert' version '2.4.0'
     id 'org.openapi.generator' version '6.1.0'
+    id 'org.unbroken-dome.test-sets' version '4.0.0'
+    id 'com.gradle.enterprise' version '3.9'
+}
+
+gradleEnterprise {
+    if (System.getenv("CI") != null) {
+        buildScan {
+            publishAlways()
+            termsOfServiceUrl = "https://gradle.com/terms-of-service"
+            termsOfServiceAgree = "yes"
+        }
+    }
 }
 
 group = 'com.poss.clash-bot'
@@ -37,30 +49,46 @@ sourceSets {
     }
 }
 
+testSets {
+    integrationTest
+}
+
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
-    implementation 'com.github.derjust:spring-data-dynamodb:5.1.0'
-    implementation platform('software.amazon.awssdk:bom:2.19.13')
-    implementation 'software.amazon.awssdk:dynamodb'
+    implementation 'org.springframework.boot:spring-boot-starter-data-mongodb-reactive'
     implementation 'org.springdoc:springdoc-openapi-webflux-ui:1.6.14'
     implementation 'io.swagger.core.v3:swagger-annotations:2.2.8'
     implementation 'javax.validation:validation-api:2.0.1.Final'
     implementation 'org.openapitools:jackson-databind-nullable:0.2.4'
     implementation 'org.mapstruct:mapstruct:1.5.3.Final'
+    implementation platform('org.testcontainers:testcontainers-bom:1.16.0')
     compileOnly 'org.projectlombok:lombok'
-    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+//    developmentOnly 'org.springframework.boot:spring-boot-devtools'
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
     annotationProcessor 'org.projectlombok:lombok'
     annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.3.Final'
+    implementation 'org.springframework.cloud:spring-cloud-stream-binder-kinesis:2.2.0'
+
+    // Testing Dependencies
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'io.projectreactor:reactor-test'
     testImplementation 'org.springframework.restdocs:spring-restdocs-webtestclient'
+    testImplementation 'org.jeasy:easy-random-core:4.0.0'
+
+    // Integration Test Dependencies
+//    integrationTestImplementation "de.flapdoodle.embed:de.flapdoodle.embed.mongo"
+    integrationTestImplementation "org.testcontainers:mongodb"
+    integrationTestImplementation "org.testcontainers:junit-jupiter"
 }
 
 tasks.named('test') {
+    outputs.dir snippetsDir
+    useJUnitPlatform()
+}
+
+tasks.named('integrationTest') {
     outputs.dir snippetsDir
     useJUnitPlatform()
 }
@@ -72,7 +100,7 @@ tasks.named('asciidoctor') {
 
 openApiGenerate {
     generatorName = "spring"
-    inputSpec = '/Users/poss/Documents/Applications/NodeProjects/Clash-Bot-WebApp/ClashBot-OpenAPI/definitions/open-api.yml'.toString()
+    inputSpec = '../ClashBot-Service/ClashBot-OpenAPI/definitions/open-api.yml'.toString()
     outputDir = "$buildDir/generated".toString()
     apiPackage = "com.poss.clash.bot.openapi.api".toString()
     modelPackage = "com.poss.clash.bot.openapi.model".toString()
@@ -81,7 +109,7 @@ openApiGenerate {
             reactive: "true",
             interfaceOnly: "true",
             skipDefaultInterface: "true",
-            additionalModelTypeAnnotations: "@lombok.Data();@lombok.NoArgsConstructor()",
+            additionalModelTypeAnnotations: "@lombok.Data();@lombok.NoArgsConstructor();@lombok.AllArgsConstructor();@lombok.Builder()",
             useSwaggerUI: "true"
     ]
 }
@@ -91,3 +119,4 @@ repositories {
 }
 
 compileJava.dependsOn tasks.openApiGenerate
+

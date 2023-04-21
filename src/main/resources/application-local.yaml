@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: clash-bot-service-local
+  jpa:
+    hibernate:
+      ddl-auto: update
+logging:
+  level:
+    root: ERROR
+    com.poss: INFO

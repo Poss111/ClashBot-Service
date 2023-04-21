@@ -1,19 +1,19 @@
 package com.poss.clash.bot.daos;
 
 import com.poss.clash.bot.daos.models.User;
-import org.socialsignin.spring.data.dynamodb.repository.EnableScan;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.repository.CrudRepository;
-import org.springframework.scheduling.annotation.Async;
+import org.springframework.data.mongodb.repository.Query;
+import org.springframework.data.mongodb.repository.Update;
+import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 import org.springframework.stereotype.Repository;
-import org.springframework.util.concurrent.ListenableFuture;
+import reactor.core.publisher.Mono;
 
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
+@Repository
+public interface UserDao extends ReactiveCrudRepository<User, String> {
 
-@EnableScan
-public interface UserDao extends CrudRepository<User, String> {
+    Mono<User> findUserByDiscordId(String id);
 
-    CompletableFuture<User> findUserById(String id);
+    @Query("{ 'discordId': ?0 }")
+    @Update("{ '$set': { 'serverId': ?1 }}")
+    Mono<Long> updateUserDefaultServerId(String id, String serverId);
 
 }

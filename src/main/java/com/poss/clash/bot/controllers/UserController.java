@@ -1,94 +1,216 @@
 package com.poss.clash.bot.controllers;
 
-import com.poss.clash.bot.openapi.api.UserApi;
+import com.poss.clash.bot.daos.models.LoLChampion;
+import com.poss.clash.bot.daos.models.User;
+import com.poss.clash.bot.enums.UserSubscription;
+import com.poss.clash.bot.exceptions.ClashBotControllerException;
+import com.poss.clash.bot.openapi.api.UsersApi;
 import com.poss.clash.bot.openapi.model.*;
 import com.poss.clash.bot.services.UserService;
 import com.poss.clash.bot.utils.UserMapper;
-import io.swagger.v3.oas.annotations.Parameter;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.reactivestreams.Publisher;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebExchange;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import javax.validation.Valid;
-import javax.validation.constraints.NotNull;
-import java.util.Optional;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @RestController
 @AllArgsConstructor
 @Slf4j
-public class UserController implements UserApi {
+public class UserController implements UsersApi {
 
-    UserService userService;
+    private final UserService userService;
 
-    UserMapper userMapper;
+    private final UserMapper userMapper;
 
     @Override
-    public Mono<ResponseEntity<AddToListOfPreferredChampions200Response>> addToListOfPreferredChampions(String id, Flux<String> champions, ServerWebExchange exchange) {
-        return Flux.merge(userService.retrieveUser(id)
-                .flatMapIterable(Player::getChampions),
-                        champions)
-                .flatMap(t1 -> {
-                    if (null != t1.getT1().getChampions()
-                            && !t1.getT1().getChampions().contains(t1.getT2().getChampionName())) {
-                        t1.getT1().getChampions().add(t1.getT2().getChampionName());
-                    }
-                    return Mono.just(t1.getT1());
-                })
+    public Mono<ResponseEntity<Champions>> addToPreferredChampionsForUser(String discordId, Mono<Champions> champions, ServerWebExchange exchange) {
+        return updateListOfPreferredChampionsForUser(champions, mergeListOfChampions(discordId));
     }
 
     @Override
-    public Mono<ResponseEntity<Flux<Champion>>> createNewListOfPreferredChampions(String id, Mono<CreateNewListOfPreferredChampionsRequest> createNewListOfPreferredChampionsRequest, ServerWebExchange exchange) {
-        return null;
+    public Mono<ResponseEntity<Servers>> addUsersSelectedServers(String discordId, Mono<Servers> servers, ServerWebExchange exchange) {
+        return updateListOfSelectedServersForUser(servers, mergeListOfServers(discordId));
+    }
+
+    @Override
+    public Mono<ResponseEntity<Champions>> createListOfPreferredChampionsForUser(String discordId, Mono<Champions> champions, ServerWebExchange exchange) {
+        return updateListOfPreferredChampionsForUser(champions, createListOfPrefferedChampionsFunc(discordId));
     }
 
     @Override
     public Mono<ResponseEntity<Player>> createUser(Mono<CreateUserRequest> createUserRequest, ServerWebExchange exchange) {
         return createUserRequest
                 .map(userMapper::createUserRequestToUser)
+                .map(user -> {
+                    user.setDefaultRole(Role.TOP);
+                    return user;
+                })
                 .flatMap(userService::saveUser)
+                .map(userMapper::userToPlayer)
                 .map(ResponseEntity::ok);
     }
 
     @Override
-    public Mono<ResponseEntity<Player>> getUser(String id, ServerWebExchange exchange) {
-        return userService.retrieveUser(id)
+    public Mono<ResponseEntity<Servers>> createUsersSelectedServers(String discordId, Mono<Servers> servers, ServerWebExchange exchange) {
+        return updateListOfSelectedServersForUser(servers, createListOfAvailableServersFunc(discordId));
+    }
+
+    @Override
+    public Mono<ResponseEntity<Player>> getUser(String discordId, ServerWebExchange exchange) {
+        return userService.retrieveUser(discordId)
+                .map(userMapper::userToPlayer)
                 .map(ResponseEntity::ok)
                 .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 
     @Override
-    public Mono<ResponseEntity<Flux<Champion>>> removeFromListOfPreferredChampions(String id, String champion, ServerWebExchange exchange) {
-        return null;
+    public Mono<ResponseEntity<Subscription>> isUserSubscribed(String discordId, SubscriptionType subscription, ServerWebExchange exchange) {
+        return userService.retrieveUser(discordId)
+                .map(user -> Subscription.builder()
+                        .key(subscription)
+                        .isOn(user.getUserSubscriptions()
+                                .get(UserSubscription
+                                        .fromValue(subscription.getValue())))
+                        .build()
+                ).map(ResponseEntity::ok)
+                .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 
     @Override
-    public Mono<ResponseEntity<Flux<Champion>>> retrieveListOfUserPreferredChampions(String id, ServerWebExchange exchange) {
-        return null;
+    public Mono<ResponseEntity<Champions>> removePreferredChampionForUser(String discordId, List<String> champions, ServerWebExchange exchange) {
+        Champions championsPayload = Champions
+                .builder()
+                .champions(champions.stream().map(name -> Champion.builder().name(name).build())
+                        .collect(Collectors.toList()))
+                .build();
+        return updateListOfPreferredChampionsForUser(Mono.just(championsPayload), removeListOfChampions(discordId));
     }
 
     @Override
-    public Mono<ResponseEntity<Flux<Subscription>>> retrieveUserSubscriptions(String id, ServerWebExchange exchange) {
-        return null;
+    public Mono<ResponseEntity<Servers>> removeUsersSelectedServers(String discordId, List<String> servers, ServerWebExchange exchange) {
+        Servers serversPayload = Servers
+                .builder()
+                .servers(servers.stream().map(name -> Server.builder().id(name).build())
+                        .collect(Collectors.toList()))
+                .build();
+        return updateListOfSelectedServersForUser(Mono.just(serversPayload), removeListOfAvailableServers(discordId));
     }
 
     @Override
-    public Mono<ResponseEntity<Flux<Subscription>>> subscribeUser(String id, ServerWebExchange exchange) {
-        return null;
+    public Mono<ResponseEntity<Champions>> retrieveUsersPreferredChampions(String discordId, ServerWebExchange exchange) {
+        return userService.retrieveUser(discordId)
+                .map(userMapper::userToPlayer)
+                .map(player -> ResponseEntity.ok(Champions.builder().champions(player.getChampions()).build()))
+                .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 
     @Override
-    public Mono<ResponseEntity<Flux<Subscription>>> unsubscribeUser(String id, ServerWebExchange exchange) {
-        return null;
+    public Mono<ResponseEntity<Servers>> retrieveUsersSelectedServers(String discordId, ServerWebExchange exchange) {
+        return userService.retrieveUser(discordId)
+                .map(User::getSelectedServers)
+                .map(listOfIds -> ResponseEntity.ok(Servers.builder().servers(listOfIds.stream()
+                                .map(id -> Server.builder().id(id).build())
+                                .collect(Collectors.toList()))
+                        .build()))
+                .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 
     @Override
-    public Mono<ResponseEntity<Player>> updateUser(Mono<CreateUserRequest> createUserRequest, ServerWebExchange exchange) {
-        return null;
+    public Mono<ResponseEntity<Subscription>> subscribeUser(String discordId, SubscriptionType subscription, ServerWebExchange exchange) {
+        return userService.toggleUserSubscription(discordId, UserSubscription.fromValue(subscription.getValue()), true)
+                .map(subscriptionMap -> Subscription.builder()
+                        .key(SubscriptionType.fromValue(subscription.getValue()))
+                        .isOn(subscriptionMap.get(UserSubscription.fromValue(subscription.getValue())))
+                        .build())
+                .map(ResponseEntity::ok)
+                .defaultIfEmpty(ResponseEntity.notFound().build());
+    }
+
+    @Override
+    public Mono<ResponseEntity<Subscription>> unsubscribeUser(String discordId, SubscriptionType subscription, ServerWebExchange exchange) {
+        return userService.toggleUserSubscription(discordId, UserSubscription.fromValue(subscription.getValue()), false)
+                .map(subscriptionMap -> Subscription.builder()
+                        .key(SubscriptionType.fromValue(subscription.getValue()))
+                        .isOn(subscriptionMap.get(UserSubscription.fromValue(subscription.getValue())))
+                        .build())
+                .map(ResponseEntity::ok)
+                .defaultIfEmpty(ResponseEntity.notFound().build());
+    }
+
+    @Override
+    public Mono<ResponseEntity<Player>> updateUser(String discordId, Mono<UpdateUserRequest> updateUserRequest, ServerWebExchange exchange) {
+        return updateUserRequest
+                .flatMap(request -> userService.updateUserDefaultServerId(discordId, request.getServerId()))
+                .map(userMapper::userToPlayer)
+                .map(ResponseEntity::ok);
+    }
+
+    private Mono<ResponseEntity<Champions>> updateListOfPreferredChampionsForUser(Mono<Champions> champions, Function<Set<LoLChampion>, Publisher<? extends LoLChampion>> handler) {
+        return champions
+                .flatMapIterable(Champions::getChampions)
+                .map(userMapper::championToLoLChampions)
+                .collect(Collectors.toSet())
+                .log()
+                .flatMapMany(handler::apply)
+                .switchIfEmpty(Mono.error(new ClashBotControllerException("User not found.", HttpStatus.NOT_FOUND)))
+                .map(userMapper::loLChampionToChampion)
+                .collect(Collectors.toSet())
+                .map(setOfChampions -> Champions.builder()
+                        .champions(new ArrayList<>(setOfChampions))
+                        .build())
+                .map(ResponseEntity::ok)
+                .defaultIfEmpty(ResponseEntity.notFound().build());
+    }
+
+    private Function<Set<LoLChampion>, Publisher<? extends LoLChampion>> createListOfPrefferedChampionsFunc(String discordId) {
+        return preferredChampions -> userService.createPreferredChampionsForUser(discordId, preferredChampions);
+    }
+
+    private Function<Set<LoLChampion>, Publisher<? extends LoLChampion>> mergeListOfChampions(String discordId) {
+        return preferredChampions -> userService.mergePreferredChampionsForUser(discordId, preferredChampions);
+    }
+
+    private Function<Set<LoLChampion>, Publisher<? extends LoLChampion>> removeListOfChampions(String discordId) {
+        return preferredChampions -> userService.removePreferredChampionsForUser(discordId, preferredChampions);
+    }
+
+    private Mono<ResponseEntity<Servers>> updateListOfSelectedServersForUser(Mono<Servers> servers, Function<Set<String>, Publisher<? extends String>> handler) {
+        return servers
+                .flatMapIterable(Servers::getServers)
+                .map(Server::getId)
+                .collect(Collectors.toSet())
+                .log()
+                .flatMapMany(handler::apply)
+                .switchIfEmpty(Mono.error(new ClashBotControllerException("User not found.", HttpStatus.NOT_FOUND)))
+                .map(serverId -> Server.builder().id(serverId).build())
+                .collectList()
+                .map(listOfServers -> Servers.builder()
+                        .servers(listOfServers)
+                        .build())
+                .map(ResponseEntity::ok)
+                .defaultIfEmpty(ResponseEntity.notFound().build());
+    }
+
+    private Function<Set<String>, Publisher<? extends String>> createListOfAvailableServersFunc(String discordId) {
+        return servers -> userService.overwriteSelectedServers(discordId, servers);
+    }
+
+    private Function<Set<String>, Publisher<? extends String>> mergeListOfServers(String discordId) {
+        return servers -> userService.mergeSelectedServers(discordId, servers);
+    }
+
+    private Function<Set<String>, Publisher<? extends String>> removeListOfAvailableServers(String discordId) {
+        return servers -> userService.removeSelectedServers(discordId, servers);
     }
 
 }

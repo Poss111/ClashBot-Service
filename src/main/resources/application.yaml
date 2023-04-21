@@ -4,12 +4,29 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-aws:
-  accessKey: accessKey
-  secretKey: secretKey
-  dynamoDb:
-    endpoint: http://localhost:8000/
+  #  data:
+  #    mongodb:
+  #      uri: mongodb://127.0.0.1:80808/clash-bot
+  cloud:
+    stream:
+      bindings:
+        teamEvents-out-0:
+          destination: clashBotTeamEvent
+          content-type: application/json
+      poller:
+        fixed-delay: 3000
+cloud:
+  aws:
+    credentials:
+      access-key: local
+      secret-key: local
+    region:
+      static: us-east-1
+    stack:
+      auto: false
 logging:
   level:
     root: ERROR
-    com.poss: INFO
+    com.poss: DEBUG
+    org.springframework.data: ERROR
+    org.springframework.integration: ERROR

@@ -1,8 +1,14 @@
 package com.poss.clash.bot.exceptions;
 
-public class ClashBotDbException extends Exception {
+import org.springframework.http.HttpStatus;
 
-    public ClashBotDbException(String message, Throwable e) {
-        super(message, e);
+public class ClashBotDbException extends HttpResponseException {
+
+    public ClashBotDbException(String message, Throwable exception, HttpStatus httpStatus) {
+        super(message, exception, httpStatus);
+    }
+
+    public ClashBotDbException(String message, HttpStatus httpStatus) {
+        super(message, httpStatus);
     }
 }

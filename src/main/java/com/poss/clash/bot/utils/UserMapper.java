@@ -1,49 +1,61 @@
 package com.poss.clash.bot.utils;
 
+import com.poss.clash.bot.daos.models.LoLChampion;
 import com.poss.clash.bot.daos.models.User;
-import com.poss.clash.bot.daos.models.UserSubscription;
-import com.poss.clash.bot.openapi.model.CreateUserRequest;
-import com.poss.clash.bot.openapi.model.Player;
-import com.poss.clash.bot.openapi.model.Subscription;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.Named;
-import software.amazon.awssdk.utils.CollectionUtils;
+import com.poss.clash.bot.enums.UserSubscription;
+import com.poss.clash.bot.openapi.model.*;
+import org.mapstruct.*;
+import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Mapper(componentModel = "spring")
 public interface UserMapper {
 
-    @Mapping(source = "subscriptions", target = "subscriptions", qualifiedByName = "subscriptionsToUserSubscriptionMap")
+    @Mapping(source = "subscriptions", target = "userSubscriptions", qualifiedByName = "subscriptionsToUserSubscriptionMap")
+    @Mapping(source = "champions", target = "preferredChampions")
+    @Mapping(source = "role", target = "defaultRole")
     User playerToUser(Player player);
 
-    @Mapping(source = "subscriptions", target = "subscriptions", qualifiedByName = "userSubscriptionMapToSubscriptions")
+    @Mapping(source = "userSubscriptions", target = "subscriptions", qualifiedByName = "userSubscriptionMapToSubscriptions")
+    @Mapping(source = "preferredChampions", target = "champions")
+    @Mapping(source = "defaultRole", target = "role")
     Player userToPlayer(User user);
+
+    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    void mergeUserWoNulls(User user, @MappingTarget User entity);
 
     User createUserRequestToUser(CreateUserRequest createUserRequest);
 
+    LoLChampion championToLoLChampions(Champion champion);
+
+    Champion loLChampionToChampion(LoLChampion loLChampion);
+
+    User clone(User user);
+
     @Named("subscriptionsToUserSubscriptionMap")
-    public static HashMap<String, Boolean> subscriptionsToUserSubscriptionMap(List<Subscription> subscription) {
-        HashMap<String, Boolean> stringBooleanHashMap = new HashMap<>();
-        if (null != subscription && !subscription.isEmpty()) {
-            subscription.forEach((entry) -> stringBooleanHashMap.put(entry.getKey(), entry.getIsOn()));
+    static Map<UserSubscription, Boolean> subscriptionsToUserSubscriptionMap(List<Subscription> subscriptions) {
+        Map<UserSubscription, Boolean> userSubscriptionsHashMap = new HashMap<>();
+        if (null != subscriptions && !subscriptions.isEmpty()) {
+            subscriptions.forEach((entry) -> userSubscriptionsHashMap
+                    .put(UserSubscription.valueOf(entry.getKey().getValue()), entry.getIsOn()));
         }
-        return stringBooleanHashMap;
+        return userSubscriptionsHashMap;
     }
 
     @Named("userSubscriptionMapToSubscriptions")
-    public static List<Subscription> userSubscriptionMapToSubscriptions(HashMap<String, Boolean> subscription) {
+    static List<Subscription> userSubscriptionMapToSubscriptions(Map<UserSubscription, Boolean> userSubscriptions) {
         List<Subscription> subscriptions = new ArrayList<>();
-        if (CollectionUtils.isNotEmpty(subscription)) {
-            subscription.forEach((key, value) -> {
-                Subscription subscription1 = new Subscription();
-                subscription1.key(key);
-                subscription1.setIsOn(value);
-                subscriptions.add(subscription1);
-            });
+        if (!CollectionUtils.isEmpty(userSubscriptions)) {
+            userSubscriptions.forEach((key, value) ->
+                    subscriptions.add(Subscription.builder()
+                            .key(SubscriptionType.fromValue(key.getValue()))
+                            .isOn(value)
+                            .build())
+            );
         }
         return subscriptions;
     }
