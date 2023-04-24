@@ -1228,6 +1228,8 @@ public class UserAssignmentServiceTest {
                         .build();
                 when(userAssociationService.delete(associationKey))
                         .thenReturn(userAsscProbe.mono());
+                when(teamSource.sendTeamRemovedEvent(any(Team.class)))
+                        .thenReturn(Mono.just(Event.builder().build()));
 
                 StepVerifier
                         .create(userAssignmentService.findAndRemoveUserFromTeam(discordId, clashTeamId))

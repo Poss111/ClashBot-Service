@@ -205,7 +205,8 @@ public class UserAssignmentService {
                                 .discordId(discordId)
                                 .tournamentId(team.getTeamId().getTournamentId())
                                 .build())
-                        .flatMap(userAssociation -> teamSource.sendTeamRemovedEvent(teamMapper.clashTeamToTeam(team)))
+                        .thenReturn(teamMapper.clashTeamToTeam(team))
+                        .flatMap(teamSource::sendTeamRemovedEvent)
                         .thenReturn(team));
     }
 

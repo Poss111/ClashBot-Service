@@ -2,18 +2,18 @@ package com.poss.clash.bot.services;
 
 import com.poss.clash.bot.ClashBotTestingConfig;
 import com.poss.clash.bot.daos.TentativeDao;
-import com.poss.clash.bot.daos.models.*;
+import com.poss.clash.bot.daos.models.ClashTeam;
+import com.poss.clash.bot.daos.models.TentativeQueue;
+import com.poss.clash.bot.daos.models.TournamentId;
+import com.poss.clash.bot.daos.models.UserAssociationKey;
 import com.poss.clash.bot.utils.IdUtils;
 import org.jeasy.random.EasyRandom;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.reactivestreams.Publisher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -22,10 +22,8 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.PublisherProbe;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Function;
 
 import static org.mockito.Mockito.*;
 
@@ -120,7 +118,6 @@ class TentativeServiceTest {
         @DisplayName("retrieveTentativeQueues - Filter by Discord Id, Tournament name and Tournament day")
         void test_retrieveTentativeQueues_ifDiscordIdTournamentNameAndTournamentDayArePassed_shouldInvokeFilterByDiscordIdTournamentNameAndTournamentDay() {
             String discordId = easyRandom.nextObject(String.class);
-            String serverId = easyRandom.nextObject(String.class);
 
             List<TentativeQueue> tentativeQueues = List.of(easyRandom.nextObject(TentativeQueue.class));
 
