@@ -18,7 +18,7 @@ plugins {
 }
 
 group = 'com.poss.clash-bot'
-version = '0.0.1-SNAPSHOT'
+version = '1.0.0-SNAPSHOT'
 sourceCompatibility = '11'
 targetCompatibility = '11'
 
@@ -37,6 +37,11 @@ sourceSets {
         java.srcDirs += 'build/generated/src/main/java'
     }
 }
+
+//jar {
+//    archiveBaseName = 'clash-bot-spring-service'
+//    archiveVersion =  '1.0.0'
+//}
 
 testSets {
     integrationTest

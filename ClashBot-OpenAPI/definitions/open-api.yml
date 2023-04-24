@@ -66,12 +66,16 @@ components:
         - id
         - teamEvent
         - serverId
+        - causedBy
       properties:
         id:
           description: The unique identifier for the event.
           type: string
         teamEvent:
           $ref: '#/components/schemas/TeamEvent'
+        summary:
+          description: A message to describe the event.
+          type: string
         serverId:
           description: The Discord server id attached to the event.
           type: string
@@ -94,6 +98,8 @@ components:
       type: string
       enum:
         - CREATED
+        - JOINED
+        - REMOVED
         - UPDATED
         - DELETED
     Servers:
@@ -216,6 +222,10 @@ components:
         tentativePlayers:
           items:
             $ref: '#/components/schemas/TentativePlayer'
+        lastUpdatedAt:
+          description: The timestamp that the object was updated at
+          type: string
+          format: date-time
     TentativeRequired:
       allOf:
         - $ref: '#/components/schemas/Tentative'
@@ -374,6 +384,13 @@ components:
           description: The total time the process took in milliseconds
           type: string
   parameters:
+    AuditHeaderParam:
+      name: x-caused-by
+      in: header
+      schema:
+        type: string
+        default: Not Found
+      required: true
     InactiveQueryParam:
       name: archived
       in: query
@@ -770,6 +787,8 @@ components:
 paths:
   /teams:
     summary: Used to interact with Teams that are active
+    parameters:
+      - $ref: '#/components/parameters/AuditHeaderParam'
     get:
       description: Returns a list of Teams.
       tags:
@@ -807,6 +826,7 @@ paths:
   /teams/{teamId}:
     summary: To interact with a created Team.
     parameters:
+      - $ref: '#/components/parameters/AuditHeaderParam'
       - $ref: '#/components/parameters/TeamIdPathParam'
     get:
       description: Returns a single Clash Bot Team based on the id provided.
@@ -841,6 +861,7 @@ paths:
   /teams/{teamId}/users/{discordId}:
     summary: To interact with a Team on the behalf of a Player.
     parameters:
+      - $ref: '#/components/parameters/AuditHeaderParam'
       - $ref: '#/components/parameters/TeamIdPathParam'
       - $ref: '#/components/parameters/DiscordIdPathParam'
     patch:
@@ -875,6 +896,8 @@ paths:
           $ref: '#/components/responses/ClashBotException'
   /tentatives:
     summary: Interacts with Tentative queues.
+    parameters:
+      - $ref: '#/components/parameters/AuditHeaderParam'
     get:
       description: Retrieves a list of Tentative queues.
       operationId: retrieveTentativeQueues
@@ -910,6 +933,7 @@ paths:
   /tentatives/{tentativeId}:
     summary: Interacts with a Tentative queue.
     parameters:
+      - $ref: '#/components/parameters/AuditHeaderParam'
       - $ref: '#/components/parameters/TentativeQueueIdPathParam'
     get:
       description: Retrieves a Tentative queues.
@@ -926,6 +950,7 @@ paths:
   /tentatives/{tentativeId}/users/{discordId}:
     summary: Interacts with a specific Tentative queue.
     parameters:
+      - $ref: '#/components/parameters/AuditHeaderParam'
       - $ref: '#/components/parameters/TentativeQueueIdPathParam'
       - $ref: '#/components/parameters/DiscordIdPathParam'
     patch:
@@ -956,6 +981,8 @@ paths:
           $ref: '#/components/responses/ClashBotException'
   /tournaments:
     summary: APIs to interact with Clash Tournaments.
+    parameters:
+      - $ref: '#/components/parameters/AuditHeaderParam'
     get:
       operationId: getTournaments
       parameters:
@@ -1013,6 +1040,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/DetailedTournament'
   /users:
+    parameters:
+      - $ref: '#/components/parameters/AuditHeaderParam'
     get:
       description: Retrieve a Clash Bot Player Details
       operationId: getUser
@@ -1059,6 +1088,7 @@ paths:
           $ref: "#/components/responses/ClashBotException"
   /users/{discordId}:
     parameters:
+      - $ref: '#/components/parameters/AuditHeaderParam'
       - $ref: '#/components/parameters/DiscordIdPathParam'
     patch:
       description: Update an existing Clash Bot Player.
@@ -1082,6 +1112,7 @@ paths:
           $ref: "#/components/responses/ClashBotException"
   /users/{discordId}/subscriptions/{subscription}:
     parameters:
+      - $ref: '#/components/parameters/AuditHeaderParam'
       - $ref: '#/components/parameters/DiscordIdPathParam'
       - $ref: '#/components/parameters/SubscriptionPathParam'
     get:
@@ -1146,6 +1177,7 @@ paths:
           $ref: "#/components/responses/ClashBotException"
   /users/{discordId}/champions:
     parameters:
+      - $ref: '#/components/parameters/AuditHeaderParam'
       - $ref: '#/components/parameters/DiscordIdPathParam'
     get:
       description: Returns a list of preferred champions that the User has.
@@ -1222,6 +1254,7 @@ paths:
           $ref: '#/components/schemas/Error'
   /users/{discordId}/servers:
     parameters:
+      - $ref: '#/components/parameters/AuditHeaderParam'
       - $ref: '#/components/parameters/DiscordIdPathParam'
     get:
       description: Returns a list of selected servers that the User has.
@@ -1297,6 +1330,8 @@ paths:
         5XX:
           $ref: '#/components/schemas/Error'
   /archive:
+    parameters:
+      - $ref: '#/components/parameters/AuditHeaderParam'
     post:
       operationId: archiveTeamsAndTentativeQueues
       description: |

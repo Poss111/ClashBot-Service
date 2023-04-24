@@ -57,7 +57,7 @@ public class TournamentsControllerTest {
                     .thenReturn(Mono.just(clashTournament));
 
             StepVerifier
-                    .create(tournamentsController.createTournament(Mono.just(detailedTournament), null))
+                    .create(tournamentsController.createTournament(easyRandom.nextObject(String.class), Mono.just(detailedTournament), null))
                     .expectNext(ResponseEntity.ok(tournamentMapper.clashTournamentToDetailedTournament(clashTournament)))
                     .verifyComplete();
         }
@@ -85,6 +85,7 @@ public class TournamentsControllerTest {
 
             StepVerifier
                     .create(tournamentsController.getTournaments(
+                            easyRandom.nextObject(String.class),
                             clashTournament.getTournamentId().getTournamentName(),
                             clashTournament.getTournamentId().getTournamentDay(),
                             false,
@@ -108,6 +109,7 @@ public class TournamentsControllerTest {
 
             StepVerifier
                     .create(tournamentsController.getTournaments(
+                            easyRandom.nextObject(String.class),
                             null,
                             null,
                             false,

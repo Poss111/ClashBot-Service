@@ -32,11 +32,12 @@ public class TeamService {
 
     public Mono<ClashTeam> removeUserFromTeam(String teamId, String discordId) {
         return teamDao.findByTeamId_Id(teamId)
-                .map(team -> {
+                .<ClashTeam>handle((team, sink) -> {
                     if (team.getPositions().values().stream().noneMatch(player -> discordId.equals(player.getDiscordId()))) {
-                        throw new ClashBotDbException(MessageFormat.format("User {0} does not belong to Team {1}.", discordId, teamId), HttpStatus.BAD_REQUEST);
+                        sink.error(new ClashBotDbException(MessageFormat.format("User {0} does not belong to Team {1}.", discordId, teamId), HttpStatus.BAD_REQUEST));
+                        return;
                     }
-                    return team;
+                    sink.next(team);
                 })
                 .map(team -> removeUserFromTeam(discordId, team))
                 .log()
@@ -79,10 +80,9 @@ public class TeamService {
         return teamDao.findByTeamId_Id(teamId)
                 .flatMap(team -> teamDao.updateTeamName(teamId, newTeamName)
                         .thenReturn(team))
-
                 .flatMap(team -> {
                             team.setTeamName(newTeamName);
-                            return teamSource.sendTeamUpdateEvent(teamMapper.clashTeamToTeam(team), "0")
+                            return teamSource.sendTeamUpdateEvent(teamMapper.clashTeamToTeam(team))
                                     .thenReturn(team);
                         }
                 );

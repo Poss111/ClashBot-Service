@@ -24,6 +24,7 @@ import reactor.test.publisher.PublisherProbe;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 
 import static org.mockito.Mockito.*;
@@ -46,18 +47,6 @@ class TentativeServiceTest {
 
     @Autowired
     EasyRandom easyRandom;
-
-    @Captor
-    private ArgumentCaptor<Function<UserAssociation, Publisher<UserAssociation>>> functionArgumentCaptor;
-
-    @Captor
-    private ArgumentCaptor<Collection<Integer>> discordIdsCaptor;
-
-    @Captor
-    private ArgumentCaptor<TournamentId> tournamentIdCaptor;
-
-    @Captor
-    private ArgumentCaptor<UserAssociation> userAssociationCaptor;
 
     @Nested
     @DisplayName("Query")
@@ -477,13 +466,16 @@ class TentativeServiceTest {
             TentativeQueue tentativeQueue = easyRandom.nextObject(TentativeQueue.class);
             tentativeQueue.getDiscordIds()
                     .clear();
-            tentativeQueue.getDiscordIds().add("2");
+            TentativeQueue expectedTentativeQueue = TentativeQueue.builder()
+                    .tentativeId(tentativeQueue.getTentativeId())
+                    .discordIds(Set.of(discordId))
+                    .build();
             when(tentativeDao.updateByTentativeId_TentativeId(tentativeQueue.getTentativeId().getTentativeId(), discordId))
                     .thenReturn(Mono.just(1L));
 
             StepVerifier
                     .create(tentativeService.assignUserToTentativeQueue(discordId, tentativeQueue))
-                    .expectNext(tentativeQueue)
+                    .expectNext(expectedTentativeQueue)
                     .verifyComplete();
         }
 

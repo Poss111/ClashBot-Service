@@ -23,6 +23,8 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.poss.clash.bot.constants.GlobalConstants.CAUSED_BY_KEY;
+
 @RestController
 @AllArgsConstructor
 @Slf4j
@@ -33,22 +35,25 @@ public class UserController implements UsersApi {
     private final UserMapper userMapper;
 
     @Override
-    public Mono<ResponseEntity<Champions>> addToPreferredChampionsForUser(String discordId, Mono<Champions> champions, ServerWebExchange exchange) {
-        return updateListOfPreferredChampionsForUser(champions, mergeListOfChampions(discordId));
+    public Mono<ResponseEntity<Champions>> addToPreferredChampionsForUser(String xCausedBy, String discordId, Mono<Champions> champions, ServerWebExchange exchange) {
+        return updateListOfPreferredChampionsForUser(champions, mergeListOfChampions(discordId))
+                .contextWrite(ctx -> ctx.put(CAUSED_BY_KEY, xCausedBy));
     }
 
     @Override
-    public Mono<ResponseEntity<Servers>> addUsersSelectedServers(String discordId, Mono<Servers> servers, ServerWebExchange exchange) {
-        return updateListOfSelectedServersForUser(servers, mergeListOfServers(discordId));
+    public Mono<ResponseEntity<Servers>> addUsersSelectedServers(String xCausedBy, String discordId, Mono<Servers> servers, ServerWebExchange exchange) {
+        return updateListOfSelectedServersForUser(servers, mergeListOfServers(discordId))
+                .contextWrite(ctx -> ctx.put(CAUSED_BY_KEY, xCausedBy));
     }
 
     @Override
-    public Mono<ResponseEntity<Champions>> createListOfPreferredChampionsForUser(String discordId, Mono<Champions> champions, ServerWebExchange exchange) {
-        return updateListOfPreferredChampionsForUser(champions, createListOfPrefferedChampionsFunc(discordId));
+    public Mono<ResponseEntity<Champions>> createListOfPreferredChampionsForUser(String xCausedBy, String discordId, Mono<Champions> champions, ServerWebExchange exchange) {
+        return updateListOfPreferredChampionsForUser(champions, createListOfPreferredChampionsFunc(discordId))
+                .contextWrite(ctx -> ctx.put(CAUSED_BY_KEY, xCausedBy));
     }
 
     @Override
-    public Mono<ResponseEntity<Player>> createUser(Mono<CreateUserRequest> createUserRequest, ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Player>> createUser(String xCausedBy, Mono<CreateUserRequest> createUserRequest, ServerWebExchange exchange) {
         return createUserRequest
                 .map(userMapper::createUserRequestToUser)
                 .map(user -> {
@@ -57,24 +62,27 @@ public class UserController implements UsersApi {
                 })
                 .flatMap(userService::saveUser)
                 .map(userMapper::userToPlayer)
-                .map(ResponseEntity::ok);
+                .map(ResponseEntity::ok)
+                .contextWrite(ctx -> ctx.put(CAUSED_BY_KEY, xCausedBy));
     }
 
     @Override
-    public Mono<ResponseEntity<Servers>> createUsersSelectedServers(String discordId, Mono<Servers> servers, ServerWebExchange exchange) {
-        return updateListOfSelectedServersForUser(servers, createListOfAvailableServersFunc(discordId));
+    public Mono<ResponseEntity<Servers>> createUsersSelectedServers(String xCausedBy, String discordId, Mono<Servers> servers, ServerWebExchange exchange) {
+        return updateListOfSelectedServersForUser(servers, createListOfAvailableServersFunc(discordId))
+                .contextWrite(ctx -> ctx.put(CAUSED_BY_KEY, xCausedBy));
     }
 
     @Override
-    public Mono<ResponseEntity<Player>> getUser(String discordId, ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Player>> getUser(String xCausedBy, String discordId, ServerWebExchange exchange) {
         return userService.retrieveUser(discordId)
                 .map(userMapper::userToPlayer)
                 .map(ResponseEntity::ok)
-                .defaultIfEmpty(ResponseEntity.notFound().build());
+                .defaultIfEmpty(ResponseEntity.notFound().build())
+                .contextWrite(ctx -> ctx.put(CAUSED_BY_KEY, xCausedBy));
     }
 
     @Override
-    public Mono<ResponseEntity<Subscription>> isUserSubscribed(String discordId, SubscriptionType subscription, ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Subscription>> isUserSubscribed(String xCausedBy, String discordId, SubscriptionType subscription, ServerWebExchange exchange) {
         return userService.retrieveUser(discordId)
                 .map(user -> Subscription.builder()
                         .key(subscription)
@@ -83,76 +91,84 @@ public class UserController implements UsersApi {
                                         .fromValue(subscription.getValue())))
                         .build()
                 ).map(ResponseEntity::ok)
-                .defaultIfEmpty(ResponseEntity.notFound().build());
+                .defaultIfEmpty(ResponseEntity.notFound().build())
+                .contextWrite(ctx -> ctx.put(CAUSED_BY_KEY, xCausedBy));
     }
 
     @Override
-    public Mono<ResponseEntity<Champions>> removePreferredChampionForUser(String discordId, List<String> champions, ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Champions>> removePreferredChampionForUser(String xCausedBy, String discordId, List<String> champions, ServerWebExchange exchange) {
         Champions championsPayload = Champions
                 .builder()
                 .champions(champions.stream().map(name -> Champion.builder().name(name).build())
                         .collect(Collectors.toList()))
                 .build();
-        return updateListOfPreferredChampionsForUser(Mono.just(championsPayload), removeListOfChampions(discordId));
+        return updateListOfPreferredChampionsForUser(Mono.just(championsPayload), removeListOfChampions(discordId))
+                .contextWrite(ctx -> ctx.put(CAUSED_BY_KEY, xCausedBy));
     }
 
     @Override
-    public Mono<ResponseEntity<Servers>> removeUsersSelectedServers(String discordId, List<String> servers, ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Servers>> removeUsersSelectedServers(String xCausedBy, String discordId, List<String> servers, ServerWebExchange exchange) {
         Servers serversPayload = Servers
                 .builder()
                 .servers(servers.stream().map(name -> Server.builder().id(name).build())
                         .collect(Collectors.toList()))
                 .build();
-        return updateListOfSelectedServersForUser(Mono.just(serversPayload), removeListOfAvailableServers(discordId));
+        return updateListOfSelectedServersForUser(Mono.just(serversPayload), removeListOfAvailableServers(discordId))
+                .contextWrite(ctx -> ctx.put(CAUSED_BY_KEY, xCausedBy));
     }
 
     @Override
-    public Mono<ResponseEntity<Champions>> retrieveUsersPreferredChampions(String discordId, ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Champions>> retrieveUsersPreferredChampions(String xCausedBy, String discordId, ServerWebExchange exchange) {
         return userService.retrieveUser(discordId)
                 .map(userMapper::userToPlayer)
                 .map(player -> ResponseEntity.ok(Champions.builder().champions(player.getChampions()).build()))
-                .defaultIfEmpty(ResponseEntity.notFound().build());
+                .defaultIfEmpty(ResponseEntity.notFound().build())
+                .contextWrite(ctx -> ctx.put(CAUSED_BY_KEY, xCausedBy));
     }
 
     @Override
-    public Mono<ResponseEntity<Servers>> retrieveUsersSelectedServers(String discordId, ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Servers>> retrieveUsersSelectedServers(String xCausedBy, String discordId, ServerWebExchange exchange) {
         return userService.retrieveUser(discordId)
                 .map(User::getSelectedServers)
                 .map(listOfIds -> ResponseEntity.ok(Servers.builder().servers(listOfIds.stream()
                                 .map(id -> Server.builder().id(id).build())
                                 .collect(Collectors.toList()))
                         .build()))
-                .defaultIfEmpty(ResponseEntity.notFound().build());
+                .defaultIfEmpty(ResponseEntity.notFound().build())
+                .contextWrite(ctx -> ctx.put(CAUSED_BY_KEY, xCausedBy));
     }
 
     @Override
-    public Mono<ResponseEntity<Subscription>> subscribeUser(String discordId, SubscriptionType subscription, ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Subscription>> subscribeUser(String xCausedBy, String discordId, SubscriptionType subscription, ServerWebExchange exchange) {
         return userService.toggleUserSubscription(discordId, UserSubscription.fromValue(subscription.getValue()), true)
                 .map(subscriptionMap -> Subscription.builder()
                         .key(SubscriptionType.fromValue(subscription.getValue()))
                         .isOn(subscriptionMap.get(UserSubscription.fromValue(subscription.getValue())))
                         .build())
                 .map(ResponseEntity::ok)
-                .defaultIfEmpty(ResponseEntity.notFound().build());
+                .defaultIfEmpty(ResponseEntity.notFound().build())
+                .contextWrite(ctx -> ctx.put(CAUSED_BY_KEY, xCausedBy));
     }
 
     @Override
-    public Mono<ResponseEntity<Subscription>> unsubscribeUser(String discordId, SubscriptionType subscription, ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Subscription>> unsubscribeUser(String xCausedBy, String discordId, SubscriptionType subscription, ServerWebExchange exchange) {
         return userService.toggleUserSubscription(discordId, UserSubscription.fromValue(subscription.getValue()), false)
                 .map(subscriptionMap -> Subscription.builder()
                         .key(SubscriptionType.fromValue(subscription.getValue()))
                         .isOn(subscriptionMap.get(UserSubscription.fromValue(subscription.getValue())))
                         .build())
                 .map(ResponseEntity::ok)
-                .defaultIfEmpty(ResponseEntity.notFound().build());
+                .defaultIfEmpty(ResponseEntity.notFound().build())
+                .contextWrite(ctx -> ctx.put(CAUSED_BY_KEY, xCausedBy));
     }
 
     @Override
-    public Mono<ResponseEntity<Player>> updateUser(String discordId, Mono<UpdateUserRequest> updateUserRequest, ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Player>> updateUser(String xCausedBy, String discordId, Mono<UpdateUserRequest> updateUserRequest, ServerWebExchange exchange) {
         return updateUserRequest
                 .flatMap(request -> userService.updateUserDefaultServerId(discordId, request.getServerId()))
                 .map(userMapper::userToPlayer)
-                .map(ResponseEntity::ok);
+                .map(ResponseEntity::ok)
+                .contextWrite(ctx -> ctx.put(CAUSED_BY_KEY, xCausedBy));
     }
 
     private Mono<ResponseEntity<Champions>> updateListOfPreferredChampionsForUser(Mono<Champions> champions, Function<Set<LoLChampion>, Publisher<? extends LoLChampion>> handler) {
@@ -172,7 +188,7 @@ public class UserController implements UsersApi {
                 .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 
-    private Function<Set<LoLChampion>, Publisher<? extends LoLChampion>> createListOfPrefferedChampionsFunc(String discordId) {
+    private Function<Set<LoLChampion>, Publisher<? extends LoLChampion>> createListOfPreferredChampionsFunc(String discordId) {
         return preferredChampions -> userService.createPreferredChampionsForUser(discordId, preferredChampions);
     }
 

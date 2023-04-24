@@ -12,6 +12,10 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
 
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -31,6 +35,7 @@ public interface TentativeMapper {
     @Mapping(source = "discordIds", target = "tentativePlayers", qualifiedByName = "discordIdsToTentativePlayers")
     @Mapping(source = "tentativeId.serverId", target = "serverId")
     @Mapping(source = "tentativeId.tentativeId", target = "id")
+    @Mapping(source = "lastModifiedDate", target = "lastUpdatedAt")
     Tentative tentativeQueueToTentative(TentativeQueue tentative);
 
     @Mapping(source = "tentativeId.tournamentId.tournamentName", target = "tournamentDetails.tournamentName")
@@ -52,6 +57,15 @@ public interface TentativeMapper {
     @Mapping(source = "preferredChampions", target = "champions")
     @Mapping(source = "defaultRole", target = "role")
     TentativePlayer userToTentativePlayer(User user);
+
+    default OffsetDateTime map(Instant value) {
+        if (null != value) {
+            ZoneOffset zoneOffset = ZoneId.of("America/Chicago").getRules().getOffset(value);
+            return OffsetDateTime.of(value.atOffset(zoneOffset).toLocalDateTime(), zoneOffset);
+        } else {
+            return null;
+        }
+    }
 
     @Named("tentativePlayersToDiscordIds")
     static Set<String> tentativePlayersToDiscordIds(List<TentativePlayer> tentativePlayerList) {

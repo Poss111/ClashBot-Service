@@ -11,8 +11,9 @@ import reactor.core.publisher.Mono;
 @AllArgsConstructor
 @RestController
 public class ArchiveController implements ArchiveApi {
+
     @Override
-    public Mono<ResponseEntity<ArchiveMetadata>> archiveTeamsAndTentativeQueues(ServerWebExchange exchange) {
+    public Mono<ResponseEntity<ArchiveMetadata>> archiveTeamsAndTentativeQueues(String xCausedBy, ServerWebExchange exchange) {
         return null;
     }
 

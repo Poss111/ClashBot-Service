@@ -29,6 +29,7 @@ import java.text.MessageFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.poss.clash.bot.constants.GlobalConstants.CAUSED_BY_KEY;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -65,9 +66,6 @@ public class UserAssignmentServiceTest {
 
     @Captor
     ArgumentCaptor<Tentative> tentativeArgumentCaptor;
-
-    @Captor
-    ArgumentCaptor<String> causedByCaptor;
 
     @Autowired
     EasyRandom easyRandom;
@@ -130,11 +128,14 @@ public class UserAssignmentServiceTest {
                         .thenReturn(Mono.empty());
                 when(userAssociationService.save(expectedUserAssociation))
                         .thenReturn(Mono.just(expectedUserAssociation));
-                when(teamSource.sendTeamUpdateEvent(teamSourceArgumentCaptor.capture(), causedByCaptor.capture()))
+                when(teamSource.sendTeamUpdateEvent(teamSourceArgumentCaptor.capture()))
                         .thenReturn(Mono.just(Event.builder().build()));
 
+                String userId = easyRandom.nextObject(String.class);
+
                 StepVerifier
-                        .create(userAssignmentService.assignUserToTeam(discordId, Role.TOP, clashTeamId))
+                        .create(userAssignmentService.assignUserToTeam(discordId, Role.TOP, clashTeamId)
+                                .contextWrite(ctx -> ctx.put(CAUSED_BY_KEY, userId)))
                         .expectNext(returnedClashTeam)
                         .verifyComplete();
 
@@ -149,8 +150,7 @@ public class UserAssignmentServiceTest {
 
                 assertAll(() -> {
                     assertEquals(1, teamSourceArgumentCaptor.getAllValues().size(), "More events executed than expected");
-                    assertEquals(1, causedByCaptor.getAllValues().size(), "More events executed than expected");
-                    verifyTeamEvent(discordId, serverId, returnedClashTeam, teamSourceArgumentCaptor.getAllValues().get(0), causedByCaptor.getAllValues().get(0));
+                    verifyTeamEvent(serverId, returnedClashTeam, teamSourceArgumentCaptor.getAllValues().get(0));
                 });
             }
 
@@ -224,7 +224,7 @@ public class UserAssignmentServiceTest {
                         .thenReturn(Mono.just(teamAfterRemoval));
                 when(userAssociationService.save(expectedUserAssociation))
                         .thenReturn(Mono.just(expectedUserAssociation));
-                when(teamSource.sendTeamUpdateEvent(teamSourceArgumentCaptor.capture(), causedByCaptor.capture()))
+                when(teamSource.sendTeamUpdateEvent(teamSourceArgumentCaptor.capture()))
                         .thenReturn(Mono.just(Event.builder().build()));
 
                 StepVerifier
@@ -243,13 +243,12 @@ public class UserAssignmentServiceTest {
                 verify(userAssociationService, times(1))
                         .save(expectedUserAssociation);
                 verify(teamSource, times(2))
-                        .sendTeamUpdateEvent(any(Team.class), anyString());
+                        .sendTeamUpdateEvent(any(Team.class));
 
                 assertAll(() -> {
                     assertEquals(2, teamSourceArgumentCaptor.getAllValues().size(), "More events executed than expected");
-                    assertEquals(2, causedByCaptor.getAllValues().size(), "More events executed than expected");
-                    verifyTeamEvent(discordId, serverId, teamAfterRemoval, teamSourceArgumentCaptor.getAllValues().get(0), causedByCaptor.getAllValues().get(0));
-                    verifyTeamEvent(discordId, serverId, returnedClashTeam, teamSourceArgumentCaptor.getAllValues().get(1), causedByCaptor.getAllValues().get(1));
+                    verifyTeamEvent(serverId, teamAfterRemoval, teamSourceArgumentCaptor.getAllValues().get(0));
+                    verifyTeamEvent(serverId, returnedClashTeam, teamSourceArgumentCaptor.getAllValues().get(1));
                 });
             }
 
@@ -322,7 +321,7 @@ public class UserAssignmentServiceTest {
                         .thenReturn(Mono.just(teamAfterRemoval));
                 when(userAssociationService.save(expectedUserAssociation))
                         .thenReturn(Mono.just(expectedUserAssociation));
-                when(teamSource.sendTeamUpdateEvent(teamSourceArgumentCaptor.capture(), causedByCaptor.capture()))
+                when(teamSource.sendTeamUpdateEvent(teamSourceArgumentCaptor.capture()))
                         .thenReturn(Mono.just(Event.builder().build()));
 
                 StepVerifier
@@ -343,7 +342,7 @@ public class UserAssignmentServiceTest {
 
                 assertAll(() -> {
                     assertEquals(1, teamSourceArgumentCaptor.getAllValues().size(), "More events executed than expected");
-                    verifyTeamEvent(discordId, serverId, returnedClashTeam, teamSourceArgumentCaptor.getAllValues().get(0), discordId);
+                    verifyTeamEvent(serverId, returnedClashTeam, teamSourceArgumentCaptor.getAllValues().get(0));
                 });
             }
 
@@ -412,9 +411,9 @@ public class UserAssignmentServiceTest {
                         .thenReturn(Mono.just(updatedTentativeQueue));
                 when(userAssociationService.save(expectedUserAssociation))
                         .thenReturn(Mono.just(expectedUserAssociation));
-                when(teamSource.sendTentativeQueueUpdateEvent(tentativeArgumentCaptor.capture(), causedByCaptor.capture()))
+                when(teamSource.sendTentativeQueueUpdateEvent(tentativeArgumentCaptor.capture()))
                         .thenReturn(Mono.just(Event.builder().build()));
-                when(teamSource.sendTeamUpdateEvent(teamSourceArgumentCaptor.capture(), causedByCaptor.capture()))
+                when(teamSource.sendTeamUpdateEvent(teamSourceArgumentCaptor.capture()))
                         .thenReturn(Mono.just(Event.builder().build()));
 
                 StepVerifier
@@ -435,15 +434,15 @@ public class UserAssignmentServiceTest {
                 verify(userAssociationService, times(1))
                         .save(expectedUserAssociation);
                 verify(teamSource, times(1))
-                        .sendTentativeQueueUpdateEvent(any(Tentative.class), any());
+                        .sendTentativeQueueUpdateEvent(any(Tentative.class));
                 verify(teamSource, times(1))
-                        .sendTeamUpdateEvent(any(Team.class), any());
+                        .sendTeamUpdateEvent(any(Team.class));
 
                 assertAll(() -> {
                     assertEquals(1, tentativeArgumentCaptor.getAllValues().size(), "More Tentative events executed than expected");
                     assertEquals(1, teamSourceArgumentCaptor.getAllValues().size(), "More Team events executed than expected");
-                    verifyTentativeEvent(discordId, serverId, updatedTentativeQueue, tentativeArgumentCaptor.getAllValues().get(0), discordId);
-                    verifyTeamEvent(discordId, serverId, returnedClashTeam, teamSourceArgumentCaptor.getAllValues().get(0), discordId);
+                    verifyTentativeEvent(serverId, updatedTentativeQueue, tentativeArgumentCaptor.getAllValues().get(0));
+                    verifyTeamEvent(serverId, returnedClashTeam, teamSourceArgumentCaptor.getAllValues().get(0));
                 });
             }
 
@@ -605,7 +604,7 @@ public class UserAssignmentServiceTest {
                         .thenReturn(Mono.just(createdTeam));
                 when(userAssociationService.save(createTeamUA))
                         .thenReturn(Mono.just(createTeamUA));
-                when(teamSource.sendTeamCreateEvent(teamSourceArgumentCaptor.capture(), causedByCaptor.capture()))
+                when(teamSource.sendTeamCreateEvent(teamSourceArgumentCaptor.capture()))
                         .thenReturn(Mono.just(Event.builder().build()));
 
                 StepVerifier
@@ -626,11 +625,11 @@ public class UserAssignmentServiceTest {
                 verify(userAssociationService, times(1))
                         .save(createTeamUA);
                 verify(teamSource, times(1))
-                        .sendTeamCreateEvent(any(Team.class), any());
+                        .sendTeamCreateEvent(any(Team.class));
 
                 assertAll(() -> {
                     assertEquals(1, teamSourceArgumentCaptor.getAllValues().size(), "More events executed than expected");
-                    verifyTeamEvent(discordId, discordServerId, createdTeam, teamSourceArgumentCaptor.getAllValues().get(0), discordId);
+                    verifyTeamEvent(discordServerId, createdTeam, teamSourceArgumentCaptor.getAllValues().get(0));
                 });
             }
 
@@ -703,9 +702,9 @@ public class UserAssignmentServiceTest {
                         .thenReturn(Mono.just(createdTeam));
                 when(userAssociationService.save(createTeamUA))
                         .thenReturn(Mono.just(createTeamUA));
-                when(teamSource.sendTeamUpdateEvent(teamSourceArgumentCaptor.capture(), causedByCaptor.capture()))
+                when(teamSource.sendTeamUpdateEvent(teamSourceArgumentCaptor.capture()))
                         .thenReturn(Mono.just(Event.builder().build()));
-                when(teamSource.sendTeamCreateEvent(teamSourceArgumentCaptor.capture(), causedByCaptor.capture()))
+                when(teamSource.sendTeamCreateEvent(teamSourceArgumentCaptor.capture()))
                         .thenReturn(Mono.just(Event.builder().build()));
 
                 StepVerifier
@@ -728,13 +727,13 @@ public class UserAssignmentServiceTest {
                 verify(userAssociationService, times(1))
                         .save(createTeamUA);
                 verify(teamSource, times(1))
-                        .sendTeamUpdateEvent(any(Team.class), anyString());
+                        .sendTeamUpdateEvent(any(Team.class));
                 verify(teamSource, times(1))
-                        .sendTeamCreateEvent(any(Team.class), anyString());
+                        .sendTeamCreateEvent(any(Team.class));
 
                 assertEquals(2, teamSourceArgumentCaptor.getAllValues().size(), "More events executed than expected");
-                verifyTeamEvent(discordId, discordServerId, teamToBeRemovedFrom, teamSourceArgumentCaptor.getAllValues().get(0), causedByCaptor.getAllValues().get(0));
-                verifyTeamEvent(discordId, discordServerId, createdTeam, teamSourceArgumentCaptor.getAllValues().get(1), causedByCaptor.getAllValues().get(1));
+                verifyTeamEvent(discordServerId, teamToBeRemovedFrom, teamSourceArgumentCaptor.getAllValues().get(0));
+                verifyTeamEvent(discordServerId, createdTeam, teamSourceArgumentCaptor.getAllValues().get(1));
             }
 
             @Test
@@ -818,7 +817,7 @@ public class UserAssignmentServiceTest {
                     when(userAssociationService.save(expectedUserAssociation))
                             .thenReturn(Mono.just(expectedUserAssociation));
                 }
-                when(teamSource.sendTeamCreateEvent(teamSourceArgumentCaptor.capture(), causedByCaptor.capture()))
+                when(teamSource.sendTeamCreateEvent(teamSourceArgumentCaptor.capture()))
                         .thenReturn(Mono.just(Event.builder().build()));
 
                 StepVerifier
@@ -844,7 +843,7 @@ public class UserAssignmentServiceTest {
                 }
 
                 assertEquals(1, teamSourceArgumentCaptor.getAllValues().size(), "More events executed than expected");
-                verifyTeamEvent(discordIdFive, discordServerId, createdTeam, teamSourceArgumentCaptor.getAllValues().get(0), discordIdFive);
+                verifyTeamEvent(discordServerId, createdTeam, teamSourceArgumentCaptor.getAllValues().get(0));
             }
 
             @Test
@@ -947,9 +946,9 @@ public class UserAssignmentServiceTest {
                     when(userAssociationService.save(expectedUserAssociation))
                             .thenReturn(Mono.just(expectedUserAssociation));
                 }
-                when(teamSource.sendTeamUpdateEvent(teamSourceArgumentCaptor.capture(), causedByCaptor.capture()))
+                when(teamSource.sendTeamUpdateEvent(teamSourceArgumentCaptor.capture()))
                         .thenReturn(Mono.just(Event.builder().build()));
-                when(teamSource.sendTeamCreateEvent(teamSourceArgumentCaptor.capture(), causedByCaptor.capture()))
+                when(teamSource.sendTeamCreateEvent(teamSourceArgumentCaptor.capture()))
                         .thenReturn(Mono.just(Event.builder().build()));
 
                 StepVerifier
@@ -976,22 +975,19 @@ public class UserAssignmentServiceTest {
                             .save(expectedUserAssociation);
                 }
                 verify(teamSource, times(5))
-                        .sendTeamUpdateEvent(any(Team.class), anyString());
+                        .sendTeamUpdateEvent(any(Team.class));
                 verify(teamSource, times(1))
-                        .sendTeamCreateEvent(any(Team.class), anyString());
+                        .sendTeamCreateEvent(any(Team.class));
 
                 assertEquals(6, teamSourceArgumentCaptor.getAllValues().size(), "More events executed than expected");
 
-                List<String> idsToCheck = new ArrayList<>(discordIds);
                 for (int i = 0; i < 5; i++) {
                     var team = teamSourceArgumentCaptor.getAllValues().get(i);
-                    idsToCheck.remove(causedByCaptor.getAllValues().remove(i));
                     assertNotNull(team);
                     assertEquals(discordServerId, team.getServerId());
                     assertEquals(teamMapper.clashTeamToTeam(teamToBeRemovedFrom), team);
                 }
 
-                assertEquals(0, idsToCheck.size(), "Not all caused by discord ids where used.");
                 assertNotNull(teamSourceArgumentCaptor.getAllValues().get(5).getId());
                 assertEquals(discordServerId, teamSourceArgumentCaptor.getAllValues().get(5).getServerId());
                 assertEquals(teamMapper.clashTeamToTeam(createdTeam), teamSourceArgumentCaptor.getAllValues().get(5));
@@ -1061,9 +1057,9 @@ public class UserAssignmentServiceTest {
                         .thenReturn(Mono.just(createdTeam));
                 when(userAssociationService.save(createTeamUA))
                         .thenReturn(Mono.just(createTeamUA));
-                when(teamSource.sendTentativeQueueUpdateEvent(tentativeArgumentCaptor.capture(), causedByCaptor.capture()))
+                when(teamSource.sendTentativeQueueUpdateEvent(tentativeArgumentCaptor.capture()))
                         .thenReturn(Mono.just(Event.builder().build()));
-                when(teamSource.sendTeamCreateEvent(teamSourceArgumentCaptor.capture(), causedByCaptor.capture()))
+                when(teamSource.sendTeamCreateEvent(teamSourceArgumentCaptor.capture()))
                         .thenReturn(Mono.just(Event.builder().build()));
 
                 StepVerifier
@@ -1086,14 +1082,14 @@ public class UserAssignmentServiceTest {
                 verify(userAssociationService, times(1))
                         .save(createTeamUA);
                 verify(teamSource, times(1))
-                        .sendTentativeQueueUpdateEvent(any(Tentative.class), anyString());
+                        .sendTentativeQueueUpdateEvent(any(Tentative.class));
                 verify(teamSource, times(1))
-                        .sendTeamCreateEvent(any(Team.class), anyString());
+                        .sendTeamCreateEvent(any(Team.class));
 
                 assertEquals(1, tentativeArgumentCaptor.getAllValues().size(), "More Tentative events executed than expected");
                 assertEquals(1, teamSourceArgumentCaptor.getAllValues().size(), "More Team events executed than expected");
-                verifyTentativeEvent(discordId, tentativeQueueToBeRemovedFrom.getTentativeId().getServerId(), tentativeQueueToBeRemovedFrom, tentativeArgumentCaptor.getAllValues().get(0), discordId);
-                verifyTeamEvent(discordId, discordServerId, createdTeam, teamSourceArgumentCaptor.getAllValues().get(0), discordId);
+                verifyTentativeEvent(tentativeQueueToBeRemovedFrom.getTentativeId().getServerId(), tentativeQueueToBeRemovedFrom, tentativeArgumentCaptor.getAllValues().get(0));
+                verifyTeamEvent(discordServerId, createdTeam, teamSourceArgumentCaptor.getAllValues().get(0));
             }
 
             @Test
@@ -1339,16 +1335,14 @@ public class UserAssignmentServiceTest {
         }
     }
 
-    private void verifyTentativeEvent(String discordId, String serverId, TentativeQueue updatedTentativeQueue, Tentative updatedTentative, String actualCausedBy) {
+    private void verifyTentativeEvent(String serverId, TentativeQueue updatedTentativeQueue, Tentative updatedTentative) {
         assertNotNull(updatedTentative.getId());
-        assertEquals(discordId, actualCausedBy);
         assertEquals(serverId, updatedTentative.getServerId());
         assertEquals(tentativeMapper.tentativeQueueToTentative(updatedTentativeQueue), updatedTentative);
     }
 
-    private void verifyTeamEvent(String discordId, String discordServerId, ClashTeam createdTeam, Team updateEventSubmitted, String actualCausedBy) {
+    private void verifyTeamEvent(String discordServerId, ClashTeam createdTeam, Team updateEventSubmitted) {
         assertNotNull(updateEventSubmitted.getId());
-        assertEquals(discordId, actualCausedBy);
         assertEquals(discordServerId, updateEventSubmitted.getServerId());
         assertEquals(teamMapper.clashTeamToTeam(createdTeam), updateEventSubmitted);
     }
@@ -1407,7 +1401,7 @@ public class UserAssignmentServiceTest {
                         .thenReturn(Mono.just(tentativeQueueAfterAssignment));
                 when(userAssociationService.save(userAssociationToSave))
                         .thenReturn(Mono.just(userAssociationToSave));
-                when(teamSource.sendTentativeQueueUpdateEvent(tentativeArgumentCaptor.capture(), causedByCaptor.capture()))
+                when(teamSource.sendTentativeQueueUpdateEvent(tentativeArgumentCaptor.capture()))
                         .thenReturn(Mono.just(Event.builder().build()));
 
                 StepVerifier
@@ -1428,10 +1422,10 @@ public class UserAssignmentServiceTest {
                 verify(userAssociationService, times(1))
                         .save(userAssociationToSave);
                 verify(teamSource, times(1))
-                        .sendTentativeQueueUpdateEvent(any(Tentative.class), anyString());
+                        .sendTentativeQueueUpdateEvent(any(Tentative.class));
 
                 assertEquals(1, tentativeArgumentCaptor.getAllValues().size());
-                verifyTentativeEvent(discordId, serverId, tentativeQueueAfterAssignment, tentativeArgumentCaptor.getAllValues().get(0), discordId);
+                verifyTentativeEvent(serverId, tentativeQueueAfterAssignment, tentativeArgumentCaptor.getAllValues().get(0));
             }
 
             @Test
@@ -1485,20 +1479,21 @@ public class UserAssignmentServiceTest {
                         tournamentId.getTournamentName(),
                         tournamentId.getTournamentDay()
                 )).thenReturn(Mono.just(teamUserAssociation));
+                ClashTeam returnedTeam = ClashTeam.builder()
+                        .teamId(TeamId.builder()
+                                .id(clashTeamId)
+                                .tournamentId(tournamentId)
+                                .build())
+                        .build();
                 when(teamService.removeUserFromTeam(clashTeamId, discordId))
-                        .thenReturn(Mono.just(ClashTeam.builder()
-                                .teamId(TeamId.builder()
-                                        .id(clashTeamId)
-                                        .tournamentId(tournamentId)
-                                        .build())
-                                .build()));
+                        .thenReturn(Mono.just(returnedTeam));
                 when(tentativeService.assignUserToTentativeQueue(discordId, tentativeQueueToBeAssignedTo))
                         .thenReturn(Mono.just(tentativeQueueAfterAssignment));
                 when(userAssociationService.save(userAssociationToSave))
                         .thenReturn(Mono.just(userAssociationToSave));
-                when(teamSource.sendTeamUpdateEvent(teamSourceArgumentCaptor.capture(), causedByCaptor.capture()))
+                when(teamSource.sendTeamUpdateEvent(teamSourceArgumentCaptor.capture()))
                         .thenReturn(Mono.just(Event.builder().build()));
-                when(teamSource.sendTentativeQueueUpdateEvent(tentativeArgumentCaptor.capture(), causedByCaptor.capture()))
+                when(teamSource.sendTentativeQueueUpdateEvent(tentativeArgumentCaptor.capture()))
                         .thenReturn(Mono.just(Event.builder().build()));
 
                 StepVerifier
@@ -1521,9 +1516,9 @@ public class UserAssignmentServiceTest {
                 verify(userAssociationService, times(1))
                         .save(userAssociationToSave);
                 verify(teamSource, times(1))
-                        .sendTeamUpdateEvent(any(Team.class), anyString());
+                        .sendTeamUpdateEvent(any(Team.class));
                 verify(teamSource, times(1))
-                        .sendTentativeQueueUpdateEvent(any(Tentative.class), anyString());
+                        .sendTentativeQueueUpdateEvent(any(Tentative.class));
             }
 
             @Test
@@ -1662,7 +1657,7 @@ public class UserAssignmentServiceTest {
                         .thenReturn(Mono.just(createdTentativeQueue));
                 when(userAssociationService.save(createdUserAssociation))
                         .thenReturn(Mono.just(createdUserAssociation));
-                when(teamSource.sendTentativeQueueCreateEvent(tentativeArgumentCaptor.capture(), causedByCaptor.capture()))
+                when(teamSource.sendTentativeQueueCreateEvent(tentativeArgumentCaptor.capture()))
                         .thenReturn(Mono.just(Event.builder().build()));
 
                 StepVerifier
@@ -1693,10 +1688,10 @@ public class UserAssignmentServiceTest {
                 verify(userAssociationService, times(1))
                         .save(createdUserAssociation);
                 verify(teamSource, times(1))
-                        .sendTentativeQueueCreateEvent(any(Tentative.class), anyString());
+                        .sendTentativeQueueCreateEvent(any(Tentative.class));
 
                 assertEquals(1, tentativeArgumentCaptor.getAllValues().size());
-                verifyTentativeEvent(discordId, serverId, createdTentativeQueue, tentativeArgumentCaptor.getAllValues().get(0), discordId);
+                verifyTentativeEvent(serverId, createdTentativeQueue, tentativeArgumentCaptor.getAllValues().get(0));
             }
 
             @Test
@@ -1763,9 +1758,9 @@ public class UserAssignmentServiceTest {
                         .thenReturn(Mono.just(createdTentativeQueue));
                 when(userAssociationService.save(createdUserAssociation))
                         .thenReturn(Mono.just(createdUserAssociation));
-                when(teamSource.sendTeamUpdateEvent(teamSourceArgumentCaptor.capture(), causedByCaptor.capture()))
+                when(teamSource.sendTeamUpdateEvent(teamSourceArgumentCaptor.capture()))
                         .thenReturn(Mono.just(Event.builder().build()));
-                when(teamSource.sendTentativeQueueCreateEvent(tentativeArgumentCaptor.capture(), causedByCaptor.capture()))
+                when(teamSource.sendTentativeQueueCreateEvent(tentativeArgumentCaptor.capture()))
                         .thenReturn(Mono.just(Event.builder().build()));
 
                 StepVerifier
@@ -1802,14 +1797,12 @@ public class UserAssignmentServiceTest {
                     assertEquals(1, teamSourceArgumentCaptor.getAllValues().size());
                     Team updateEventSubmitted = teamSourceArgumentCaptor.getAllValues().get(0);
                     assertNotNull(updateEventSubmitted.getId());
-                    assertEquals(discordId, causedByCaptor.getAllValues().get(0));
                     assertEquals(serverId, updateEventSubmitted.getServerId());
                     assertEquals(teamMapper.clashTeamToTeam(returnedClashTeam), updateEventSubmitted);
 
                     assertEquals(1, tentativeArgumentCaptor.getAllValues().size());
                     Tentative createEventSubmitted = tentativeArgumentCaptor.getAllValues().get(0);
                     assertNotNull(createEventSubmitted.getId());
-                    assertEquals(discordId, causedByCaptor.getAllValues().get(1));
                     assertEquals(serverId, createEventSubmitted.getServerId());
                     assertEquals(tentativeMapper.tentativeQueueToTentative(createdTentativeQueue), createEventSubmitted);
                 });
@@ -2017,7 +2010,7 @@ public class UserAssignmentServiceTest {
                 PublisherProbe<Void> publisherProbe = PublisherProbe.empty();
                 when(userAssociationService.delete(userAssociationToSave.getUserAssociationKey()))
                         .thenReturn(publisherProbe.mono());
-                when(teamSource.sendTentativeQueueUpdateEvent(tentativeArgumentCaptor.capture(), causedByCaptor.capture()))
+                when(teamSource.sendTentativeQueueUpdateEvent(tentativeArgumentCaptor.capture()))
                         .thenReturn(Mono.just(Event.builder().build()));
 
                 StepVerifier
@@ -2032,10 +2025,8 @@ public class UserAssignmentServiceTest {
                 verify(userAssociationService, times(1))
                         .delete(userAssociationToSave.getUserAssociationKey());
 
-                assertAll(() -> {
-                    Tentative removeEventSubmitted = tentativeArgumentCaptor.getAllValues().get(0);
-                    verifyTentativeEvent(discordId, serverId, tentativeQueueToBeRemovedFrom, removeEventSubmitted, discordId);
-                });
+                Tentative removeEventSubmitted = tentativeArgumentCaptor.getAllValues().get(0);
+                verifyTentativeEvent(serverId, tentativeQueueToBeRemovedFrom, removeEventSubmitted);
             }
 
             @Test

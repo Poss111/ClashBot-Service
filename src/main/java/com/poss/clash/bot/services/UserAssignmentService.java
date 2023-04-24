@@ -49,11 +49,11 @@ public class UserAssignmentService {
                             UserAssociation updatedUserAssc = buildUserAssociationForTeam(discordId, clashTeamId, clashTeam);
                             if (StringUtils.isNotBlank(userAssociation.getTeamId())) {
                                 return this.teamService.removeUserFromTeam(userAssociation.getTeamId(), discordId)
-                                        .flatMap(updatedTeam -> teamSource.sendTeamUpdateEvent(teamMapper.clashTeamToTeam(updatedTeam), discordId))
+                                        .flatMap(updatedTeam -> teamSource.sendTeamUpdateEvent(teamMapper.clashTeamToTeam(updatedTeam)))
                                         .thenReturn(updatedUserAssc);
                             }
                             return tentativeService.removeUserFromTentativeQueue(discordId, userAssociation.getTentativeId())
-                                    .flatMap(updatedTentativeQueue -> teamSource.sendTentativeQueueUpdateEvent(tentativeMapper.tentativeQueueToTentative(updatedTentativeQueue), discordId))
+                                    .flatMap(updatedTentativeQueue -> teamSource.sendTentativeQueueUpdateEvent(tentativeMapper.tentativeQueueToTentative(updatedTentativeQueue)))
                                     .thenReturn(updatedUserAssc);
                         }).defaultIfEmpty(buildUserAssociationForTeam(discordId, clashTeamId, clashTeam))
                         .map(userAssc -> {
@@ -68,13 +68,15 @@ public class UserAssignmentService {
                         .map(updatedTeam -> Tuples.of(updatedTeam, tuple.getT2())))
                 .flatMap(tuple -> {
                             if (StringUtils.isBlank(tuple.getT2().getServerId())) {
-                                return teamSource.sendTeamUpdateEvent(teamMapper.clashTeamToTeam(tuple.getT1()), discordId)
+                                return teamSource.sendTeamUpdateEvent(
+                                        teamMapper.clashTeamToTeam(tuple.getT1())
+                                        )
                                         .log()
                                         .thenReturn(tuple.getT1());
                             }
                             return Mono.zip(
                                             userAssociationService.save(tuple.getT2()),
-                                            teamSource.sendTeamUpdateEvent(teamMapper.clashTeamToTeam(tuple.getT1()), discordId))
+                                            teamSource.sendTeamUpdateEvent(teamMapper.clashTeamToTeam(tuple.getT1())))
                                     .log()
                                     .thenReturn(tuple.getT1());
                         }
@@ -125,30 +127,23 @@ public class UserAssignmentService {
                                 return teamService.removeUserFromTeam(assc.getTeamId(), assc.getUserAssociationKey().getDiscordId())
                                         .log()
                                         .flatMap((teamRemovedFrom) -> teamSource.sendTeamUpdateEvent(
-                                                teamMapper.clashTeamToTeam(teamRemovedFrom),
-                                                assc.getUserAssociationKey().getDiscordId())
+                                                teamMapper.clashTeamToTeam(teamRemovedFrom)
+                                                )
                                         )
                                         .thenReturn(assc);
                             }
                             return tentativeService.removeUserFromTentativeQueue(assc.getUserAssociationKey().getDiscordId(), assc.getTentativeId())
                                     .log()
                                     .flatMap((tentativeQueueRemovedFrom) -> teamSource.sendTentativeQueueUpdateEvent(
-                                            tentativeMapper.tentativeQueueToTentative(tentativeQueueRemovedFrom),
-                                            assc.getUserAssociationKey().getDiscordId()))
+                                            tentativeMapper.tentativeQueueToTentative(tentativeQueueRemovedFrom)
+                                    ))
                                     .thenReturn(assc);
                         })
                         .defaultIfEmpty(buildBaseAssociation(discordServerId, tournamentName, tournamentDay, entry.getValue())))
                 .collectList()
                 .flatMap(assc -> teamService.createClashTeam(createNewTeam(positions, teamName, discordServerId, tournamentName, tournamentDay))
-                        .flatMap((createdTeam) -> {
-                            String causedBy = "0";
-                            Optional<Map.Entry<Role, BasePlayerRecord>> first = createdTeam.getPositions().entrySet().stream().findFirst();
-                            if (first.isPresent()) {
-                                causedBy = first.get().getValue().getDiscordId();
-                            }
-                            return teamSource.sendTeamCreateEvent(teamMapper.clashTeamToTeam(createdTeam), causedBy)
-                                    .thenReturn(createdTeam);
-                        })
+                        .flatMap((createdTeam) -> teamSource.sendTeamCreateEvent(teamMapper.clashTeamToTeam(createdTeam))
+                                .thenReturn(createdTeam))
                         .map(createdTeam -> associateUsersToTeam(assc, createdTeam)))
                 .flatMap(tuple -> Flux.fromIterable(tuple.getT2())
                         .flatMap(userAssociationService::save)
@@ -210,7 +205,7 @@ public class UserAssignmentService {
                                 .discordId(discordId)
                                 .tournamentId(team.getTeamId().getTournamentId())
                                 .build())
-                        .flatMap(userAssociation -> teamSource.sendTeamUpdateEvent(teamMapper.clashTeamToTeam(team), discordId))
+                        .flatMap(userAssociation -> teamSource.sendTeamUpdateEvent(teamMapper.clashTeamToTeam(team)))
                         .thenReturn(team));
     }
 
@@ -257,7 +252,7 @@ public class UserAssignmentService {
                         .flatMap(assc -> {
                             if (StringUtils.isNotBlank(assc.getTeamId())) {
                                 return teamService.removeUserFromTeam(assc.getTeamId(), id)
-                                        .flatMap((teamAfterUpdate) -> teamSource.sendTeamUpdateEvent(teamMapper.clashTeamToTeam(teamAfterUpdate), id))
+                                        .flatMap((teamAfterUpdate) -> teamSource.sendTeamUpdateEvent(teamMapper.clashTeamToTeam(teamAfterUpdate)))
                                         .thenReturn(assc);
                             }
                             return Mono.just(assc);
@@ -287,8 +282,8 @@ public class UserAssignmentService {
                         }))
                 .flatMap(tuple -> Flux.fromIterable(tuple.getT2())
                         .flatMap(userAssociationService::save)
-                        .flatMap((userAssociation) -> teamSource.sendTentativeQueueCreateEvent(tentativeMapper.tentativeQueueToTentative(tuple.getT1()),
-                                        userAssociation.getUserAssociationKey().getDiscordId())
+                        .flatMap((userAssociation) -> teamSource.sendTentativeQueueCreateEvent(tentativeMapper.tentativeQueueToTentative(tuple.getT1())
+                                )
                                 .thenReturn(userAssociation))
                         .collectList()
                         .log()
@@ -309,7 +304,7 @@ public class UserAssignmentService {
                         .flatMap(assc -> {
                             if (StringUtils.isNotBlank(assc.getTeamId())) {
                                 return teamService.removeUserFromTeam(assc.getTeamId(), discordId)
-                                        .flatMap(team -> teamSource.sendTeamUpdateEvent(teamMapper.clashTeamToTeam(team), discordId))
+                                        .flatMap(team -> teamSource.sendTeamUpdateEvent(teamMapper.clashTeamToTeam(team)))
                                         .thenReturn(assc);
                             }
                             return Mono.just(assc);
@@ -330,7 +325,7 @@ public class UserAssignmentService {
                             return Tuples.of(updatedTentativeQueue, tuple.getT2());
                         }))
                 .flatMap(tuple -> this.userAssociationService.save(tuple.getT2())
-                        .flatMap((assc) -> teamSource.sendTentativeQueueUpdateEvent(tentativeMapper.tentativeQueueToTentative(tuple.getT1()), discordId))
+                        .flatMap((assc) -> teamSource.sendTentativeQueueUpdateEvent(tentativeMapper.tentativeQueueToTentative(tuple.getT1())))
                         .thenReturn(tuple.getT1()));
     }
 
@@ -348,7 +343,7 @@ public class UserAssignmentService {
                                 .discordId(discordId)
                                 .build())
                         .thenReturn(tentativeQueue))
-                .flatMap(tentativeQueue -> teamSource.sendTentativeQueueUpdateEvent(tentativeMapper.tentativeQueueToTentative(tentativeQueue), discordId)
+                .flatMap(tentativeQueue -> teamSource.sendTentativeQueueUpdateEvent(tentativeMapper.tentativeQueueToTentative(tentativeQueue))
                         .thenReturn(tentativeQueue)
                 );
     }
