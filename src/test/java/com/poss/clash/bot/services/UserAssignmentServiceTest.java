@@ -1535,6 +1535,8 @@ public class UserAssignmentServiceTest {
                         .build();
                 when(teamService.removeUserFromTeam(clashTeamId, discordId))
                         .thenReturn(Mono.just(returnedTeam));
+                when(userService.enrichClashTeamWithUserDetails(returnedTeam))
+                        .thenReturn(Mono.just(returnedTeam));
                 when(tentativeService.assignUserToTentativeQueue(discordId, tentativeQueueToBeAssignedTo))
                         .thenReturn(Mono.just(tentativeQueueAfterAssignment));
                 when(userAssociationService.save(userAssociationToSave))
@@ -1559,6 +1561,8 @@ public class UserAssignmentServiceTest {
                         );
                 verify(teamService, times(1))
                         .removeUserFromTeam(clashTeamId, discordId);
+                verify(userService, times(1))
+                        .enrichClashTeamWithUserDetails(returnedTeam);
                 verify(tentativeService, times(1))
                         .assignUserToTentativeQueue(discordId, tentativeQueueToBeAssignedTo);
                 verify(userAssociationService, times(1))
@@ -1802,6 +1806,8 @@ public class UserAssignmentServiceTest {
                         .thenReturn(Mono.just(currentAssociation));
                 when(teamService.removeUserFromTeam(clashTeamId, discordId))
                         .thenReturn(Mono.just(returnedClashTeam));
+                when(userService.enrichClashTeamWithUserDetails(returnedClashTeam))
+                        .thenReturn(Mono.just(returnedClashTeam));
                 when(tentativeService.createTentativeQueue(tentativeQueueToCreate))
                         .thenReturn(Mono.just(createdTentativeQueue));
                 when(userAssociationService.save(createdUserAssociation))
@@ -1836,6 +1842,8 @@ public class UserAssignmentServiceTest {
                                 tournamentId.getTournamentDay());
                 verify(teamService, times(1))
                         .removeUserFromTeam(clashTeamId, discordId);
+                verify(userService, times(1))
+                        .enrichClashTeamWithUserDetails(returnedClashTeam);
                 verify(tentativeService, times(1))
                         .createTentativeQueue(tentativeQueueToCreate);
                 verify(userAssociationService, times(1))

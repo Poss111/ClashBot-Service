@@ -257,6 +257,7 @@ public class UserAssignmentService {
                         .flatMap(assc -> {
                             if (StringUtils.isNotBlank(assc.getTeamId())) {
                                 return teamService.removeUserFromTeam(assc.getTeamId(), id)
+                                        .flatMap(userService::enrichClashTeamWithUserDetails)
                                         .flatMap((teamAfterUpdate) -> teamSource.sendTeamRemovedEvent(teamMapper.clashTeamToTeam(teamAfterUpdate)))
                                         .thenReturn(assc);
                             }
@@ -309,6 +310,7 @@ public class UserAssignmentService {
                         .flatMap(assc -> {
                             if (StringUtils.isNotBlank(assc.getTeamId())) {
                                 return teamService.removeUserFromTeam(assc.getTeamId(), discordId)
+                                        .flatMap(userService::enrichClashTeamWithUserDetails)
                                         .flatMap(team -> teamSource.sendTeamRemovedEvent(teamMapper.clashTeamToTeam(team)))
                                         .thenReturn(assc);
                             }
