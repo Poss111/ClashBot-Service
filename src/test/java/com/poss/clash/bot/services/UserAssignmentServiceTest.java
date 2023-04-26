@@ -55,6 +55,9 @@ public class UserAssignmentServiceTest {
     @Mock
     TeamSource teamSource;
 
+    @Mock
+    UserService userService;
+
     @Spy
     TeamMapper teamMapper = Mappers.getMapper(TeamMapper.class);
 
@@ -124,6 +127,8 @@ public class UserAssignmentServiceTest {
                         .thenReturn(returnedClashTeam);
                 when(teamService.upsertClashTeam(returnedClashTeam))
                         .thenReturn(Mono.just(returnedClashTeam));
+                when(userService.enrichClashTeamWithUserDetails(returnedClashTeam))
+                        .thenReturn(Mono.just(returnedClashTeam));
                 when(userAssociationService.retrieveUsersTeamOrTentativeQueueForTournament(discordId, tournamentId.getTournamentName(), tournamentId.getTournamentDay()))
                         .thenReturn(Mono.empty());
                 when(userAssociationService.save(expectedUserAssociation))
@@ -143,6 +148,8 @@ public class UserAssignmentServiceTest {
                         .addUserToTeam(discordId, Role.TOP, retrievedTeam);
                 verify(teamService, times(1))
                         .upsertClashTeam(returnedClashTeam);
+                verify(userService, times(1))
+                        .enrichClashTeamWithUserDetails(returnedClashTeam);
                 verify(userAssociationService, times(1))
                         .retrieveUsersTeamOrTentativeQueueForTournament(discordId, tournamentId.getTournamentName(), tournamentId.getTournamentDay());
                 verify(userAssociationService, times(1))
@@ -222,6 +229,8 @@ public class UserAssignmentServiceTest {
                         .thenReturn(Mono.just(otherTeamUserAssociation));
                 when(teamService.removeUserFromTeam(currentlyAssignedClashTeamId, discordId))
                         .thenReturn(Mono.just(teamAfterRemoval));
+                when(userService.enrichClashTeamWithUserDetails(returnedClashTeam))
+                        .thenReturn(Mono.just(returnedClashTeam));
                 when(userAssociationService.save(expectedUserAssociation))
                         .thenReturn(Mono.just(expectedUserAssociation));
                 when(teamSource.sendTeamRemovedEvent(teamSourceArgumentCaptor.capture()))
@@ -238,6 +247,8 @@ public class UserAssignmentServiceTest {
                         .addUserToTeam(discordId, Role.TOP, retrievedTeam);
                 verify(teamService, times(1))
                         .upsertClashTeam(returnedClashTeam);
+                verify(userService, times(1))
+                        .enrichClashTeamWithUserDetails(returnedClashTeam);
                 verify(userAssociationService, times(1))
                         .retrieveUsersTeamOrTentativeQueueForTournament(discordId, tournamentId.getTournamentName(), tournamentId.getTournamentDay());
                 verify(teamService, times(1))
@@ -317,6 +328,8 @@ public class UserAssignmentServiceTest {
                         .thenReturn(returnedClashTeam);
                 when(teamService.upsertClashTeam(returnedClashTeam))
                         .thenReturn(Mono.just(returnedClashTeam));
+                when(userService.enrichClashTeamWithUserDetails(returnedClashTeam))
+                        .thenReturn(Mono.just(returnedClashTeam));
                 when(userAssociationService.retrieveUsersTeamOrTentativeQueueForTournament(discordId, tournamentId.getTournamentName(), tournamentId.getTournamentDay()))
                         .thenReturn(Mono.just(otherTeamUserAssociation));
                 when(teamService.removeUserFromTeam(currentlyAssignedClashTeamId, discordId))
@@ -335,6 +348,8 @@ public class UserAssignmentServiceTest {
                         .addUserToTeam(discordId, Role.TOP, retrievedTeam);
                 verify(teamService, times(1))
                         .upsertClashTeam(returnedClashTeam);
+                verify(userService, times(1))
+                        .enrichClashTeamWithUserDetails(returnedClashTeam);
                 verify(userAssociationService, times(1))
                         .retrieveUsersTeamOrTentativeQueueForTournament(discordId, tournamentId.getTournamentName(), tournamentId.getTournamentDay());
                 verify(teamService, times(0))
@@ -407,6 +422,8 @@ public class UserAssignmentServiceTest {
                         .thenReturn(returnedClashTeam);
                 when(teamService.upsertClashTeam(returnedClashTeam))
                         .thenReturn(Mono.just(returnedClashTeam));
+                when(userService.enrichClashTeamWithUserDetails(returnedClashTeam))
+                        .thenReturn(Mono.just(returnedClashTeam));
                 when(userAssociationService.retrieveUsersTeamOrTentativeQueueForTournament(discordId, tournamentId.getTournamentName(), tournamentId.getTournamentDay()))
                         .thenReturn(Mono.just(otherTentativeQueueUserAssociation));
                 when(tentativeService.removeUserFromTentativeQueue(discordId, tentativeQueueId))
@@ -427,6 +444,8 @@ public class UserAssignmentServiceTest {
                         .addUserToTeam(discordId, Role.TOP, retrievedTeam);
                 verify(teamService, times(1))
                         .upsertClashTeam(returnedClashTeam);
+                verify(userService, times(1))
+                        .enrichClashTeamWithUserDetails(returnedClashTeam);
                 verify(userAssociationService, times(1))
                         .retrieveUsersTeamOrTentativeQueueForTournament(discordId, tournamentId.getTournamentName(), tournamentId.getTournamentDay());
                 verify(tentativeService, times(1))
@@ -606,6 +625,8 @@ public class UserAssignmentServiceTest {
                         .thenReturn(Mono.just(createdTeam));
                 when(userAssociationService.save(createTeamUA))
                         .thenReturn(Mono.just(createTeamUA));
+                when(userService.enrichClashTeamWithUserDetails(createdTeam))
+                        .thenReturn(Mono.just(createdTeam));
                 when(teamSource.sendTeamCreateEvent(teamSourceArgumentCaptor.capture()))
                         .thenReturn(Mono.just(Event.builder().build()));
 
@@ -626,6 +647,8 @@ public class UserAssignmentServiceTest {
                                 tournamentId.getTournamentDay());
                 verify(userAssociationService, times(1))
                         .save(createTeamUA);
+                verify(userService, times(1))
+                        .enrichClashTeamWithUserDetails(createdTeam);
                 verify(teamSource, times(1))
                         .sendTeamCreateEvent(any(Team.class));
 
@@ -704,6 +727,8 @@ public class UserAssignmentServiceTest {
                         .thenReturn(Mono.just(createdTeam));
                 when(userAssociationService.save(createTeamUA))
                         .thenReturn(Mono.just(createTeamUA));
+                when(userService.enrichClashTeamWithUserDetails(createdTeam))
+                        .thenReturn(Mono.just(createdTeam));
                 when(teamSource.sendTeamRemovedEvent(teamSourceArgumentCaptor.capture()))
                         .thenReturn(Mono.just(Event.builder().build()));
                 when(teamSource.sendTeamCreateEvent(teamSourceArgumentCaptor.capture()))
@@ -728,6 +753,8 @@ public class UserAssignmentServiceTest {
                         .removeUserFromTeam(otherTeamId, discordId);
                 verify(userAssociationService, times(1))
                         .save(createTeamUA);
+                verify(userService, times(1))
+                        .enrichClashTeamWithUserDetails(createdTeam);
                 verify(teamSource, times(1))
                         .sendTeamRemovedEvent(any(Team.class));
                 verify(teamSource, times(1))
@@ -808,6 +835,8 @@ public class UserAssignmentServiceTest {
                         .thenReturn(Mono.just(true));
                 when(teamService.createClashTeam(expectedTeamToCreate))
                         .thenReturn(Mono.just(createdTeam));
+                when(userService.enrichClashTeamWithUserDetails(createdTeam))
+                        .thenReturn(Mono.just(createdTeam));
 
                 when(userAssociationService.retrieveUsersTeamOrTentativeQueueForTournament(anyString(),
                         anyString(),
@@ -844,6 +873,8 @@ public class UserAssignmentServiceTest {
                     verify(userAssociationService, times(1))
                             .save(expectedUserAssociation);
                 }
+                verify(userService, times(1))
+                        .enrichClashTeamWithUserDetails(createdTeam);
 
                 assertEquals(1, teamSourceArgumentCaptor.getAllValues().size(), "More events executed than expected");
                 verifyTeamEvent(discordServerId, createdTeam, teamSourceArgumentCaptor.getAllValues().get(0));
@@ -920,6 +951,8 @@ public class UserAssignmentServiceTest {
                         .thenReturn(Mono.just(true));
                 when(teamService.createClashTeam(expectedTeamToCreate))
                         .thenReturn(Mono.just(createdTeam));
+                when(userService.enrichClashTeamWithUserDetails(createdTeam))
+                        .thenReturn(Mono.just(createdTeam));
 
                 ClashTeam teamToBeRemovedFrom = ClashTeam.builder()
                         .teamId(TeamId.builder()
@@ -990,6 +1023,8 @@ public class UserAssignmentServiceTest {
                     assertEquals(discordServerId, team.getServerId());
                     assertEquals(teamMapper.clashTeamToTeam(teamToBeRemovedFrom), team);
                 }
+                verify(userService, times(1))
+                        .enrichClashTeamWithUserDetails(createdTeam);
 
                 assertNotNull(teamSourceArgumentCaptor.getAllValues().get(5).getId());
                 assertEquals(discordServerId, teamSourceArgumentCaptor.getAllValues().get(5).getServerId());
@@ -1058,6 +1093,8 @@ public class UserAssignmentServiceTest {
                         .thenReturn(Mono.just(tentativeQueueToBeRemovedFrom));
                 when(teamService.createClashTeam(expectedTeamToCreate))
                         .thenReturn(Mono.just(createdTeam));
+                when(userService.enrichClashTeamWithUserDetails(createdTeam))
+                        .thenReturn(Mono.just(createdTeam));
                 when(userAssociationService.save(createTeamUA))
                         .thenReturn(Mono.just(createTeamUA));
                 when(teamSource.sendTentativeQueueRemovedEvent(tentativeArgumentCaptor.capture()))
@@ -1084,6 +1121,8 @@ public class UserAssignmentServiceTest {
                         .removeUserFromTentativeQueue(discordId, otherTentativeQueue);
                 verify(userAssociationService, times(1))
                         .save(createTeamUA);
+                verify(userService, times(1))
+                        .enrichClashTeamWithUserDetails(createdTeam);
                 verify(teamSource, times(1))
                         .sendTentativeQueueRemovedEvent(any(Tentative.class));
                 verify(teamSource, times(1))
@@ -1221,6 +1260,8 @@ public class UserAssignmentServiceTest {
                         .thenReturn(Mono.just(teamToBeRemovedFrom));
                 when(teamService.upsertClashTeam(teamAfterUpdate))
                         .thenReturn(Mono.just(teamAfterUpdate));
+                when(userService.enrichClashTeamWithUserDetails(teamAfterUpdate))
+                        .thenReturn(Mono.just(teamAfterUpdate));
                 PublisherProbe<Void> userAsscProbe = PublisherProbe.empty();
                 UserAssociationKey associationKey = UserAssociationKey.builder()
                         .discordId(discordId)
@@ -1240,6 +1281,8 @@ public class UserAssignmentServiceTest {
                         .findTeamById(clashTeamId);
                 verify(teamService, times(1))
                         .upsertClashTeam(teamAfterUpdate);
+                verify(userService, times(1))
+                        .enrichClashTeamWithUserDetails(teamAfterUpdate);
                 verify(userAssociationService, times(1))
                         .delete(associationKey);
             }

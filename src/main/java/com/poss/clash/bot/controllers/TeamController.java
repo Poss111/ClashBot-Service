@@ -113,7 +113,7 @@ public class TeamController implements TeamsApi {
                             tournamentName,
                             tournamentDay)
                     .collectList()
-                    .flatMapMany(userService::enrichClashTeamWithUserDetails)
+                    .flatMapMany(userService::enrichClashTeamsWithUserDetails)
                     .map(teamMapper::clashTeamToTeam)
                     .collectList();
         }

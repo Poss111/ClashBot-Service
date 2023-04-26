@@ -32,6 +32,7 @@ public class UserAssignmentService {
     private final UserAssociationService userAssociationService;
     private final TentativeService tentativeService;
     private final TournamentService tournamentService;
+    private final UserService userService;
     private final TeamSource teamSource;
     private final TeamMapper teamMapper;
     private final TentativeMapper tentativeMapper;
@@ -65,6 +66,7 @@ public class UserAssignmentService {
                 )
                 .flatMap(tuple -> teamService.upsertClashTeam(tuple.getT1())
                         .log()
+                        .flatMap(userService::enrichClashTeamWithUserDetails)
                         .map(updatedTeam -> Tuples.of(updatedTeam, tuple.getT2())))
                 .flatMap(tuple -> {
                             if (StringUtils.isBlank(tuple.getT2().getServerId())) {
@@ -142,6 +144,7 @@ public class UserAssignmentService {
                         .defaultIfEmpty(buildBaseAssociation(discordServerId, tournamentName, tournamentDay, entry.getValue())))
                 .collectList()
                 .flatMap(assc -> teamService.createClashTeam(createNewTeam(positions, teamName, discordServerId, tournamentName, tournamentDay))
+                        .flatMap(userService::enrichClashTeamWithUserDetails)
                         .flatMap((createdTeam) -> teamSource.sendTeamCreateEvent(teamMapper.clashTeamToTeam(createdTeam))
                                 .thenReturn(createdTeam))
                         .map(createdTeam -> associateUsersToTeam(assc, createdTeam)))
@@ -200,6 +203,7 @@ public class UserAssignmentService {
         return teamService.findTeamById(clashTeamId)
                 .switchIfEmpty(Mono.error(new ClashBotDbException(MessageFormat.format("Team {0} does not exist.", clashTeamId), HttpStatus.NOT_FOUND)))
                 .flatMap(team -> removeUserFromTeam(discordId, team))
+                .flatMap(userService::enrichClashTeamWithUserDetails)
                 .log()
                 .flatMap(team -> userAssociationService.delete(UserAssociationKey.builder()
                                 .discordId(discordId)

@@ -168,7 +168,7 @@ public class UserService {
         return clashTeam;
     }
 
-    public Flux<ClashTeam> enrichClashTeamWithUserDetails(List<ClashTeam> clashTeamListToEnrich) {
+    public Flux<ClashTeam> enrichClashTeamsWithUserDetails(List<ClashTeam> clashTeamListToEnrich) {
         Set<String> uniqueDiscordIds = clashTeamListToEnrich.parallelStream()
                 .map(ClashTeam::getPositions)
                 .map(positions -> positions.values().stream()
@@ -176,11 +176,26 @@ public class UserService {
                         .collect(Collectors.toSet()))
                 .flatMap(Set::stream)
                 .collect(Collectors.toSet());
-        return Flux.fromIterable(uniqueDiscordIds)
-                .flatMap(this::retrieveUser)
-                .collectMap(User::getDiscordId, Function.identity())
+        return getMapOfUserDetailsMono(uniqueDiscordIds)
                 .map(map -> clashTeamListToEnrich.stream().map(team -> Tuples.of(team, map)).collect(Collectors.toList()))
                 .flatMapIterable(teamToMap -> teamToMap)
                 .map(clashTeamToMapTuple -> populateTeamUserDetails(clashTeamToMapTuple.getT1(), clashTeamToMapTuple.getT2()));
     }
+
+    public Mono<ClashTeam> enrichClashTeamWithUserDetails(ClashTeam clashTeamToEnrich) {
+        Set<String> discordIdsSet = clashTeamToEnrich.getPositions()
+                .values()
+                .stream()
+                .map(BasePlayerRecord::getDiscordId)
+                .collect(Collectors.toSet());
+        return getMapOfUserDetailsMono(discordIdsSet)
+                .map(discordIdToUserDetails -> populateTeamUserDetails(clashTeamToEnrich, discordIdToUserDetails));
+    }
+
+    private Mono<Map<String, User>> getMapOfUserDetailsMono(Set<String> uniqueDiscordIds) {
+        return Flux.fromIterable(uniqueDiscordIds)
+                .flatMap(this::retrieveUser)
+                .collectMap(User::getDiscordId, Function.identity());
+    }
+
 }

@@ -245,7 +245,7 @@ public class TeamControllerTest {
                     tournamentId.getTournamentName(),
                     tournamentId.getTournamentDay())
             ).thenReturn(Mono.just(filteredClashTeams).flatMapMany(Flux::fromIterable));
-            when(userService.enrichClashTeamWithUserDetails(filteredClashTeams))
+            when(userService.enrichClashTeamsWithUserDetails(filteredClashTeams))
                     .thenReturn(Mono.just(filteredClashTeams).flatMapMany(Flux::fromIterable));
 
             Teams expectedResponse = Teams.builder()
