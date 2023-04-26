@@ -6,6 +6,7 @@ import com.poss.clash.bot.enums.UserSubscription;
 import com.poss.clash.bot.exceptions.ClashBotControllerException;
 import com.poss.clash.bot.openapi.api.UsersApi;
 import com.poss.clash.bot.openapi.model.*;
+import com.poss.clash.bot.services.UserAssociationService;
 import com.poss.clash.bot.services.UserService;
 import com.poss.clash.bot.utils.UserMapper;
 import lombok.AllArgsConstructor;
@@ -31,6 +32,8 @@ import static com.poss.clash.bot.constants.GlobalConstants.CAUSED_BY_KEY;
 public class UserController implements UsersApi {
 
     private final UserService userService;
+
+    private final UserAssociationService userAssociationService;
 
     private final UserMapper userMapper;
 
@@ -181,6 +184,11 @@ public class UserController implements UsersApi {
                 .switchIfEmpty(Mono.error(new ClashBotControllerException("User not found.", HttpStatus.NOT_FOUND)))
                 .map(userMapper::loLChampionToChampion)
                 .collect(Collectors.toSet())
+                .flatMap(setOfChampions -> Mono.deferContextual(ctx -> userAssociationService.updateInvolvedTeams(ctx.get(CAUSED_BY_KEY))
+                        .collectList()
+                        .log()
+                        .thenReturn(setOfChampions)
+                        .defaultIfEmpty(setOfChampions)))
                 .map(setOfChampions -> Champions.builder()
                         .champions(new ArrayList<>(setOfChampions))
                         .build())
