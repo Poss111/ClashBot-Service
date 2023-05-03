@@ -25,20 +25,24 @@ jobs:
           ls -lha
           CI=true ./gradlew clean build
 
-  run-helm-checks:
-    - name: Checkout repo
-      uses: actions/checkout@v2
+  helm-checks:
+    name: "Helm Chart check"
+    runs-on: ubuntu-latest
 
-    - name: Helm Lint
-      run: |
-        helm lint ./helm -f helm/local-values.yaml
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
 
-    - name: Helm Lint
-      run: |
-        helm package ./helm
+      - name: Helm Lint
+        run: |
+          helm lint ./helm -f helm/local-values.yaml
 
-    - name: Publish Helm Artifact
-      uses: actions/upload-artifact@v3
-      with:
-        name: helm-chart
-        path: /clash-bot-service*.tgz
+      - name: Helm Lint
+        run: |
+          helm package ./helm
+
+      - name: Publish Helm Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: helm-chart
+          path: /clash-bot-service*.tgz
