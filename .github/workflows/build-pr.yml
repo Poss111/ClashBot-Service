@@ -27,6 +27,8 @@ jobs:
 
       - name: Helm Lint
         run: |
+          ls -lha ./helm
+          ls -lha /helm
           helm lint ./helm -f helm/local-values.yaml
 
       - name: Helm Lint
