@@ -50,7 +50,7 @@ jobs:
         id: docker
         run: |
           DOCKER_REGISTRY="poss11111/clash-bot-service"
-          DOCKER_TAG="${{github.ref_name}}-${{github.run_number}}"
+          DOCKER_TAG="${{github.head_ref}}-${{github.run_number}}"
           FULL_DOCKER_PATH="$DOCKER_REGISTRY:$DOCKER_TAG"
           echo "dockerRegistry=DOCKER_REGISTRY" >> "$GITHUB_OUTPUT"
           echo "dockerTag=$DOCKER_TAG" >> "$GITHUB_OUTPUT"
