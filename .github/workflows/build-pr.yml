@@ -58,7 +58,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v4
         with:
-          tags: |
+          images: |
             poss11111/clash-bot-service
           labels: |
             maintainer=Poss111
