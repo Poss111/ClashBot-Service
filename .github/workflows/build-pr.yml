@@ -17,10 +17,6 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v2
 
-      - name: Check if helm is available
-        run: |
-          helm version
-
       - name: Setup Gradle
         uses: gradle/gradle-build-action@v2
 
@@ -28,3 +24,17 @@ jobs:
         run: |
           ls -lha
           CI=true ./gradlew clean build
+
+      - name: Helm Lint
+        run: |
+          helm lint ./helm -f helm/local-values.yaml
+
+      - name: Helm Lint
+        run: |
+          helm package ./helm
+
+      - name: Publish artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: pr-artifacts
+          path: /clash-bot-service*.tgz
