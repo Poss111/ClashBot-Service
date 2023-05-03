@@ -1,23 +1,18 @@
 spring:
   application:
-    name: clash-bot-service-local
+    name: clash-bot-service-k8s
   jpa:
     hibernate:
       ddl-auto: update
   data:
     mongodb:
-      uri: mongodb://127.0.0.1:27017/clash-bot
+      uri: mongodb://host.docker.internal:27017/clash-bot
 aws:
   endpoint-configuration:
-    url: http://127.0.0.1:4566
+    url: http://host.docker.internal:4566
     signingRegion: us-east-1
 cloud:
   aws:
-    credentials:
-      access-key: local
-      secret-key: local
-    region:
-      static: us-east-1
     stack:
       auto: false
 logging:

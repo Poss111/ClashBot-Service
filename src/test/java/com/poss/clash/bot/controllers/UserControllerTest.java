@@ -5,6 +5,7 @@ import com.poss.clash.bot.daos.models.LoLChampion;
 import com.poss.clash.bot.daos.models.User;
 import com.poss.clash.bot.enums.UserSubscription;
 import com.poss.clash.bot.openapi.model.*;
+import com.poss.clash.bot.services.UserAssociationService;
 import com.poss.clash.bot.services.UserService;
 import com.poss.clash.bot.utils.UserMapper;
 import org.jeasy.random.EasyRandom;
@@ -43,6 +44,9 @@ public class UserControllerTest {
     @Mock
     UserService userService;
 
+    @Mock
+    UserAssociationService userAssociationService;
+
     @Spy
     UserMapper userMapper = Mappers.getMapper(UserMapper.class);
 
@@ -58,6 +62,7 @@ public class UserControllerTest {
         void test() {
             String discordId = easyRandom.nextObject(String.class);
             Champions championsListToAdd = easyRandom.nextObject(Champions.class);
+            String xCausedBy = easyRandom.nextObject(String.class);
 
             Set<LoLChampion> setOfLolChampions = championsListToAdd.getChampions()
                     .stream()
@@ -69,8 +74,9 @@ public class UserControllerTest {
 
             when(userService.mergePreferredChampionsForUser(discordId, setOfLolChampions))
                     .thenReturn(Mono.just(setOfLolChampions).flatMapMany(Flux::fromIterable));
+            when(userAssociationService.updateInvolvedTeams(xCausedBy))
+                    .thenReturn(Mono.just(Event.builder().build()).flux());
 
-            String xCausedBy = easyRandom.nextObject(String.class);
             StepVerifier
                     .create(userController.addToPreferredChampionsForUser(xCausedBy, discordId, Mono.just(championsListToAdd), null))
                     .expectAccessibleContext()
@@ -120,6 +126,7 @@ public class UserControllerTest {
         void test() {
             String discordId = easyRandom.nextObject(String.class);
             Champions championsListToAdd = easyRandom.nextObject(Champions.class);
+            String xCausedBy = easyRandom.nextObject(String.class);
 
             Set<LoLChampion> setOfLolChampions = championsListToAdd.getChampions()
                     .stream()
@@ -131,8 +138,8 @@ public class UserControllerTest {
 
             when(userService.createPreferredChampionsForUser(discordId, setOfLolChampions))
                     .thenReturn(Mono.just(setOfLolChampions).flatMapMany(Flux::fromIterable));
-
-            String xCausedBy = easyRandom.nextObject(String.class);
+            when(userAssociationService.updateInvolvedTeams(xCausedBy))
+                    .thenReturn(Mono.just(Event.builder().build()).flux());
             StepVerifier
                     .create(userController.createListOfPreferredChampionsForUser(xCausedBy, discordId, Mono.just(championsListToAdd), null))
                     .expectAccessibleContext()
@@ -182,6 +189,8 @@ public class UserControllerTest {
         void test() {
             String discordId = easyRandom.nextObject(String.class);
             Champions championsListToAdd = easyRandom.nextObject(Champions.class);
+            String xCausedBy = easyRandom.nextObject(String.class);
+
             List<String> listOfNames = championsListToAdd.getChampions().stream().map(Champion::getName).collect(Collectors.toList());
 
             Set<LoLChampion> setOfLolChampions = championsListToAdd.getChampions()
@@ -194,8 +203,9 @@ public class UserControllerTest {
 
             when(userService.removePreferredChampionsForUser(discordId, setOfLolChampions))
                     .thenReturn(Mono.just(setOfLolChampions).flatMapMany(Flux::fromIterable));
+            when(userAssociationService.updateInvolvedTeams(xCausedBy))
+                    .thenReturn(Mono.just(Event.builder().build()).flux());
 
-            String xCausedBy = easyRandom.nextObject(String.class);
             StepVerifier
                     .create(userController.removePreferredChampionForUser(xCausedBy, discordId, listOfNames, null))
                     .expectAccessibleContext()

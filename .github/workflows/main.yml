@@ -1,4 +1,4 @@
-name: Build - Clash Bot WebApp
+name: Deployment
 
 on:
   push:

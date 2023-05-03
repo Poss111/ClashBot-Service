@@ -17,6 +17,10 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v2
 
+      - name: Check if helm is available
+        run: |
+          helm version
+
       - name: Setup Gradle
         uses: gradle/gradle-build-action@v2
 

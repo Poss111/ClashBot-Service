@@ -2,8 +2,10 @@ package com.poss.clash.bot.source;
 
 
 import com.poss.clash.bot.openapi.model.*;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
@@ -17,11 +19,13 @@ import static com.poss.clash.bot.constants.GlobalConstants.*;
 
 @Component
 @Slf4j
+@Data
 public class TeamSource {
 
     private final BlockingQueue<Event> teamEvent = new LinkedBlockingQueue<>();
 
     @Bean
+    @Profile("!integration")
     public Supplier<Event> teamEvents() {
         return this.teamEvent::poll;
     }

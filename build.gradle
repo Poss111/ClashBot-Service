@@ -74,6 +74,7 @@ dependencies {
     // Integration Test Dependencies
 //    integrationTestImplementation "de.flapdoodle.embed:de.flapdoodle.embed.mongo"
     integrationTestImplementation "org.testcontainers:mongodb"
+    integrationTestImplementation 'org.testcontainers:localstack'
     integrationTestImplementation "org.testcontainers:junit-jupiter"
 }
 

@@ -1,9 +1,5 @@
 package com.poss.clash.bot.configs;
 
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.client.builder.AwsClientBuilder;
-import com.amazonaws.services.kinesis.AmazonKinesisAsync;
-import com.amazonaws.services.kinesis.AmazonKinesisAsyncClientBuilder;
 import com.mongodb.reactivestreams.client.MongoClient;
 import com.mongodb.reactivestreams.client.MongoClients;
 import lombok.AllArgsConstructor;
@@ -30,7 +26,8 @@ public class MongoDbConfiguration extends AbstractReactiveMongoConfiguration {
     private final MongoProperties mongoProperties;
 
     @Bean
-    public MongoClient mongoClient() {
+    @Override
+    public MongoClient reactiveMongoClient() {
         log.info("Creating Mongo client with {}...", mongoProperties.getUri());
         return StringUtils.isBlank(mongoProperties.getUri()) ?
                 MongoClients.create() :
@@ -45,15 +42,6 @@ public class MongoDbConfiguration extends AbstractReactiveMongoConfiguration {
     @Bean
     protected ReactiveAuditorAware<String> auditProvider() {
         return () -> Mono.just(Objects.requireNonNull(context.getId()));
-    }
-
-    @Bean
-    AmazonKinesisAsync amazonKinesis(AWSCredentialsProvider awsCredentialsProvider) {
-        return AmazonKinesisAsyncClientBuilder
-                .standard()
-                .withCredentials(awsCredentialsProvider)
-                .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration("http://localhost:4566", "us-east-1"))
-                .build();
     }
 
 }

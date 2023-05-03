@@ -4,11 +4,22 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+  cloud:
+    stream:
+      bindings:
+        teamEvents-out-0:
+          destination: clashBotTeamEvent
+          content-type: application/json
+          producer:
+            auto-startup: false
+      poller:
+        fixed-delay: 3000
 
 logging:
   level:
     root: ERROR
     com.poss: INFO
+    reactor: INFO
     org.springframework: ERROR
-    org.springframework.data: TRACE
-    org.springframework.data.mongodb: TRACE
+    org.springframework.data: ERROR
+    org.springframework.data.mongodb: ERROR
