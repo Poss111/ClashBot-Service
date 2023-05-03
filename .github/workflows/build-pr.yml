@@ -37,7 +37,7 @@ jobs:
         run: |
           helm lint ./helm -f helm/local-values.yaml
 
-      - name: Helm Lint
+      - name: Helm Package
         run: |
           helm package ./helm
 
@@ -45,4 +45,4 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: helm-chart
-          path: /clash-bot-service*.tgz
+          path: /*.tgz
