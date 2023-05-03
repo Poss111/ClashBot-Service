@@ -41,9 +41,6 @@ jobs:
       fullDockerPath: ${{ steps.docker.outputs.fullDockerPath }}
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v2
-
       - name: Download built jar
         uses: actions/download-artifact@v3
         with:
@@ -52,15 +49,15 @@ jobs:
       - name: Docker build
         id: docker
         run: |
-          ls -lha
-          ls -lha build/libs/
           DOCKER_REGISTRY="poss11111/clash-bot-service"
           DOCKER_TAG="${{github.head_ref}}-${{github.run_number}}"
           FULL_DOCKER_PATH="$DOCKER_REGISTRY:$DOCKER_TAG"
           echo "dockerRegistry=DOCKER_REGISTRY" >> "$GITHUB_OUTPUT"
           echo "dockerTag=$DOCKER_TAG" >> "$GITHUB_OUTPUT"
           echo "fullDockerPath=FULL_DOCKER_PATH" >> "$GITHUB_OUTPUT"
-          docker build -t $FULL_DOCKER_PATH .
+          JAR=$(ls | grep *SNAPSHOT.jar)
+          echo "Jar to be used $JAR"
+          docker build -t $FULL_DOCKER_PATH . --build-arg JAR=$JAR
 
   helm-checks:
     name: "Helm Chart check"
