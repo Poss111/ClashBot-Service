@@ -46,4 +46,4 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: helm-chart
-          path: /**/clash-bot-service-*.tgz
+          path: /home/runner/work/ClashBot-Service/ClashBot-Service/clash-bot-service-*.tgz
