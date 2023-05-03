@@ -25,13 +25,53 @@ jobs:
           ls -lha
           CI=true ./gradlew clean build
 
+      - uses: actions/upload-artifact@v3
+        with:
+          name: jar
+          path: build/libs
+
+  build-image:
+    name: "Build Docker image"
+    needs:
+      - build-artifact
+    runs-on: ubuntu-latest
+    outputs:
+      dockerRegistry: ${{ steps.docker.outputs.dockerRegistry }}
+      dockerTag: ${{ steps.docker.outputs.dockerTag }}
+      fullDockerPath: ${{ steps.docker.outputs.fullDockerPath }}
+
+    steps:
+      - name: Download math result for job 1
+        uses: actions/download-artifact@v3
+        with:
+          name: jar
+
+      - name: Docker build
+        id: docker
+        run: |
+          DOCKER_REGISTRY="poss11111/clash-bot-service"
+          DOCKER_TAG="${{github.ref_name}}-${{github.run_number}}"
+          FULL_DOCKER_PATH="$DOCKER_REGISTRY:$DOCKER_TAG"
+          echo "dockerRegistry=DOCKER_REGISTRY" >> "$GITHUB_OUTPUT"
+          echo "dockerTag=$DOCKER_TAG" >> "$GITHUB_OUTPUT"
+          echo "fullDockerPath=FULL_DOCKER_PATH" >> "$GITHUB_OUTPUT"
+          docker build -t $FULL_DOCKER_PATH .
+
   helm-checks:
     name: "Helm Chart check"
+    needs:
+      - build-image
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v2
+
+      - name: Update Helm Version
+        env:
+          DOCKER_TAG: ${{needs.build-image.outputs.dockerTag}}
+        run: |
+          sed -i "s/^appVersion:.*$/appVersion: $DOCKER_TAG/" ./helm/Chart.yaml
 
       - name: Helm Lint
         run: |
@@ -40,7 +80,6 @@ jobs:
       - name: Helm Package
         run: |
           helm package ./helm
-          ls -lha
 
       - name: Publish Helm Artifact
         uses: actions/upload-artifact@v3
