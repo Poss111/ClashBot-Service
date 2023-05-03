@@ -71,7 +71,7 @@ jobs:
         id: docker
         run: |
           JAR=$(ls | grep *SNAPSHOT.jar)
-          echo "jar=JAR" >> "$GITHUB_OUTPUT"
+          echo "jar=$JAR" >> "$GITHUB_OUTPUT"
 
       - name: Build and push
         uses: docker/build-push-action@v4
