@@ -41,13 +41,17 @@ jobs:
       fullDockerPath: ${{ steps.docker.outputs.fullDockerPath }}
 
     steps:
-      - name: Download math result for job 1
+      - name: Checkout repo
+        uses: actions/checkout@v2
+
+      - name: Download built jar
         uses: actions/download-artifact@v3
         with:
           name: jar
 
       - name: Docker build
         id: docker
+        with:
         run: |
           DOCKER_REGISTRY="poss11111/clash-bot-service"
           DOCKER_TAG="${{github.head_ref}}-${{github.run_number}}"
