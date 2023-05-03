@@ -15,7 +15,7 @@ jobs:
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Setup Gradle
         uses: gradle/gradle-build-action@v2
@@ -41,6 +41,9 @@ jobs:
       fullDockerPath: ${{ steps.docker.outputs.fullDockerPath }}
 
     steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
       - name: Download built jar
         uses: actions/download-artifact@v3
         with:
@@ -67,7 +70,7 @@ jobs:
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Update Helm Version
         env:
