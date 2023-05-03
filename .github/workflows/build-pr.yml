@@ -52,6 +52,8 @@ jobs:
       - name: Docker build
         id: docker
         run: |
+          ls -lha
+          ls -lha build/libs/
           DOCKER_REGISTRY="poss11111/clash-bot-service"
           DOCKER_TAG="${{github.head_ref}}-${{github.run_number}}"
           FULL_DOCKER_PATH="$DOCKER_REGISTRY:$DOCKER_TAG"
