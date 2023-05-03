@@ -25,18 +25,20 @@ jobs:
           ls -lha
           CI=true ./gradlew clean build
 
-      - name: Helm Lint
-        run: |
-          ls -lha ./helm
-          ls -lha /helm
-          helm lint ./helm -f helm/local-values.yaml
+  run-helm-checks:
+    - name: Checkout repo
+      uses: actions/checkout@v2
 
-      - name: Helm Lint
-        run: |
-          helm package ./helm
+    - name: Helm Lint
+      run: |
+        helm lint ./helm -f helm/local-values.yaml
 
-      - name: Publish artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: pr-artifacts
-          path: /clash-bot-service*.tgz
+    - name: Helm Lint
+      run: |
+        helm package ./helm
+
+    - name: Publish Helm Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: helm-chart
+        path: /clash-bot-service*.tgz
