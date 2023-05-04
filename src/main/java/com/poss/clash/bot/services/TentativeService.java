@@ -18,15 +18,6 @@ public class TentativeService {
     private final TentativeDao tentativeDao;
     private final IdUtils idUtils;
 
-    /**
-     * I do not like this method. There has to be a better way to work with Spring Data for Dynamic queries.
-     *
-     * @param discordId
-     * @param serverId
-     * @param tournamentName
-     * @param tournamentDay
-     * @return
-     */
     public Flux<TentativeQueue> retrieveTentativeQueues(String discordId, String serverId, String tournamentName, String tournamentDay) {
         Flux<TentativeQueue> tentativeQueueFlux;
         if (StringUtils.isNotBlank(discordId)
@@ -95,6 +86,7 @@ public class TentativeService {
     }
 
     public Mono<TentativeQueue> assignUserToTentativeQueue(String discordId, TentativeQueue tentativeQueue) {
+        tentativeQueue.getDiscordIds().add(discordId);
         return tentativeDao.updateByTentativeId_TentativeId(tentativeQueue.getTentativeId().getTentativeId(), discordId)
                 .thenReturn(tentativeQueue);
     }

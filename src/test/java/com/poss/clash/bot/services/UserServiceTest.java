@@ -313,9 +313,7 @@ public class UserServiceTest {
                 StepVerifier.create(userService.mergeSelectedServers(userDiscordId, newServerIds))
                         .recordWith(HashSet::new)
                         .expectNextCount(2)
-                        .consumeRecordedWith(list -> {
-                            assertEquals(newServerIds, list);
-                        })
+                        .consumeRecordedWith(list -> assertEquals(newServerIds, list))
                         .verifyComplete();
             }
 
@@ -376,9 +374,7 @@ public class UserServiceTest {
             StepVerifier.create(userService.overwriteSelectedServers(userDiscordId, newServerIds))
                     .recordWith(HashSet::new)
                     .expectNextCount(newServerIds.size())
-                    .consumeRecordedWith(list -> {
-                        assertEquals(newServerIds, list);
-                    })
+                    .consumeRecordedWith(list -> assertEquals(newServerIds, list))
                     .verifyComplete();
         }
 
@@ -489,7 +485,7 @@ public class UserServiceTest {
     class PopulateUserDetails {
 
         @Test
-        void test_populateListOfUserDetailsForListOfClashTeams() {
+        void test_enrichClashTeamsWithUserDetails_populateListOfUserDetailsForListOfClashTeams() {
             String teamId = "ct-1234";
             String awesomeTeam = "Awesome Team";
             HashMap<Role, BasePlayerRecord> positions = new HashMap<>();
@@ -575,13 +571,68 @@ public class UserServiceTest {
             positionsTwo.forEach((key, value) -> when(userService.retrieveUser(value.getDiscordId()))
                     .thenReturn(Mono.just(User.builder().discordId(value.getDiscordId()).preferredChampions(expectedPreferredChamps).build())));
             StepVerifier
-                    .create(userService.enrichClashTeamWithUserDetails(clashTeamListToEnrich))
+                    .create(userService.enrichClashTeamsWithUserDetails(clashTeamListToEnrich))
                     .recordWith(HashSet::new)
                     .expectNextCount(2)
                     .consumeRecordedWith(enrichedClashTeams -> {
                         for (ClashTeam clashTeam : enrichedClashTeams) {
                             clashTeam.getPositions().forEach((key, value) -> assertEquals(expectedPreferredChamps, value.getChampionsToPlay()));
                         }
+                    })
+                    .verifyComplete();
+        }
+
+        @Test
+        void test_enrichClashTeamWithUserDetails_populateUserClashTeamDetails() {
+            String teamId = "ct-1234";
+            String awesomeTeam = "Awesome Team";
+            HashMap<Role, BasePlayerRecord> positions = new HashMap<>();
+            String discordId = "1";
+            String discordIdTwo = "2";
+            String discordIdThree = "3";
+            String discordIdFour = "4";
+            String discordIdFive = "5";
+            positions.put(Role.TOP, BasePlayerRecord.builder()
+                    .discordId(discordId)
+                    .build());
+            positions.put(Role.JG, BasePlayerRecord.builder()
+                    .discordId(discordIdTwo)
+                    .build());
+            positions.put(Role.MID, BasePlayerRecord.builder()
+                    .discordId(discordIdThree)
+                    .build());
+            positions.put(Role.BOT, BasePlayerRecord.builder()
+                    .discordId(discordIdFour)
+                    .build());
+            positions.put(Role.SUPP, BasePlayerRecord.builder()
+                    .discordId(discordIdFive)
+                    .build());
+
+            TournamentId tournamentId = TournamentId.builder()
+                    .tournamentName("awesome_sauce")
+                    .tournamentDay("1")
+                    .build();
+            String serverId = "1234";
+
+            ClashTeam clashTeamEntity = ClashTeam.builder()
+                    .teamId(TeamId.builder()
+                            .id(teamId)
+                            .tournamentId(tournamentId)
+                            .build())
+                    .teamName(awesomeTeam)
+                    .serverId(serverId)
+                    .positions(positions)
+                    .build();
+            Set<LoLChampion> expectedPreferredChamps = Set.of(LoLChampion.builder()
+                    .name("Anivia")
+                    .build());
+            positions.forEach((key, value) -> when(userService.retrieveUser(value.getDiscordId()))
+                    .thenReturn(Mono.just(User.builder().discordId(value.getDiscordId()).preferredChampions(expectedPreferredChamps).build())));
+            StepVerifier
+                    .create(userService.enrichClashTeamWithUserDetails(clashTeamEntity))
+                    .expectNextMatches(enrichedClashTeam -> {
+                        enrichedClashTeam.getPositions().forEach((key, value) -> assertEquals(expectedPreferredChamps, value.getChampionsToPlay()));
+                        return true;
                     })
                     .verifyComplete();
         }

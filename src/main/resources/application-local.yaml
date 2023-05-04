@@ -4,6 +4,22 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+  data:
+    mongodb:
+      uri: mongodb://127.0.0.1:27017/clash-bot
+aws:
+  endpoint-configuration:
+    url: http://127.0.0.1:4566
+    signingRegion: us-east-1
+cloud:
+  aws:
+    credentials:
+      access-key: local
+      secret-key: local
+    region:
+      static: us-east-1
+    stack:
+      auto: false
 logging:
   level:
     root: ERROR

@@ -1,0 +1,6 @@
+service:
+  springProfile: k8s
+  port: 8080
+
+image:
+  pullPolicy: Never

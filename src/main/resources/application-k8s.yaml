@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: clash-bot-service-k8s
+  jpa:
+    hibernate:
+      ddl-auto: update
+  data:
+    mongodb:
+      uri: mongodb://host.docker.internal:27017/clash-bot
+aws:
+  endpoint-configuration:
+    url: http://host.docker.internal:4566
+    signingRegion: us-east-1
+cloud:
+  aws:
+    stack:
+      auto: false
+logging:
+  level:
+    root: ERROR
+    com.poss: INFO

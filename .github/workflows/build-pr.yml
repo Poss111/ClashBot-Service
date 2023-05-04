@@ -3,7 +3,7 @@ name: Build - Clash Bot WebApp
 on:
   pull_request:
     branches:
-      - master
+      - main
     paths-ignore:
       - '**/README.md'
       - '**/.gitignore'
@@ -15,10 +15,95 @@ jobs:
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Setup Gradle
         uses: gradle/gradle-build-action@v2
 
       - name: Gradle build
-        run: CI=true ./gradlew clean build
+        run: |
+          ls -lha
+          CI=true ./gradlew clean build
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: jar
+          path: build/libs
+
+  build-image:
+    name: "Build Docker image"
+    needs:
+      - build-artifact
+    runs-on: ubuntu-latest
+    outputs:
+      dockerTag: ${{ steps.meta.outputs.version }}
+      fullDockerPath: ${{ steps.docker.outputs.fullDockerPath }}
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Download built jar
+        uses: actions/download-artifact@v3
+        with:
+          name: jar
+          path: build/libs
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: |
+            poss11111/clash-bot-service
+          labels: |
+            maintainer=Poss111
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+
+      - name: Build and push
+        uses: docker/build-push-action@v4
+        with:
+          push: true
+          context: .
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            JAR=${{ steps.docker.outputs.jar }}
+
+  helm-checks:
+    name: "Helm Chart check"
+    needs:
+      - build-image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Update Helm Version
+        env:
+          DOCKER_TAG: ${{needs.build-image.outputs.dockerTag}}
+        run: |
+          sed -i "s/^appVersion:.*$/appVersion: $DOCKER_TAG/" ./helm/Chart.yaml
+
+      - name: Helm Lint
+        run: |
+          helm lint ./helm -f helm/local-values.yaml
+
+      - name: Helm Package
+        run: |
+          helm package ./helm
+
+      - name: Publish Helm Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: helm-chart
+          path: /home/runner/work/ClashBot-Service/ClashBot-Service/clash-bot-service-*.tgz

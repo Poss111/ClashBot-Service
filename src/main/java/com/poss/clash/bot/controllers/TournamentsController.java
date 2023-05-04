@@ -19,12 +19,11 @@ import reactor.core.publisher.Mono;
 public class TournamentsController implements TournamentsApi {
 
     private final TournamentService tournamentService;
-
     private final TournamentMapper tournamentMapper;
 
     @Override
-    public Mono<ResponseEntity<DetailedTournament>> createTournament(Mono<DetailedTournament> tournament, ServerWebExchange exchange) {
-        return tournament
+    public Mono<ResponseEntity<DetailedTournament>> createTournament(String xCausedBy, Mono<DetailedTournament> detailedTournament, ServerWebExchange exchange) {
+        return detailedTournament
                 .map(tournamentMapper::detailedTournamentToClashTournament)
                 .flatMap(tournamentService::saveTournament)
                 .map(tournamentMapper::clashTournamentToDetailedTournament)
@@ -32,12 +31,12 @@ public class TournamentsController implements TournamentsApi {
     }
 
     @Override
-    public Mono<ResponseEntity<Tournaments>> getTournaments(String tournament, String day, Boolean upcoming, ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Tournaments>> getTournaments(String xCausedBy, String tournament, String day, Boolean upcomingOnly, ServerWebExchange exchange) {
         Flux<ClashTournament> tournamentFlux;
         if (StringUtils.isNotBlank(tournament) || StringUtils.isNotBlank(day)) {
             tournamentFlux = tournamentService.retrieveTournamentsByTournamentOrDay(tournament, day);
         } else {
-            tournamentFlux = tournamentService.retrieveAllTournaments(upcoming);
+            tournamentFlux = tournamentService.retrieveAllTournaments(upcomingOnly);
         }
         return tournamentFlux
                 .map(tournamentMapper::clashTournamentToDetailedTournament)
@@ -48,5 +47,5 @@ public class TournamentsController implements TournamentsApi {
                         .build())
                 .map(ResponseEntity::ok);
     }
-
+    
 }

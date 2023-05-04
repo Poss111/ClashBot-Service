@@ -31,9 +31,13 @@ import reactor.test.StepVerifier;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.poss.clash.bot.constants.GlobalConstants.CAUSED_BY_KEY;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 
@@ -231,8 +235,12 @@ class TentativeControllerTest {
             when(userAssignmentService.assignUserToTentativeQueue(discordId, tqId))
                     .thenReturn(Mono.just(tentativeQueue));
 
+            String xCausedBy = easyRandom.nextObject(String.class);
             StepVerifier
-                    .create(tentativeController.assignUserToATentativeQueue(tqId, discordId, null))
+                    .create(tentativeController.assignUserToATentativeQueue(xCausedBy, tqId, discordId, null))
+                    .expectAccessibleContext()
+                    .contains(CAUSED_BY_KEY, xCausedBy)
+                    .then()
                     .expectNext(ResponseEntity.ok(tentativeMapper.tentativeQueueToTentative(tentativeQueue)))
                     .verifyComplete();
         }
@@ -254,8 +262,12 @@ class TentativeControllerTest {
             when(userAssignmentService.findAndRemoveUserFromTentativeQueue(discordId, tqId))
                     .thenReturn(Mono.just(tentativeQueue));
 
+            String xCausedBy = easyRandom.nextObject(String.class);
             StepVerifier
-                    .create(tentativeController.removeUserFromTentativeQueue(tqId, discordId, null))
+                    .create(tentativeController.removeUserFromTentativeQueue(xCausedBy, tqId, discordId, null))
+                    .expectAccessibleContext()
+                    .contains(CAUSED_BY_KEY, xCausedBy)
+                    .then()
                     .expectNext(ResponseEntity.ok(tentativeMapper.tentativeQueueToTentative(tentativeQueue)))
                     .verifyComplete();
         }
@@ -296,8 +308,12 @@ class TentativeControllerTest {
                     tournamentId.getTournamentDay()
             )).thenReturn(Mono.just(tentativeQueue));
 
+            String xCausedBy = easyRandom.nextObject(String.class);
             StepVerifier
-                    .create(tentativeController.createTentativeQueue(Mono.just(tentativePayload), null))
+                    .create(tentativeController.createTentativeQueue(xCausedBy, Mono.just(tentativePayload), null))
+                    .expectAccessibleContext()
+                    .contains(CAUSED_BY_KEY, xCausedBy)
+                    .then()
                     .expectNext(ResponseEntity.ok(tentativeMapper.tentativeQueueToTentative(tentativeQueue)))
                     .expectComplete()
                     .verify();
@@ -320,8 +336,12 @@ class TentativeControllerTest {
                     )
                     .build();
 
+            String xCausedBy = easyRandom.nextObject(String.class);
             StepVerifier
-                    .create(tentativeController.createTentativeQueue(Mono.just(tentativePayload), null))
+                    .create(tentativeController.createTentativeQueue(xCausedBy, Mono.just(tentativePayload), null))
+                    .expectAccessibleContext()
+                    .contains(CAUSED_BY_KEY, xCausedBy)
+                    .then()
                     .expectError(ClashBotControllerException.class)
                     .verify();
         }
@@ -379,17 +399,25 @@ class TentativeControllerTest {
                             tentativeMapper.userToTentativePlayer(discordIdToUser.get(id)))
                     .collect(Collectors.toList());
 
+            ZoneOffset zoneOffset = ZoneId.of("America/Chicago").getRules().getOffset(queue.getLastModifiedDate());
+            OffsetDateTime offsetDateTime = OffsetDateTime.of(queue.getLastModifiedDate().atOffset(zoneOffset).toLocalDateTime(), zoneOffset);
+
             Tentatives tentatives = Tentatives.builder()
                     .queues(List.of(Tentative.builder()
                             .serverId(serverId)
                             .tournamentDetails(baseTournament)
                             .tentativePlayers(tentativePlayerList)
                             .id(tentativeQueueId)
+                            .lastUpdatedAt(offsetDateTime)
                             .build()))
                     .count(1)
                     .build();
 
-            StepVerifier.create(tentativeController.retrieveTentativeQueues(false, null, null, null, null, null))
+            String xCausedBy = easyRandom.nextObject(String.class);
+            StepVerifier.create(tentativeController.retrieveTentativeQueues(xCausedBy, false, null, null, null, null, null))
+                    .expectAccessibleContext()
+                    .contains(CAUSED_BY_KEY, xCausedBy)
+                    .then()
                     .expectNext(ResponseEntity.ok(tentatives))
                     .expectComplete()
                     .verify();
@@ -453,7 +481,11 @@ class TentativeControllerTest {
                     .count(1)
                     .build();
 
-            StepVerifier.create(tentativeController.retrieveTentativeQueues(true, null, null, null, null, null))
+            String xCausedBy = easyRandom.nextObject(String.class);
+            StepVerifier.create(tentativeController.retrieveTentativeQueues(xCausedBy, true, null, null, null, null, null))
+                    .expectAccessibleContext()
+                    .contains(CAUSED_BY_KEY, xCausedBy)
+                    .then()
                     .expectNext(ResponseEntity.ok(tentatives))
                     .expectComplete()
                     .verify();
@@ -474,8 +506,12 @@ class TentativeControllerTest {
             when(tentativeService.findById(tqId))
                     .thenReturn(Mono.just(tentativeQueue));
 
+            String xCausedBy = easyRandom.nextObject(String.class);
             StepVerifier
-                    .create(tentativeController.retrieveTentativeQueue(tqId, null))
+                    .create(tentativeController.retrieveTentativeQueue(xCausedBy, tqId, null))
+                    .expectAccessibleContext()
+                    .contains(CAUSED_BY_KEY, xCausedBy)
+                    .then()
                     .expectNext(ResponseEntity.ok(tentativeMapper.tentativeQueueToTentative(tentativeQueue)))
                     .verifyComplete();
         }
@@ -486,8 +522,12 @@ class TentativeControllerTest {
             String tqId = "tq1234";
             when(tentativeService.findById(tqId))
                     .thenReturn(Mono.empty());
+            String xCausedBy = easyRandom.nextObject(String.class);
             StepVerifier
-                    .create(tentativeController.retrieveTentativeQueue(tqId, null))
+                    .create(tentativeController.retrieveTentativeQueue(xCausedBy, tqId, null))
+                    .expectAccessibleContext()
+                    .contains(CAUSED_BY_KEY, xCausedBy)
+                    .then()
                     .expectNext(ResponseEntity.notFound().build())
                     .verifyComplete();
         }

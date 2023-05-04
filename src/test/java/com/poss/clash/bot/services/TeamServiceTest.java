@@ -60,9 +60,6 @@ public class TeamServiceTest {
     @Captor
     private ArgumentCaptor<Team> teamEventArgumentCaptor;
 
-    @Captor
-    private ArgumentCaptor<String> causedByCaptor;
-
     @Nested
     @DisplayName("Create")
     class Create {
@@ -403,7 +400,7 @@ public class TeamServiceTest {
                     .thenReturn(Mono.just(clashTeam));
             when(teamDao.updateTeamName(clashTeamId, newTeamName))
                     .thenReturn(publisherProbe.mono());
-            when(teamSource.sendTeamUpdateEvent(teamEventArgumentCaptor.capture(), causedByCaptor.capture()))
+            when(teamSource.sendTeamUpdateEvent(teamEventArgumentCaptor.capture()))
                     .thenReturn(Mono.just(Event.builder().build()));
 
             StepVerifier
@@ -416,15 +413,13 @@ public class TeamServiceTest {
             verify(teamDao, times(1))
                     .updateTeamName(clashTeamId, newTeamName);
             verify(teamSource, times(1))
-                    .sendTeamUpdateEvent(any(Team.class), anyString());
+                    .sendTeamUpdateEvent(any(Team.class));
 
             assertAll(() -> {
                 assertEquals(1, teamEventArgumentCaptor.getAllValues().size());
-                assertEquals(1, causedByCaptor.getAllValues().size());
-                Team updatedTeamEvent = teamEventArgumentCaptor.getAllValues().get(0);
+                Team updatedTeamEvent = teamEventArgumentCaptor.getValue();
                 assertEquals(clashTeam.getServerId(), updatedTeamEvent.getServerId());
                 assertEquals(teamMapper.clashTeamToTeam(clashTeam), updatedTeamEvent);
-                assertEquals("0", causedByCaptor.getAllValues().get(0));
             });
         }
 

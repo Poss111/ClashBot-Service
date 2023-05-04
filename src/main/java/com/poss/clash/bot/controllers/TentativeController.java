@@ -28,6 +28,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.poss.clash.bot.constants.GlobalConstants.CAUSED_BY_KEY;
+
 @RestController
 @AllArgsConstructor
 @Slf4j
@@ -40,14 +42,15 @@ public class TentativeController implements TentativesApi {
     private final TentativeMapper tentativeMapper;
 
     @Override
-    public Mono<ResponseEntity<Tentative>> assignUserToATentativeQueue(String tentativeId, String discordId, ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Tentative>> assignUserToATentativeQueue(String xCausedBy, String tentativeId, String discordId, ServerWebExchange exchange) {
         return userAssignmentService.assignUserToTentativeQueue(discordId, tentativeId)
                 .map(tentativeMapper::tentativeQueueToTentative)
-                .map(ResponseEntity::ok);
+                .map(ResponseEntity::ok)
+                .contextWrite(ctx -> ctx.put(CAUSED_BY_KEY, xCausedBy));
     }
 
     @Override
-    public Mono<ResponseEntity<Tentative>> createTentativeQueue(Mono<TentativeRequired> tentativeRequired, ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Tentative>> createTentativeQueue(String xCausedBy, Mono<TentativeRequired> tentativeRequired, ServerWebExchange exchange) {
         return tentativeRequired
                 .map(this::validateTentativeRequest)
                 .flatMap(tentativeRequest -> userAssignmentService.createTentativeQueueAndAssignUser(
@@ -60,26 +63,29 @@ public class TentativeController implements TentativesApi {
                 ))
                 .map(tentativeMapper::tentativeQueueToTentative)
                 .map(ResponseEntity::ok)
-                .defaultIfEmpty(ResponseEntity.notFound().build());
+                .defaultIfEmpty(ResponseEntity.notFound().build())
+                .contextWrite(ctx -> ctx.put(CAUSED_BY_KEY, xCausedBy));
     }
 
     @Override
-    public Mono<ResponseEntity<Tentative>> removeUserFromTentativeQueue(String tentativeId, String discordId, ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Tentative>> removeUserFromTentativeQueue(String xCausedBy, String tentativeId, String discordId, ServerWebExchange exchange) {
         return userAssignmentService.findAndRemoveUserFromTentativeQueue(discordId, tentativeId)
                 .map(tentativeMapper::tentativeQueueToTentative)
-                .map(ResponseEntity::ok);
+                .map(ResponseEntity::ok)
+                .contextWrite(ctx -> ctx.put(CAUSED_BY_KEY, xCausedBy));
     }
 
     @Override
-    public Mono<ResponseEntity<Tentative>> retrieveTentativeQueue(String tentativeId, ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Tentative>> retrieveTentativeQueue(String xCausedBy, String tentativeId, ServerWebExchange exchange) {
         return tentativeService.findById(tentativeId)
                 .map(tentativeMapper::tentativeQueueToTentative)
                 .map(ResponseEntity::ok)
-                .defaultIfEmpty(ResponseEntity.notFound().build());
+                .defaultIfEmpty(ResponseEntity.notFound().build())
+                .contextWrite(ctx -> ctx.put(CAUSED_BY_KEY, xCausedBy));
     }
 
     @Override
-    public Mono<ResponseEntity<Tentatives>> retrieveTentativeQueues(Boolean archived, String discordId, String serverId, String tournamentName, String tournamentDay, ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Tentatives>> retrieveTentativeQueues(String xCausedBy, Boolean archived, String discordId, String serverId, String tournamentName, String tournamentDay, ServerWebExchange exchange) {
         return swapFluxBasedOnArchivedFlag(archived, discordId, serverId, tournamentName, tournamentDay)
                 .collectList()
                 .map(this::buildTupleOfTentativesAndSetOfDiscordIds)
@@ -100,8 +106,10 @@ public class TentativeController implements TentativesApi {
                     return tuple.getT1();
                 })
                 .map(ResponseEntity::ok)
-                .defaultIfEmpty(ResponseEntity.notFound().build());
+                .defaultIfEmpty(ResponseEntity.notFound().build())
+                .contextWrite(ctx -> ctx.put(CAUSED_BY_KEY, xCausedBy));
     }
+
 
     protected Tuple2<Tentatives, Set<String>> buildTupleOfTentativesAndSetOfDiscordIds(List<Tentative> list) {
         Stream<List<TentativePlayer>> listOfTentativePlayers = list.stream().map(
@@ -145,4 +153,5 @@ public class TentativeController implements TentativesApi {
         }
         return tentativePayload;
     }
+
 }

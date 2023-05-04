@@ -5,6 +5,7 @@ import com.poss.clash.bot.daos.models.LoLChampion;
 import com.poss.clash.bot.daos.models.User;
 import com.poss.clash.bot.enums.UserSubscription;
 import com.poss.clash.bot.openapi.model.*;
+import com.poss.clash.bot.services.UserAssociationService;
 import com.poss.clash.bot.services.UserService;
 import com.poss.clash.bot.utils.UserMapper;
 import org.jeasy.random.EasyRandom;
@@ -30,6 +31,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static com.poss.clash.bot.constants.GlobalConstants.CAUSED_BY_KEY;
 import static org.mockito.Mockito.when;
 
 @ExtendWith({SpringExtension.class})
@@ -41,6 +43,9 @@ public class UserControllerTest {
 
     @Mock
     UserService userService;
+
+    @Mock
+    UserAssociationService userAssociationService;
 
     @Spy
     UserMapper userMapper = Mappers.getMapper(UserMapper.class);
@@ -57,6 +62,7 @@ public class UserControllerTest {
         void test() {
             String discordId = easyRandom.nextObject(String.class);
             Champions championsListToAdd = easyRandom.nextObject(Champions.class);
+            String xCausedBy = easyRandom.nextObject(String.class);
 
             Set<LoLChampion> setOfLolChampions = championsListToAdd.getChampions()
                     .stream()
@@ -68,9 +74,14 @@ public class UserControllerTest {
 
             when(userService.mergePreferredChampionsForUser(discordId, setOfLolChampions))
                     .thenReturn(Mono.just(setOfLolChampions).flatMapMany(Flux::fromIterable));
+            when(userAssociationService.updateInvolvedTeams(xCausedBy))
+                    .thenReturn(Mono.just(Event.builder().build()).flux());
 
             StepVerifier
-                    .create(userController.addToPreferredChampionsForUser(discordId, Mono.just(championsListToAdd), null))
+                    .create(userController.addToPreferredChampionsForUser(xCausedBy, discordId, Mono.just(championsListToAdd), null))
+                    .expectAccessibleContext()
+                    .contains(CAUSED_BY_KEY, xCausedBy)
+                    .then()
                     .expectNextMatches(response ->
                             championsListToAdd.getChampions().size() == response.getBody().getChampions().size()
                                     && 200 == response.getStatusCodeValue())
@@ -94,8 +105,12 @@ public class UserControllerTest {
             when(userService.mergePreferredChampionsForUser(discordId, setOfLolChampions))
                     .thenReturn(Flux.empty());
 
+            String xCausedBy = easyRandom.nextObject(String.class);
             StepVerifier
-                    .create(userController.addToPreferredChampionsForUser(discordId, Mono.just(championsListToAdd), null))
+                    .create(userController.addToPreferredChampionsForUser(xCausedBy, discordId, Mono.just(championsListToAdd), null))
+                    .expectAccessibleContext()
+                    .contains(CAUSED_BY_KEY, xCausedBy)
+                    .then()
                     .expectErrorMessage("User not found.")
                     .verify();
         }
@@ -111,6 +126,7 @@ public class UserControllerTest {
         void test() {
             String discordId = easyRandom.nextObject(String.class);
             Champions championsListToAdd = easyRandom.nextObject(Champions.class);
+            String xCausedBy = easyRandom.nextObject(String.class);
 
             Set<LoLChampion> setOfLolChampions = championsListToAdd.getChampions()
                     .stream()
@@ -122,9 +138,13 @@ public class UserControllerTest {
 
             when(userService.createPreferredChampionsForUser(discordId, setOfLolChampions))
                     .thenReturn(Mono.just(setOfLolChampions).flatMapMany(Flux::fromIterable));
-
+            when(userAssociationService.updateInvolvedTeams(xCausedBy))
+                    .thenReturn(Mono.just(Event.builder().build()).flux());
             StepVerifier
-                    .create(userController.createListOfPreferredChampionsForUser(discordId, Mono.just(championsListToAdd), null))
+                    .create(userController.createListOfPreferredChampionsForUser(xCausedBy, discordId, Mono.just(championsListToAdd), null))
+                    .expectAccessibleContext()
+                    .contains(CAUSED_BY_KEY, xCausedBy)
+                    .then()
                     .expectNextMatches(response ->
                             championsListToAdd.getChampions().size() == response.getBody().getChampions().size()
                                     && 200 == response.getStatusCodeValue())
@@ -148,8 +168,12 @@ public class UserControllerTest {
             when(userService.createPreferredChampionsForUser(discordId, setOfLolChampions))
                     .thenReturn(Flux.empty());
 
+            String xCausedBy = easyRandom.nextObject(String.class);
             StepVerifier
-                    .create(userController.createListOfPreferredChampionsForUser(discordId, Mono.just(championsListToAdd), null))
+                    .create(userController.createListOfPreferredChampionsForUser(xCausedBy, discordId, Mono.just(championsListToAdd), null))
+                    .expectAccessibleContext()
+                    .contains(CAUSED_BY_KEY, xCausedBy)
+                    .then()
                     .expectErrorMessage("User not found.")
                     .verify();
         }
@@ -165,6 +189,8 @@ public class UserControllerTest {
         void test() {
             String discordId = easyRandom.nextObject(String.class);
             Champions championsListToAdd = easyRandom.nextObject(Champions.class);
+            String xCausedBy = easyRandom.nextObject(String.class);
+
             List<String> listOfNames = championsListToAdd.getChampions().stream().map(Champion::getName).collect(Collectors.toList());
 
             Set<LoLChampion> setOfLolChampions = championsListToAdd.getChampions()
@@ -177,9 +203,14 @@ public class UserControllerTest {
 
             when(userService.removePreferredChampionsForUser(discordId, setOfLolChampions))
                     .thenReturn(Mono.just(setOfLolChampions).flatMapMany(Flux::fromIterable));
+            when(userAssociationService.updateInvolvedTeams(xCausedBy))
+                    .thenReturn(Mono.just(Event.builder().build()).flux());
 
             StepVerifier
-                    .create(userController.removePreferredChampionForUser(discordId, listOfNames, null))
+                    .create(userController.removePreferredChampionForUser(xCausedBy, discordId, listOfNames, null))
+                    .expectAccessibleContext()
+                    .contains(CAUSED_BY_KEY, xCausedBy)
+                    .then()
                     .expectNextMatches(response ->
                             championsListToAdd.getChampions().size() == response.getBody().getChampions().size()
                                     && 200 == response.getStatusCodeValue())
@@ -204,8 +235,12 @@ public class UserControllerTest {
             when(userService.removePreferredChampionsForUser(discordId, setOfLolChampions))
                     .thenReturn(Flux.empty());
 
+            String xCausedBy = easyRandom.nextObject(String.class);
             StepVerifier
-                    .create(userController.removePreferredChampionForUser(discordId, listOfNames, null))
+                    .create(userController.removePreferredChampionForUser(xCausedBy, discordId, listOfNames, null))
+                    .expectAccessibleContext()
+                    .contains(CAUSED_BY_KEY, xCausedBy)
+                    .then()
                     .expectErrorMessage("User not found.")
                     .verify();
         }
@@ -226,8 +261,12 @@ public class UserControllerTest {
 
             Player player = userMapper.userToPlayer(user);
 
+            String xCausedBy = easyRandom.nextObject(String.class);
             StepVerifier
-                    .create(userController.retrieveUsersPreferredChampions(user.getDiscordId(), null))
+                    .create(userController.retrieveUsersPreferredChampions(xCausedBy, user.getDiscordId(), null))
+                    .expectAccessibleContext()
+                    .contains(CAUSED_BY_KEY, xCausedBy)
+                    .then()
                     .expectNext(ResponseEntity.ok(Champions.builder().champions(player.getChampions()).build()))
                     .verifyComplete();
         }
@@ -240,10 +279,12 @@ public class UserControllerTest {
             when(userService.retrieveUser(user.getDiscordId()))
                     .thenReturn(Mono.empty());
 
-            Player player = userMapper.userToPlayer(user);
-
+            String xCausedBy = easyRandom.nextObject(String.class);
             StepVerifier
-                    .create(userController.retrieveUsersPreferredChampions(user.getDiscordId(), null))
+                    .create(userController.retrieveUsersPreferredChampions(xCausedBy, user.getDiscordId(), null))
+                    .expectAccessibleContext()
+                    .contains(CAUSED_BY_KEY, xCausedBy)
+                    .then()
                     .expectNext(ResponseEntity.notFound().build())
                     .verifyComplete();
         }
@@ -265,8 +306,12 @@ public class UserControllerTest {
             when(userService.saveUser(user))
                     .thenReturn(Mono.just(user));
 
+            String xCausedBy = easyRandom.nextObject(String.class);
             StepVerifier
-                    .create(userController.createUser(Mono.just(request), null))
+                    .create(userController.createUser(xCausedBy, Mono.just(request), null))
+                    .expectAccessibleContext()
+                    .contains(CAUSED_BY_KEY, xCausedBy)
+                    .then()
                     .expectNext(ResponseEntity.ok(userMapper.userToPlayer(user)))
                     .verifyComplete();
         }
@@ -285,8 +330,12 @@ public class UserControllerTest {
             when(userService.retrieveUser(request.getDiscordId()))
                     .thenReturn(Mono.just(request));
 
+            String xCausedBy = easyRandom.nextObject(String.class);
             StepVerifier
-                    .create(userController.getUser(request.getDiscordId(), null))
+                    .create(userController.getUser(xCausedBy, request.getDiscordId(), null))
+                    .expectAccessibleContext()
+                    .contains(CAUSED_BY_KEY, xCausedBy)
+                    .then()
                     .expectNext(ResponseEntity.ok(userMapper.userToPlayer(request)))
                     .verifyComplete();
         }
@@ -306,8 +355,12 @@ public class UserControllerTest {
 
             when(userService.updateUserDefaultServerId(discordId, request.getServerId()))
                     .thenReturn(Mono.just(user));
+            String xCausedBy = easyRandom.nextObject(String.class);
             StepVerifier
-                    .create(userController.updateUser(discordId, Mono.just(request), null))
+                    .create(userController.updateUser(xCausedBy, discordId, Mono.just(request), null))
+                    .expectAccessibleContext()
+                    .contains(CAUSED_BY_KEY, xCausedBy)
+                    .then()
                     .expectNext(ResponseEntity.ok(userMapper.userToPlayer(user)))
                     .verifyComplete();
         }
@@ -331,8 +384,12 @@ public class UserControllerTest {
             when(userService.toggleUserSubscription(user.getDiscordId(), UserSubscription.DISCORD_MONDAY_NOTIFICATION, true))
                     .thenReturn(Mono.just(Map.of(UserSubscription.DISCORD_MONDAY_NOTIFICATION, true)));
 
+            String xCausedBy = easyRandom.nextObject(String.class);
             StepVerifier
-                    .create(userController.subscribeUser(user.getDiscordId(), SubscriptionType.DISCORD_MONDAY_NOTIFICATION, null))
+                    .create(userController.subscribeUser(xCausedBy, user.getDiscordId(), SubscriptionType.DISCORD_MONDAY_NOTIFICATION, null))
+                    .expectAccessibleContext()
+                    .contains(CAUSED_BY_KEY, xCausedBy)
+                    .then()
                     .expectNext(ResponseEntity.ok(expectedSubscription))
                     .verifyComplete();
         }
@@ -345,8 +402,12 @@ public class UserControllerTest {
             when(userService.toggleUserSubscription(user.getDiscordId(), UserSubscription.DISCORD_MONDAY_NOTIFICATION, true))
                     .thenReturn(Mono.empty());
 
+            String xCausedBy = easyRandom.nextObject(String.class);
             StepVerifier
-                    .create(userController.subscribeUser(user.getDiscordId(), SubscriptionType.DISCORD_MONDAY_NOTIFICATION, null))
+                    .create(userController.subscribeUser(xCausedBy, user.getDiscordId(), SubscriptionType.DISCORD_MONDAY_NOTIFICATION, null))
+                    .expectAccessibleContext()
+                    .contains(CAUSED_BY_KEY, xCausedBy)
+                    .then()
                     .expectNext(ResponseEntity.notFound().build())
                     .verifyComplete();
         }
@@ -370,8 +431,12 @@ public class UserControllerTest {
             when(userService.toggleUserSubscription(user.getDiscordId(), UserSubscription.DISCORD_MONDAY_NOTIFICATION, false))
                     .thenReturn(Mono.just(Map.of(UserSubscription.DISCORD_MONDAY_NOTIFICATION, false)));
 
+            String xCausedBy = easyRandom.nextObject(String.class);
             StepVerifier
-                    .create(userController.unsubscribeUser(user.getDiscordId(), SubscriptionType.DISCORD_MONDAY_NOTIFICATION, null))
+                    .create(userController.unsubscribeUser(xCausedBy, user.getDiscordId(), SubscriptionType.DISCORD_MONDAY_NOTIFICATION, null))
+                    .expectAccessibleContext()
+                    .contains(CAUSED_BY_KEY, xCausedBy)
+                    .then()
                     .expectNext(ResponseEntity.ok(expectedSubscription))
                     .verifyComplete();
         }
@@ -384,8 +449,12 @@ public class UserControllerTest {
             when(userService.toggleUserSubscription(user.getDiscordId(), UserSubscription.DISCORD_MONDAY_NOTIFICATION, false))
                     .thenReturn(Mono.empty());
 
+            String xCausedBy = easyRandom.nextObject(String.class);
             StepVerifier
-                    .create(userController.unsubscribeUser(user.getDiscordId(), SubscriptionType.DISCORD_MONDAY_NOTIFICATION, null))
+                    .create(userController.unsubscribeUser(xCausedBy, user.getDiscordId(), SubscriptionType.DISCORD_MONDAY_NOTIFICATION, null))
+                    .expectAccessibleContext()
+                    .contains(CAUSED_BY_KEY, xCausedBy)
+                    .then()
                     .expectNext(ResponseEntity.notFound().build())
                     .verifyComplete();
         }
@@ -410,11 +479,16 @@ public class UserControllerTest {
                     .isOn(user.getUserSubscriptions().get(UserSubscription.DISCORD_MONDAY_NOTIFICATION))
                     .build();
 
+            String xCausedBy = easyRandom.nextObject(String.class);
             StepVerifier
                     .create(userController.isUserSubscribed(
+                            xCausedBy,
                             user.getDiscordId(),
                             SubscriptionType.DISCORD_MONDAY_NOTIFICATION,
                             null))
+                    .expectAccessibleContext()
+                    .contains(CAUSED_BY_KEY, xCausedBy)
+                    .then()
                     .expectNext(ResponseEntity.ok(subscription))
                     .verifyComplete();
         }
@@ -428,16 +502,16 @@ public class UserControllerTest {
                     user.getDiscordId())
             ).thenReturn(Mono.empty());
 
-            Subscription subscription = Subscription.builder()
-                    .key(SubscriptionType.DISCORD_MONDAY_NOTIFICATION)
-                    .isOn(user.getUserSubscriptions().get(UserSubscription.DISCORD_MONDAY_NOTIFICATION))
-                    .build();
-
+            String xCausedBy = easyRandom.nextObject(String.class);
             StepVerifier
                     .create(userController.isUserSubscribed(
+                            xCausedBy,
                             user.getDiscordId(),
                             SubscriptionType.DISCORD_MONDAY_NOTIFICATION,
                             null))
+                    .expectAccessibleContext()
+                    .contains(CAUSED_BY_KEY, xCausedBy)
+                    .then()
                     .expectNext(ResponseEntity.notFound().build())
                     .verifyComplete();
         }
@@ -471,8 +545,12 @@ public class UserControllerTest {
             when(userService.overwriteSelectedServers(discordId, setOfServers))
                     .thenReturn(Mono.just(setOfServers).flatMapMany(Flux::fromIterable));
 
+            String xCausedBy = easyRandom.nextObject(String.class);
             StepVerifier
-                    .create(userController.createUsersSelectedServers(discordId, Mono.just(servers), null))
+                    .create(userController.createUsersSelectedServers(xCausedBy, discordId, Mono.just(servers), null))
+                    .expectAccessibleContext()
+                    .contains(CAUSED_BY_KEY, xCausedBy)
+                    .then()
                     .expectNextMatches(response -> HttpStatus.OK.value() == response.getStatusCodeValue()
                             && null != response.getBody()
                             && response.getBody().getServers().containsAll(expectedServers))
@@ -493,8 +571,12 @@ public class UserControllerTest {
             when(userService.overwriteSelectedServers(discordId, setOfServers))
                     .thenReturn(Flux.empty());
 
+            String xCausedBy = easyRandom.nextObject(String.class);
             StepVerifier
-                    .create(userController.createUsersSelectedServers(discordId, Mono.just(servers), null))
+                    .create(userController.createUsersSelectedServers(xCausedBy, discordId, Mono.just(servers), null))
+                    .expectAccessibleContext()
+                    .contains(CAUSED_BY_KEY, xCausedBy)
+                    .then()
                     .expectErrorMessage("User not found.")
                     .verify();
         }
@@ -524,8 +606,12 @@ public class UserControllerTest {
             when(userService.mergeSelectedServers(discordId, setOfServers))
                     .thenReturn(Mono.just(setOfServers).flatMapMany(Flux::fromIterable));
 
+            String xCausedBy = easyRandom.nextObject(String.class);
             StepVerifier
-                    .create(userController.addUsersSelectedServers(discordId, Mono.just(servers), null))
+                    .create(userController.addUsersSelectedServers(xCausedBy, discordId, Mono.just(servers), null))
+                    .expectAccessibleContext()
+                    .contains(CAUSED_BY_KEY, xCausedBy)
+                    .then()
                     .expectNextMatches(response -> HttpStatus.OK.value() == response.getStatusCodeValue()
                             && null != response.getBody()
                             && response.getBody().getServers().containsAll(expectedServers))
@@ -546,8 +632,12 @@ public class UserControllerTest {
             when(userService.mergeSelectedServers(discordId, setOfServers))
                     .thenReturn(Flux.empty());
 
+            String xCausedBy = easyRandom.nextObject(String.class);
             StepVerifier
-                    .create(userController.addUsersSelectedServers(discordId, Mono.just(servers), null))
+                    .create(userController.addUsersSelectedServers(xCausedBy, discordId, Mono.just(servers), null))
+                    .expectAccessibleContext()
+                    .contains(CAUSED_BY_KEY, xCausedBy)
+                    .then()
                     .expectErrorMessage("User not found.")
                     .verify();
         }
@@ -575,8 +665,12 @@ public class UserControllerTest {
             when(userService.removeSelectedServers(discordId, set))
                     .thenReturn(Mono.just(set).flatMapMany(Flux::fromIterable));
 
+            String xCausedBy = easyRandom.nextObject(String.class);
             StepVerifier
-                    .create(userController.removeUsersSelectedServers(discordId, ids, null))
+                    .create(userController.removeUsersSelectedServers(xCausedBy, discordId, ids, null))
+                    .expectAccessibleContext()
+                    .contains(CAUSED_BY_KEY, xCausedBy)
+                    .then()
                     .expectNextMatches(response -> HttpStatus.OK.value() == response.getStatusCodeValue()
                             && null != response.getBody()
                             && response.getBody().getServers().containsAll(listOfServers))
@@ -601,8 +695,12 @@ public class UserControllerTest {
             when(userService.removeSelectedServers(discordId, setOfServers))
                     .thenReturn(Flux.empty());
 
+            String xCausedBy = easyRandom.nextObject(String.class);
             StepVerifier
-                    .create(userController.removeUsersSelectedServers(discordId, serversIdList, null))
+                    .create(userController.removeUsersSelectedServers(xCausedBy, discordId, serversIdList, null))
+                    .expectAccessibleContext()
+                    .contains(CAUSED_BY_KEY, xCausedBy)
+                    .then()
                     .expectErrorMessage("User not found.")
                     .verify();
         }
@@ -636,8 +734,12 @@ public class UserControllerTest {
 
             servers.servers(serverIds);
 
+            String xCausedBy = easyRandom.nextObject(String.class);
             StepVerifier
-                    .create(userController.retrieveUsersSelectedServers(discordId, null))
+                    .create(userController.retrieveUsersSelectedServers(xCausedBy, discordId, null))
+                    .expectAccessibleContext()
+                    .contains(CAUSED_BY_KEY, xCausedBy)
+                    .then()
                     .expectNext(ResponseEntity.ok(servers))
                     .verifyComplete();
         }
@@ -648,8 +750,12 @@ public class UserControllerTest {
             String discordId = easyRandom.nextObject(String.class);
             when(userService.retrieveUser(discordId))
                     .thenReturn(Mono.empty());
+            String xCausedBy = easyRandom.nextObject(String.class);
             StepVerifier
-                    .create(userController.retrieveUsersSelectedServers(discordId, null))
+                    .create(userController.retrieveUsersSelectedServers(xCausedBy, discordId, null))
+                    .expectAccessibleContext()
+                    .contains(CAUSED_BY_KEY, xCausedBy)
+                    .then()
                     .expectNext(ResponseEntity.notFound().build())
                     .verifyComplete();
         }

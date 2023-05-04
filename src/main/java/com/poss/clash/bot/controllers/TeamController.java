@@ -18,6 +18,8 @@ import reactor.core.publisher.Mono;
 import java.util.HashMap;
 import java.util.List;
 
+import static com.poss.clash.bot.constants.GlobalConstants.CAUSED_BY_KEY;
+
 @RestController
 @AllArgsConstructor
 public class TeamController implements TeamsApi {
@@ -28,16 +30,24 @@ public class TeamController implements TeamsApi {
     private final TeamMapper teamMapper;
     private final UserService userService;
 
-    @Override
-    public Mono<ResponseEntity<Team>> assignUserToTeam(String teamId, String discordId, Mono<PositionDetails> positionDetails, ServerWebExchange exchange) {
-        return positionDetails
-                .flatMap(details -> userAssignmentService.assignUserToTeam(discordId, details.getRole(), teamId))
-                .map(teamMapper::clashTeamToTeam)
-                .map(ResponseEntity::ok);
+    private Mono<TeamRequired> validatePlayerDetails(TeamRequired payload) {
+        if (null == payload.getPlayerDetails()) {
+            return Mono.error(new ClashBotControllerException("Missing user details to create team with.", HttpStatus.BAD_REQUEST));
+        }
+        return Mono.just(payload);
     }
 
     @Override
-    public Mono<ResponseEntity<Team>> createTeam(Mono<TeamRequired> teamRequired, ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Team>> assignUserToTeam(String xCausedBy, String teamId, String discordId, Mono<PositionDetails> positionDetails, ServerWebExchange exchange) {
+        return positionDetails
+            .flatMap(details -> userAssignmentService.assignUserToTeam(discordId, details.getRole(), teamId))
+            .map(teamMapper::clashTeamToTeam)
+            .map(ResponseEntity::ok)
+            .contextWrite(ctx -> ctx.put(CAUSED_BY_KEY, xCausedBy));
+    }
+
+    @Override
+    public Mono<ResponseEntity<Team>> createTeam(String xCausedBy, Mono<TeamRequired> teamRequired, ServerWebExchange exchange) {
         return teamRequired
                 .flatMap(this::validatePlayerDetails)
                 .flatMap(teamDetails -> {
@@ -65,26 +75,29 @@ public class TeamController implements TeamsApi {
                         }
                 )
                 .map(teamMapper::clashTeamToTeam)
-                .map(ResponseEntity::ok);
+                .map(ResponseEntity::ok)
+                .contextWrite(ctx -> ctx.put(CAUSED_BY_KEY, xCausedBy));
     }
 
     @Override
-    public Mono<ResponseEntity<Team>> removeUserFromTeam(String teamId, String discordId, ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Team>> removeUserFromTeam(String xCausedBy, String teamId, String discordId, ServerWebExchange exchange) {
         return userAssignmentService.findAndRemoveUserFromTeam(discordId, teamId)
+                .contextWrite(ctx -> ctx.put(CAUSED_BY_KEY, xCausedBy))
                 .map(teamMapper::clashTeamToTeam)
                 .map(ResponseEntity::ok);
     }
 
     @Override
-    public Mono<ResponseEntity<Team>> retrieveTeamBasedOnId(String teamId, ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Team>> retrieveTeamBasedOnId(String xCausedBy, String teamId, ServerWebExchange exchange) {
         return teamService.findTeamById(teamId)
+                .contextWrite(ctx -> ctx.put(CAUSED_BY_KEY, xCausedBy))
                 .map(teamMapper::clashTeamToTeam)
                 .map(ResponseEntity::ok);
     }
 
     @Override
-    public Mono<ResponseEntity<Teams>> retrieveTeams(Boolean archived, String discordId, String serverId, String tournamentName, String tournamentDay, ServerWebExchange exchange) {
-        Mono<List<Team>> monoOfTeams = null;
+    public Mono<ResponseEntity<Teams>> retrieveTeams(String xCausedBy, Boolean archived, String discordId, String serverId, String tournamentName, String tournamentDay, ServerWebExchange exchange) {
+        Mono<List<Team>> monoOfTeams;
         if (archived) {
             monoOfTeams = archivedService.retrieveTeamBasedOnCriteria(
                             discordId,
@@ -100,7 +113,7 @@ public class TeamController implements TeamsApi {
                             tournamentName,
                             tournamentDay)
                     .collectList()
-                    .flatMapMany(userService::enrichClashTeamWithUserDetails)
+                    .flatMapMany(userService::enrichClashTeamsWithUserDetails)
                     .map(teamMapper::clashTeamToTeam)
                     .collectList();
         }
@@ -110,24 +123,19 @@ public class TeamController implements TeamsApi {
                         .teams(list)
                         .build())
                 .map(ResponseEntity::ok)
-                .defaultIfEmpty(ResponseEntity.notFound().build());
+                .defaultIfEmpty(ResponseEntity.notFound().build())
+                .contextWrite(ctx -> ctx.put(CAUSED_BY_KEY, xCausedBy));
     }
 
     @Override
-    public Mono<ResponseEntity<Team>> updateTeam(String teamId, Mono<TeamUpdate> teamUpdate, ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Team>> updateTeam(String xCausedBy, String teamId, Mono<TeamUpdate> teamUpdate, ServerWebExchange exchange) {
         return teamUpdate
                 .log()
                 .flatMap(updateDetails -> teamService.updateTeamName(teamId, updateDetails.getTeamName()))
                 .map(teamMapper::clashTeamToTeam)
                 .map(ResponseEntity::ok)
-                .defaultIfEmpty(ResponseEntity.notFound().build());
-    }
-
-    private Mono<TeamRequired> validatePlayerDetails(TeamRequired payload) {
-        if (null == payload.getPlayerDetails()) {
-            return Mono.error(new ClashBotControllerException("Missing user details to create team with.", HttpStatus.BAD_REQUEST));
-        }
-        return Mono.just(payload);
+                .defaultIfEmpty(ResponseEntity.notFound().build())
+                .contextWrite(ctx -> ctx.put(CAUSED_BY_KEY, xCausedBy));
     }
 
 }

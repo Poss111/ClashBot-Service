@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static com.poss.clash.bot.constants.GlobalConstants.CAUSED_BY_KEY;
 import static org.mockito.Mockito.*;
 
 @ExtendWith({SpringExtension.class})
@@ -105,8 +106,12 @@ public class TeamControllerTest {
                     baseTournament.getTournamentDay())
             ).thenReturn(Mono.just(clashTeam));
 
+            String xCausedBy = easyRandom.nextObject(String.class);
             StepVerifier
-                    .create(teamController.createTeam(Mono.just(requestedTeamToCreate), null))
+                    .create(teamController.createTeam(xCausedBy, Mono.just(requestedTeamToCreate), null))
+                    .expectAccessibleContext()
+                    .contains(CAUSED_BY_KEY, xCausedBy)
+                    .then()
                     .expectNext(ResponseEntity.ok(teamMapper.clashTeamToTeam(clashTeam)))
                     .verifyComplete();
         }
@@ -128,7 +133,7 @@ public class TeamControllerTest {
             ClashTeam clashTeam = teamMapper.teamRequiredToClashTeam(requestedTeamToCreate);
 
             StepVerifier
-                    .create(teamController.createTeam(Mono.just(requestedTeamToCreate), null))
+                    .create(teamController.createTeam(easyRandom.nextObject(String.class), Mono.just(requestedTeamToCreate), null))
                     .expectError(ClashBotControllerException.class)
                     .verify();
 
@@ -153,8 +158,12 @@ public class TeamControllerTest {
             when(userAssignmentService.assignUserToTeam(discordId, Role.TOP, teamId))
                     .thenReturn(Mono.just(clashTeamToBeReturned));
 
+            String xCausedBy = easyRandom.nextObject(String.class);
             StepVerifier
-                    .create(teamController.assignUserToTeam(teamId, discordId, positionDetailsMono, null))
+                    .create(teamController.assignUserToTeam(xCausedBy, teamId, discordId, positionDetailsMono, null))
+                    .expectAccessibleContext()
+                    .contains(CAUSED_BY_KEY, xCausedBy)
+                    .then()
                     .expectNext(ResponseEntity.ok(teamMapper.clashTeamToTeam(clashTeamToBeReturned)))
                     .verifyComplete();
         }
@@ -175,8 +184,12 @@ public class TeamControllerTest {
             when(userAssignmentService.findAndRemoveUserFromTeam(discordId, teamId))
                     .thenReturn(Mono.just(clashTeamToBeReturned));
 
+            String xCausedBy = easyRandom.nextObject(String.class);
             StepVerifier
-                    .create(teamController.removeUserFromTeam(teamId, discordId, null))
+                    .create(teamController.removeUserFromTeam(xCausedBy, teamId, discordId, null))
+                    .expectAccessibleContext()
+                    .contains(CAUSED_BY_KEY, xCausedBy)
+                    .then()
                     .expectNext(ResponseEntity.ok(teamMapper.clashTeamToTeam(clashTeamToBeReturned)))
                     .verifyComplete();
         }
@@ -194,8 +207,12 @@ public class TeamControllerTest {
             when(teamService.findTeamById(clashTeamToBeReturned.getTeamId().getId()))
                     .thenReturn(Mono.just(clashTeamToBeReturned));
 
+            String xCausedBy = easyRandom.nextObject(String.class);
             StepVerifier
-                    .create(teamController.retrieveTeamBasedOnId(clashTeamToBeReturned.getTeamId().getId(), null))
+                    .create(teamController.retrieveTeamBasedOnId(xCausedBy, clashTeamToBeReturned.getTeamId().getId(), null))
+                    .expectAccessibleContext()
+                    .contains(CAUSED_BY_KEY, xCausedBy)
+                    .then()
                     .expectNext(ResponseEntity.ok(teamMapper.clashTeamToTeam(clashTeamToBeReturned)))
                     .verifyComplete();
         }
@@ -228,7 +245,7 @@ public class TeamControllerTest {
                     tournamentId.getTournamentName(),
                     tournamentId.getTournamentDay())
             ).thenReturn(Mono.just(filteredClashTeams).flatMapMany(Flux::fromIterable));
-            when(userService.enrichClashTeamWithUserDetails(filteredClashTeams))
+            when(userService.enrichClashTeamsWithUserDetails(filteredClashTeams))
                     .thenReturn(Mono.just(filteredClashTeams).flatMapMany(Flux::fromIterable));
 
             Teams expectedResponse = Teams.builder()
@@ -236,15 +253,21 @@ public class TeamControllerTest {
                     .count(3)
                     .build();
 
+            String xCausedBy = easyRandom.nextObject(String.class);
             StepVerifier
                     .create(teamController.retrieveTeams(
+                            xCausedBy,
                             false,
                             discordId,
                             serverId,
                             tournamentId.getTournamentName(),
                             tournamentId.getTournamentDay(),
                             null)
-                    ).expectNext(ResponseEntity.ok(expectedResponse))
+                    )
+                    .expectAccessibleContext()
+                    .contains(CAUSED_BY_KEY, xCausedBy)
+                    .then()
+                    .expectNext(ResponseEntity.ok(expectedResponse))
                     .verifyComplete();
         }
 
@@ -277,15 +300,21 @@ public class TeamControllerTest {
                     .count(3)
                     .build();
 
+            String xCausedBy = easyRandom.nextObject(String.class);
             StepVerifier
                     .create(teamController.retrieveTeams(
+                            xCausedBy,
                             true,
                             discordId,
                             serverId,
                             tournamentId.getTournamentName(),
                             tournamentId.getTournamentDay(),
                             null)
-                    ).expectNext(ResponseEntity.ok(expectedResponse))
+                    )
+                    .expectAccessibleContext()
+                    .contains(CAUSED_BY_KEY, xCausedBy)
+                    .then()
+                    .expectNext(ResponseEntity.ok(expectedResponse))
                     .verifyComplete();
         }
 
@@ -307,8 +336,12 @@ public class TeamControllerTest {
             when(teamService.updateTeamName(teamId, newName))
                     .thenReturn(Mono.just(clashTeamUpdate));
 
+            String xCausedBy = easyRandom.nextObject(String.class);
             StepVerifier
-                    .create(teamController.updateTeam(teamId, teamUpdateMono, null))
+                    .create(teamController.updateTeam(xCausedBy, teamId, teamUpdateMono, null))
+                    .expectAccessibleContext()
+                    .contains(CAUSED_BY_KEY, xCausedBy)
+                    .then()
                     .expectNext(ResponseEntity.ok(teamMapper.clashTeamToTeam(clashTeamUpdate)))
                     .verifyComplete();
         }
@@ -324,7 +357,7 @@ public class TeamControllerTest {
                     .thenReturn(Mono.empty());
 
             StepVerifier
-                    .create(teamController.updateTeam(teamId, teamUpdateMono, null))
+                    .create(teamController.updateTeam(easyRandom.nextObject(String.class), teamId, teamUpdateMono, null))
                     .expectNext(ResponseEntity.notFound().build())
                     .verifyComplete();
         }
