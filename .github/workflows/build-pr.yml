@@ -70,6 +70,7 @@ jobs:
       - name: Retrieve JAR
         id: docker
         run: |
+          ls -lha
           JAR=$(ls | grep *SNAPSHOT.jar)
           echo "jar=$JAR" >> "$GITHUB_OUTPUT"
 
