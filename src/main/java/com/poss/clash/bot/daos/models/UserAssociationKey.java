@@ -11,7 +11,7 @@ import java.io.Serializable;
 @Builder
 public class UserAssociationKey implements Serializable {
 
-    private String discordId;
-    private TournamentId tournamentId;
+  private String discordId;
+  private TournamentId tournamentId;
 
 }

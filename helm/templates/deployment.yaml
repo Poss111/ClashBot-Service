@@ -50,6 +50,11 @@ spec:
                   key: secret-key
             - name: AWS_REGION
               value: {{ .Values.aws.region }}
+            - name: RIOT_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  key: access-key
+                  name: riot-secret
           ports:
             - name: http
               containerPort: {{ .Values.service.port }}

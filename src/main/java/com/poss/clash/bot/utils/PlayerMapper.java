@@ -13,10 +13,10 @@ import java.util.List;
 @Mapper(componentModel = "spring", builder = @Builder(disableBuilder = true))
 public interface PlayerMapper {
 
-    @Mapping(source = "basePlayerRecord.championsToPlay", target = "champions")
-    @Mapping(source = "basePlayerRecord.name", target = "name")
-    TeamPlayer basePlayerRecordToTeam(BasePlayerRecord basePlayerRecord);
+  @Mapping(source = "basePlayerRecord.championsToPlay", target = "champions")
+  @Mapping(source = "basePlayerRecord.name", target = "name")
+  TeamPlayer basePlayerRecordToTeam(BasePlayerRecord basePlayerRecord);
 
-    List<Champion> lolChampionsToChampion(List<LoLChampion> champions);
+  List<Champion> lolChampionsToChampion(List<LoLChampion> champions);
 
 }

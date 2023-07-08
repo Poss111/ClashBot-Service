@@ -7,6 +7,7 @@ import com.poss.clash.bot.daos.models.LoLChampion;
 import com.poss.clash.bot.daos.models.User;
 import com.poss.clash.bot.enums.UserSubscription;
 import com.poss.clash.bot.openapi.model.Role;
+import io.micrometer.core.instrument.util.StringUtils;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -36,23 +37,31 @@ public class UserService {
     }
 
     public Mono<User> saveUser(User user) {
-        return userDao.findUserByDiscordId(user.getDiscordId())
+        return userDao
+                .findUserByDiscordId(user.getDiscordId())
                 .switchIfEmpty(userDao.save(user));
     }
 
     public Mono<User> updateUserDefaultServerId(String discordId, String serverId) {
-        return userDao.findUserByDiscordId(discordId)
-                .flatMap(user -> userDao.updateUserDefaultServerId(discordId, serverId)
+        return userDao
+                .findUserByDiscordId(discordId)
+                .flatMap(user -> userDao
+                        .updateUserDefaultServerId(discordId, serverId)
                         .thenReturn(user));
     }
 
-    public Mono<Map<UserSubscription, Boolean>> toggleUserSubscription(String discordId, UserSubscription subscription, Boolean expectedStatus) {
-        return userDao.findUserByDiscordId(discordId)
+    public Mono<Map<UserSubscription, Boolean>> toggleUserSubscription(
+            String discordId, UserSubscription subscription, Boolean expectedStatus
+    ) {
+        return userDao
+                .findUserByDiscordId(discordId)
                 .mapNotNull(user -> {
                     if (null == user.getUserSubscriptions()) {
                         user.setUserSubscriptions(new HashMap<>());
                     }
-                    user.getUserSubscriptions().put(subscription, expectedStatus);
+                    user
+                            .getUserSubscriptions()
+                            .put(subscription, expectedStatus);
                     return user;
                 })
                 .flatMap(userDao::save)
@@ -91,7 +100,9 @@ public class UserService {
             if (CollectionUtils.isEmpty(user.getPreferredChampions())) {
                 user.setPreferredChampions(preferredChampions);
             } else {
-                user.getPreferredChampions().addAll(preferredChampions);
+                user
+                        .getPreferredChampions()
+                        .addAll(preferredChampions);
             }
             return user;
         };
@@ -100,7 +111,9 @@ public class UserService {
     private Function<User, User> removePreferredChampions(Set<LoLChampion> preferredChampionsToBeRemoved) {
         return user -> {
             if (!CollectionUtils.isEmpty(user.getPreferredChampions())) {
-                user.getPreferredChampions().removeAll(preferredChampionsToBeRemoved);
+                user
+                        .getPreferredChampions()
+                        .removeAll(preferredChampionsToBeRemoved);
             }
             return user;
         };
@@ -129,7 +142,9 @@ public class UserService {
             if (CollectionUtils.isEmpty(usersSelectedServers)) {
                 user.setSelectedServers(serverIds);
             } else {
-                user.getSelectedServers().addAll(serverIds);
+                user
+                        .getSelectedServers()
+                        .addAll(serverIds);
             }
             return user;
         };
@@ -143,57 +158,83 @@ public class UserService {
     protected Function<User, User> removeSelectedServersList(Set<String> serverIds) {
         return user -> {
             if (!CollectionUtils.isEmpty(user.getSelectedServers())) {
-                user.getSelectedServers().removeAll(serverIds);
+                user
+                        .getSelectedServers()
+                        .removeAll(serverIds);
             }
             return user;
         };
     }
 
     private Mono<User> updateUser(String discordId, Function<User, User> listHandler) {
-        return userDao.findUserByDiscordId(discordId)
+        return userDao
+                .findUserByDiscordId(discordId)
                 .checkpoint(MessageFormat.format("Pulled details for user id {0}", discordId))
                 .map(listHandler)
                 .flatMap(userDao::save);
     }
 
     ClashTeam populateTeamUserDetails(ClashTeam clashTeam, Map<String, User> idToPlayerDetailsMap) {
-        Set<Map.Entry<Role, BasePlayerRecord>> entries = clashTeam.getPositions().entrySet();
+        Set<Map.Entry<Role, BasePlayerRecord>> entries = clashTeam
+                .getPositions()
+                .entrySet();
         for (Map.Entry<Role, BasePlayerRecord> entry : entries) {
-            BasePlayerRecord basePlayerRecord = clashTeam.getPositions().get(entry.getKey());
+            BasePlayerRecord basePlayerRecord = clashTeam
+                    .getPositions()
+                    .get(entry.getKey());
             User user = idToPlayerDetailsMap.get(basePlayerRecord.getDiscordId());
-            basePlayerRecord.setChampionsToPlay(user.getPreferredChampions());
-            basePlayerRecord.setName(user.getName());
+            if (null != user) {
+                basePlayerRecord.setChampionsToPlay(user.getPreferredChampions());
+                basePlayerRecord.setName(user.getName());
+            } else {
+                basePlayerRecord.setName(basePlayerRecord.getDiscordId());
+            }
         }
         log.info("Enriched Clash Team {}", clashTeam);
         return clashTeam;
     }
 
     public Flux<ClashTeam> enrichClashTeamsWithUserDetails(List<ClashTeam> clashTeamListToEnrich) {
-        Set<String> uniqueDiscordIds = clashTeamListToEnrich.parallelStream()
+        Set<String> uniqueDiscordIds = clashTeamListToEnrich
+                .parallelStream()
                 .map(ClashTeam::getPositions)
-                .map(positions -> positions.values().stream()
+                .map(positions -> positions
+                        .values()
+                        .stream()
                         .map(BasePlayerRecord::getDiscordId)
                         .collect(Collectors.toSet()))
                 .flatMap(Set::stream)
+                .filter(StringUtils::isNotBlank)
                 .collect(Collectors.toSet());
+        log.info("Collected list of discord ids to retrieve details from discordIds={}", uniqueDiscordIds);
         return getMapOfUserDetailsMono(uniqueDiscordIds)
-                .map(map -> clashTeamListToEnrich.stream().map(team -> Tuples.of(team, map)).collect(Collectors.toList()))
+                .log()
+                .map(map -> clashTeamListToEnrich
+                        .stream()
+                        .map(team -> Tuples.of(team, map))
+                        .collect(Collectors.toList()))
                 .flatMapIterable(teamToMap -> teamToMap)
-                .map(clashTeamToMapTuple -> populateTeamUserDetails(clashTeamToMapTuple.getT1(), clashTeamToMapTuple.getT2()));
+                .map(clashTeamToMapTuple -> populateTeamUserDetails(clashTeamToMapTuple.getT1(),
+                                                                    clashTeamToMapTuple.getT2()));
     }
 
     public Mono<ClashTeam> enrichClashTeamWithUserDetails(ClashTeam clashTeamToEnrich) {
-        Set<String> discordIdsSet = clashTeamToEnrich.getPositions()
+        Set<String> discordIdsSet = clashTeamToEnrich
+                .getPositions()
                 .values()
                 .stream()
                 .map(BasePlayerRecord::getDiscordId)
+                .filter(StringUtils::isNotBlank)
                 .collect(Collectors.toSet());
+        log.info("Collected list of discord ids to retrieve details from discordIds={}", discordIdsSet);
         return getMapOfUserDetailsMono(discordIdsSet)
                 .map(discordIdToUserDetails -> populateTeamUserDetails(clashTeamToEnrich, discordIdToUserDetails));
     }
 
     private Mono<Map<String, User>> getMapOfUserDetailsMono(Set<String> uniqueDiscordIds) {
-        return Flux.fromIterable(uniqueDiscordIds)
+        return Flux
+                .fromIterable(uniqueDiscordIds)
+                .checkpoint(MessageFormat.format("Retrieving users={0}", uniqueDiscordIds))
                 .flatMap(this::retrieveUser)
                 .collectMap(User::getDiscordId, Function.identity());
     }

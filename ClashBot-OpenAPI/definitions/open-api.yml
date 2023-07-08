@@ -1039,6 +1039,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DetailedTournament'
+  /tournaments/riot:
+    summary: Used to interact with Riot's Clash Tournaments api for League of Legends
+    patch:
+      description: Will retrieve Clash Tournaments from Riot's League of Legends API
+      operationId: retrieveRiotClashTournaments
+      tags:
+        - Tournament
+      responses:
+        200:
+          description: Successfully retrieved and persisted Clash Tournaments
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tournaments'
   /users:
     parameters:
       - $ref: '#/components/parameters/AuditHeaderParam'

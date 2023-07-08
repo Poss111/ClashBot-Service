@@ -16,28 +16,29 @@ import org.springframework.context.annotation.Profile;
 @Slf4j
 public class AWSConfiguration {
 
-    private final AWSEndpointConfiguration awsEndpointConfiguration;
+  private final AWSEndpointConfiguration awsEndpointConfiguration;
 
-    @Bean
-    @Profile("local || k8s")
-    AmazonKinesisAsync localAmazonKinesis(AWSCredentialsProvider awsCredentialsProvider) {
-        log.info("Instantiating local stack Kinesis connection {}...", awsEndpointConfiguration);
-        return AmazonKinesisAsyncClientBuilder
-                .standard()
-                .withCredentials(awsCredentialsProvider)
-                .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(
-                        awsEndpointConfiguration.getUrl(),
-                        awsEndpointConfiguration.getSigningRegion()
-                ))
-                .build();
-    }
+  @Bean
+  @Profile("local || k8s")
+  AmazonKinesisAsync localAmazonKinesis(AWSCredentialsProvider awsCredentialsProvider) {
+    log.info("Instantiating local stack Kinesis connection {}...", awsEndpointConfiguration);
+    return AmazonKinesisAsyncClientBuilder
+        .standard()
+        .withCredentials(awsCredentialsProvider)
+        .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(
+            awsEndpointConfiguration.getUrl(),
+            awsEndpointConfiguration.getSigningRegion()
+        ))
+        .build();
+  }
 
-    @Bean
-    @Profile("!local && !integration && !k8s")
-    AmazonKinesisAsync amazonKinesis(AWSCredentialsProvider awsCredentialsProvider) {
-        return AmazonKinesisAsyncClientBuilder
-                .standard()
-                .withCredentials(awsCredentialsProvider)
-                .build();
-    }
+  @Bean
+  @Profile("!local && !integration && !k8s")
+  AmazonKinesisAsync amazonKinesis(AWSCredentialsProvider awsCredentialsProvider) {
+    return AmazonKinesisAsyncClientBuilder
+        .standard()
+        .withCredentials(awsCredentialsProvider)
+        .build();
+  }
+
 }

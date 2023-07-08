@@ -22,26 +22,26 @@ import java.util.Objects;
 @Profile("!integration")
 public class MongoDbConfiguration extends AbstractReactiveMongoConfiguration {
 
-    private final ApplicationContext context;
-    private final MongoProperties mongoProperties;
+  private final ApplicationContext context;
+  private final MongoProperties mongoProperties;
 
-    @Bean
-    @Override
-    public MongoClient reactiveMongoClient() {
-        log.info("Creating Mongo client with {}...", mongoProperties.getUri());
-        return StringUtils.isBlank(mongoProperties.getUri()) ?
-                MongoClients.create() :
-                MongoClients.create(mongoProperties.getUri());
-    }
+  @Bean
+  @Override
+  public MongoClient reactiveMongoClient() {
+    log.info("Creating Mongo client with {}...", mongoProperties.getUri());
+    return StringUtils.isBlank(mongoProperties.getUri()) ?
+        MongoClients.create() :
+        MongoClients.create(mongoProperties.getUri());
+  }
 
-    @Override
-    protected String getDatabaseName() {
-        return "clash-bot";
-    }
+  @Override
+  protected String getDatabaseName() {
+    return "clash-bot";
+  }
 
-    @Bean
-    protected ReactiveAuditorAware<String> auditProvider() {
-        return () -> Mono.just(Objects.requireNonNull(context.getId()));
-    }
+  @Bean
+  protected ReactiveAuditorAware<String> auditProvider() {
+    return () -> Mono.just(Objects.requireNonNull(context.getId()));
+  }
 
 }

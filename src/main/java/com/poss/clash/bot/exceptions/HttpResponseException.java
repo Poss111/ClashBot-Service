@@ -4,20 +4,20 @@ import org.springframework.http.HttpStatus;
 
 public class HttpResponseException extends RuntimeException {
 
-    private final HttpStatus httpStatus;
+  private final HttpStatus httpStatus;
 
-    HttpResponseException(String message, Throwable exception, HttpStatus httpStatus) {
-        super(message, exception);
-        this.httpStatus = httpStatus;
-    }
+  HttpResponseException(String message, Throwable exception, HttpStatus httpStatus) {
+    super(message, exception);
+    this.httpStatus = httpStatus;
+  }
 
-    HttpResponseException(String message, HttpStatus httpStatus) {
-        super(message);
-        this.httpStatus = httpStatus;
-    }
+  HttpResponseException(String message, HttpStatus httpStatus) {
+    super(message);
+    this.httpStatus = httpStatus;
+  }
 
-    public HttpStatus getHttpStatus() {
-        return httpStatus;
-    }
+  public HttpStatus getHttpStatus() {
+    return httpStatus;
+  }
 
 }

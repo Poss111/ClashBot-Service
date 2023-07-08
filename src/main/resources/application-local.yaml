@@ -20,7 +20,11 @@ cloud:
       static: us-east-1
     stack:
       auto: false
+riot:
+  url: https://na1.api.riotgames.com
+  api-key: ${RIOT_API_KEY}
+  timeout: 30s
 logging:
   level:
     root: ERROR
-    com.poss: INFO
+    com.poss.clash: TRACE

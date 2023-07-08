@@ -21,36 +21,43 @@ import java.util.Map;
 @Order(-2)
 public class GlobalErrorHandler extends AbstractErrorWebExceptionHandler {
 
-    public GlobalErrorHandler(ErrorAttributes errorAttributes, WebProperties webProperties, ApplicationContext applicationContext,
-                              ServerCodecConfigurer configurer) {
-        super(errorAttributes, webProperties.getResources(), applicationContext);
-        this.setMessageWriters(configurer.getWriters());
+  public GlobalErrorHandler(
+      ErrorAttributes errorAttributes, WebProperties webProperties, ApplicationContext applicationContext,
+      ServerCodecConfigurer configurer
+  ) {
+    super(errorAttributes, webProperties.getResources(), applicationContext);
+    this.setMessageWriters(configurer.getWriters());
+  }
+
+  @Override
+  protected RouterFunction<ServerResponse> getRoutingFunction(ErrorAttributes errorAttributes) {
+    return RouterFunctions.route(
+        RequestPredicates.all(), this::renderErrorResponse);
+  }
+
+  private Mono<ServerResponse> renderErrorResponse(
+      ServerRequest request
+  ) {
+    Map<String, Object> errorPropertiesMap = getErrorAttributes(request,
+                                                                ErrorAttributeOptions.defaults());
+
+    HttpStatus statusCode = HttpStatus.INTERNAL_SERVER_ERROR;
+    Throwable error = getError(request);
+
+    if (error instanceof HttpResponseException
+        && null != ((HttpResponseException) error).getHttpStatus()) {
+      statusCode = ((HttpResponseException) error).getHttpStatus();
+      errorPropertiesMap.put("status", ((HttpResponseException) error)
+          .getHttpStatus()
+          .value());
+      errorPropertiesMap.put("error", statusCode.getReasonPhrase());
+      errorPropertiesMap.put("message", error.getMessage());
     }
 
-    @Override
-    protected RouterFunction<ServerResponse> getRoutingFunction(ErrorAttributes errorAttributes) {
-        return RouterFunctions.route(
-                RequestPredicates.all(), this::renderErrorResponse);
-    }
+    return ServerResponse
+        .status(statusCode)
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(BodyInserters.fromValue(errorPropertiesMap));
+  }
 
-    private Mono<ServerResponse> renderErrorResponse(
-            ServerRequest request) {
-        Map<String, Object> errorPropertiesMap = getErrorAttributes(request,
-                ErrorAttributeOptions.defaults());
-
-        HttpStatus statusCode = HttpStatus.INTERNAL_SERVER_ERROR;
-        Throwable error = getError(request);
-
-        if (error instanceof HttpResponseException
-                && null != ((HttpResponseException) error).getHttpStatus()) {
-            statusCode = ((HttpResponseException) error).getHttpStatus();
-            errorPropertiesMap.put("status", ((HttpResponseException) error).getHttpStatus().value());
-            errorPropertiesMap.put("error", statusCode.getReasonPhrase());
-            errorPropertiesMap.put("message", error.getMessage());
-        }
-
-        return ServerResponse.status(statusCode)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(errorPropertiesMap));
-    }
 }

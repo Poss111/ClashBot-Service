@@ -28,112 +28,138 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @Import(ClashBotTestingConfig.class)
 class TentativeMapperTest {
 
-    TentativeMapper tentativeMapper = Mappers.getMapper(TentativeMapper.class);
+  TentativeMapper tentativeMapper = Mappers.getMapper(TentativeMapper.class);
 
-    @Autowired
-    EasyRandom easyRandom;
+  @Autowired
+  EasyRandom easyRandom;
 
+  @Test
+  @DisplayName("TentativeMapper - Tentative -> TentativeQueue")
+  void test_tentativeToTentativeQueue() {
+    String expectedTournamentName = "awesome_sauce";
+    String expectedTournamentDay = "3";
+    String serverId = "1234";
+    List<TentativePlayer> expectedTentativeQueue = new ArrayList<>();
+    expectedTentativeQueue.add(TentativePlayer
+                                   .builder()
+                                   .discordId("1")
+                                   .build());
+    expectedTentativeQueue.add(TentativePlayer
+                                   .builder()
+                                   .discordId("2")
+                                   .build());
+    expectedTentativeQueue.add(TentativePlayer
+                                   .builder()
+                                   .discordId("3")
+                                   .build());
+    Tentative source = Tentative
+        .builder()
+        .tentativePlayers(expectedTentativeQueue)
+        .serverId(serverId)
+        .tournamentDetails(BaseTournament
+                               .builder()
+                               .tournamentName(expectedTournamentName)
+                               .tournamentDay(expectedTournamentDay)
+                               .build())
+        .build();
 
-    @Test
-    @DisplayName("TentativeMapper - Tentative -> TentativeQueue")
-    void test_tentativeToTentativeQueue() {
-        String expectedTournamentName = "awesome_sauce";
-        String expectedTournamentDay = "3";
-        String serverId = "1234";
-        List<TentativePlayer> expectedTentativeQueue = new ArrayList<>();
-        expectedTentativeQueue.add(TentativePlayer.builder()
-                .discordId("1")
-                .build());
-        expectedTentativeQueue.add(TentativePlayer.builder()
-                .discordId("2")
-                .build());
-        expectedTentativeQueue.add(TentativePlayer.builder()
-                .discordId("3")
-                .build());
-        Tentative source = Tentative.builder()
-                .tentativePlayers(expectedTentativeQueue)
+    TentativeQueue target = TentativeQueue
+        .builder()
+        .tentativeId(
+            TentativeId
+                .builder()
                 .serverId(serverId)
-                .tournamentDetails(BaseTournament.builder()
-                        .tournamentName(expectedTournamentName)
-                        .tournamentDay(expectedTournamentDay)
-                        .build())
-                .build();
+                .tournamentId(TournamentId
+                                  .builder()
+                                  .tournamentName(expectedTournamentName)
+                                  .tournamentDay(expectedTournamentDay)
+                                  .build())
+                .build()
+        )
+        .discordIds(
+            expectedTentativeQueue
+                .stream()
+                .map(TentativePlayer::getDiscordId)
+                .collect(Collectors.toSet()))
+        .build();
 
-        TentativeQueue target = TentativeQueue.builder()
-                .tentativeId(
-                        TentativeId.builder()
-                                .serverId(serverId)
-                                .tournamentId(TournamentId.builder()
-                                        .tournamentName(expectedTournamentName)
-                                        .tournamentDay(expectedTournamentDay)
-                                        .build())
-                                .build()
-                )
-                .discordIds(
-                        expectedTentativeQueue.stream().map(TentativePlayer::getDiscordId).collect(Collectors.toSet()))
-                .build();
+    assertEquals(target, tentativeMapper.tentativeToTentativeQueue(source));
+  }
 
-        assertEquals(target, tentativeMapper.tentativeToTentativeQueue(source));
-    }
+  @Test
+  @DisplayName("TentativeMapper - TentativeQueue -> Tentative")
+  void test_tentativeQueueToTentative() {
+    String expectedTournamentName = "awesome_sauce";
+    String expectedTournamentDay = "3";
+    String serverId = "1234";
+    List<TentativePlayer> expectedTentativeQueue = new ArrayList<>();
+    expectedTentativeQueue.add(TentativePlayer
+                                   .builder()
+                                   .discordId("1")
+                                   .build());
+    expectedTentativeQueue.add(TentativePlayer
+                                   .builder()
+                                   .discordId("2")
+                                   .build());
+    expectedTentativeQueue.add(TentativePlayer
+                                   .builder()
+                                   .discordId("3")
+                                   .build());
+    Tentative target = Tentative
+        .builder()
+        .tentativePlayers(expectedTentativeQueue)
+        .serverId(serverId)
+        .tournamentDetails(BaseTournament
+                               .builder()
+                               .tournamentName(expectedTournamentName)
+                               .tournamentDay(expectedTournamentDay)
+                               .build())
+        .build();
 
-    @Test
-    @DisplayName("TentativeMapper - TentativeQueue -> Tentative")
-    void test_tentativeQueueToTentative() {
-        String expectedTournamentName = "awesome_sauce";
-        String expectedTournamentDay = "3";
-        String serverId = "1234";
-        List<TentativePlayer> expectedTentativeQueue = new ArrayList<>();
-        expectedTentativeQueue.add(TentativePlayer.builder()
-                .discordId("1")
-                .build());
-        expectedTentativeQueue.add(TentativePlayer.builder()
-                .discordId("2")
-                .build());
-        expectedTentativeQueue.add(TentativePlayer.builder()
-                .discordId("3")
-                .build());
-        Tentative target = Tentative.builder()
-                .tentativePlayers(expectedTentativeQueue)
+    TentativeQueue source = TentativeQueue
+        .builder()
+        .tentativeId(
+            TentativeId
+                .builder()
                 .serverId(serverId)
-                .tournamentDetails(BaseTournament.builder()
-                        .tournamentName(expectedTournamentName)
-                        .tournamentDay(expectedTournamentDay)
-                        .build())
-                .build();
+                .tournamentId(TournamentId
+                                  .builder()
+                                  .tournamentName(expectedTournamentName)
+                                  .tournamentDay(expectedTournamentDay)
+                                  .build())
+                .build()
+        )
+        .discordIds(
+            expectedTentativeQueue
+                .stream()
+                .map(TentativePlayer::getDiscordId)
+                .collect(Collectors.toSet()))
+        .build();
 
-        TentativeQueue source = TentativeQueue.builder()
-                .tentativeId(
-                        TentativeId.builder()
-                                .serverId(serverId)
-                                .tournamentId(TournamentId.builder()
-                                        .tournamentName(expectedTournamentName)
-                                        .tournamentDay(expectedTournamentDay)
-                                        .build())
-                                .build()
-                )
-                .discordIds(
-                        expectedTentativeQueue.stream().map(TentativePlayer::getDiscordId).collect(Collectors.toSet()))
-                .build();
+    assertEquals(target, tentativeMapper.tentativeQueueToTentative(source));
+  }
 
-        assertEquals(target, tentativeMapper.tentativeQueueToTentative(source));
-    }
+  @Test
+  @DisplayName("User -> TentativePlayer")
+  void test_userToTentativePlayer() {
+    User user = easyRandom.nextObject(User.class);
 
-    @Test
-    @DisplayName("User -> TentativePlayer")
-    void test_userToTentativePlayer() {
-        User user = easyRandom.nextObject(User.class);
+    TentativePlayer tentativePlayer = TentativePlayer
+        .builder()
+        .name(user.getName())
+        .discordId(user.getDiscordId())
+        .role(user.getDefaultRole())
+        .champions(user
+                       .getPreferredChampions()
+                       .stream()
+                       .map(champ -> Champion
+                           .builder()
+                           .name(champ.getName())
+                           .build())
+                       .collect(Collectors.toList()))
+        .build();
 
-        TentativePlayer tentativePlayer = TentativePlayer.builder()
-                .name(user.getName())
-                .discordId(user.getDiscordId())
-                .role(user.getDefaultRole())
-                .champions(user.getPreferredChampions().stream().map(champ -> Champion.builder()
-                                .name(champ.getName())
-                                .build())
-                        .collect(Collectors.toList()))
-                .build();
-
-        assertEquals(tentativePlayer, tentativeMapper.userToTentativePlayer(user));
-    }
+    assertEquals(tentativePlayer, tentativeMapper.userToTentativePlayer(user));
+  }
 
 }

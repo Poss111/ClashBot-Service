@@ -12,16 +12,16 @@ import java.time.Instant;
 @Data
 public class AuditEntity implements Serializable {
 
-    @CreatedDate
-    Instant createdDate;
+  @CreatedDate
+  Instant createdDate;
 
-    @CreatedBy
-    String createdBy;
+  @CreatedBy
+  String createdBy;
 
-    @LastModifiedDate
-    Instant lastModifiedDate;
+  @LastModifiedDate
+  Instant lastModifiedDate;
 
-    @LastModifiedBy
-    String lastModifiedBy;
+  @LastModifiedBy
+  String lastModifiedBy;
 
 }

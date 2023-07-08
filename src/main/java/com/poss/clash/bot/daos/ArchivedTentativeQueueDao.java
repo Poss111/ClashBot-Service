@@ -5,4 +5,5 @@ import com.poss.clash.bot.daos.models.TentativeId;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 
 public interface ArchivedTentativeQueueDao extends ReactiveCrudRepository<ArchivedTentativeQueue, TentativeId> {
+
 }

@@ -11,8 +11,8 @@ import java.util.Set;
 @Builder
 public class BasePlayerRecord {
 
-    private String discordId;
-    private Set<LoLChampion> championsToPlay;
-    private String name;
+  private String discordId;
+  private Set<LoLChampion> championsToPlay;
+  private String name;
 
 }

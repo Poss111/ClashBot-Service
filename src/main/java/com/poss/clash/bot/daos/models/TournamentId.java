@@ -13,7 +13,7 @@ import java.io.Serializable;
 @Builder
 public class TournamentId implements Serializable {
 
-    private String tournamentName;
-    private String tournamentDay;
+  private String tournamentName;
+  private String tournamentDay;
 
 }

@@ -7,6 +7,6 @@ import org.mapstruct.Mapper;
 @Mapper(componentModel = "spring", builder = @Builder(disableBuilder = true))
 public interface UserAssociationMapper {
 
-    UserAssociation clone(UserAssociation userAssociation);
+  UserAssociation clone(UserAssociation userAssociation);
 
 }

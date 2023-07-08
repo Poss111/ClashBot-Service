@@ -9,6 +9,6 @@ import reactor.core.publisher.Flux;
 @Repository
 public interface UserAssociationDao extends ReactiveCrudRepository<UserAssociation, UserAssociationKey> {
 
-    Flux<UserAssociation> findByUserAssociationKeyAndTentativeIdIsNull(UserAssociationKey userAssociationKey);
+  Flux<UserAssociation> findByUserAssociationKeyAndTentativeIdIsNull(UserAssociationKey userAssociationKey);
 
 }

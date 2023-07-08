@@ -11,10 +11,12 @@ import java.time.Instant;
 
 public interface TournamentDao extends ReactiveCrudRepository<ClashTournament, TournamentId> {
 
-    Flux<ClashTournament> findAll(Example<ClashTournament> clashTournamentExample);
+  Flux<ClashTournament> findAll(Example<ClashTournament> clashTournamentExample);
 
-    Flux<ClashTournament> findClashTournamentsByStartTimeAfter(Instant instant);
+  Flux<ClashTournament> findClashTournamentsByStartTimeAfter(Instant instant);
 
-    Mono<Boolean> existsByTournamentIdTournamentName_AndTournamentIdTournamentDay_AndStartTimeAfter(String tournamentName, String tournamentDay, Instant instant);
+  Mono<Boolean> existsByTournamentIdTournamentName_AndTournamentIdTournamentDay_AndStartTimeAfter(
+      String tournamentName, String tournamentDay, Instant instant
+  );
 
 }
