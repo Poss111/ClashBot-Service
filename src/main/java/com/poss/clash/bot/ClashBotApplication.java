@@ -12,8 +12,8 @@ import org.springframework.data.mongodb.repository.config.EnableReactiveMongoRep
 @ConfigurationPropertiesScan
 public class ClashBotApplication {
 
-    public static void main(String[] args) {
-        SpringApplication.run(ClashBotApplication.class, args);
-    }
+  public static void main(String[] args) {
+    SpringApplication.run(ClashBotApplication.class, args);
+  }
 
 }

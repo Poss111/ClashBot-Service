@@ -9,6 +9,6 @@ import lombok.*;
 @EqualsAndHashCode
 public class LoLChampion {
 
-    private String name;
+  private String name;
 
 }

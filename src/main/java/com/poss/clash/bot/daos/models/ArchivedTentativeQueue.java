@@ -15,8 +15,8 @@ import java.util.Set;
 @Builder
 public class ArchivedTentativeQueue extends AuditEntity {
 
-    @Id
-    private TentativeId tentativeId;
-    private Set<String> discordIds;
+  @Id
+  private TentativeId tentativeId;
+  private Set<String> discordIds;
 
 }

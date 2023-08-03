@@ -30,108 +30,113 @@ import static org.mockito.Mockito.when;
 @Import(ClashBotTestingConfig.class)
 class TournamentServiceTest {
 
-    @InjectMocks
-    TournamentService tournamentService;
+  @InjectMocks
+  TournamentService tournamentService;
 
-    @Mock
-    TournamentDao tournamentDao;
+  @Mock
+  TournamentDao tournamentDao;
 
-    @Autowired
-    EasyRandom easyRandom;
+  @Autowired
+  EasyRandom easyRandom;
 
-    @Nested
-    @DisplayName("Query")
-    class Query {
+  @Nested
+  @DisplayName("Query")
+  class Query {
 
-        @Test
-        @DisplayName("retrieveTournamentsByTournamentOrDay - Retrieve all tournaments by name or day")
-        void test() {
-            TournamentId tournamentId = easyRandom.nextObject(TournamentId.class);
+    @Test
+    @DisplayName("retrieveTournamentsByTournamentOrDay - Retrieve all tournaments by name or day")
+    void test() {
+      TournamentId tournamentId = easyRandom.nextObject(TournamentId.class);
 
-            ClashTournament clashTournament = easyRandom.nextObject(ClashTournament.class);
+      ClashTournament clashTournament = easyRandom.nextObject(ClashTournament.class);
 
-            when(tournamentDao.findAll(Example.of(ClashTournament.builder()
-                    .tournamentId(tournamentId)
-                    .build()))
-            ).thenReturn(Mono.just(List.of(clashTournament))
-                    .flatMapMany(Flux::fromIterable));
+      when(tournamentDao.findAll(Example.of(ClashTournament
+                                                .builder()
+                                                .tournamentId(tournamentId)
+                                                .build()))
+      ).thenReturn(Mono
+                       .just(List.of(clashTournament))
+                       .flatMapMany(Flux::fromIterable));
 
-            StepVerifier
-                    .create(tournamentService.retrieveTournamentsByTournamentOrDay(
-                            tournamentId.getTournamentName(),
-                            tournamentId.getTournamentDay())
-                    )
-                    .expectNext(clashTournament)
-                    .verifyComplete();
-        }
-
-        @Test
-        @DisplayName("retrieveAllTournaments - If upcoming only is false then retrieve all tournaments")
-        void test2() {
-            ClashTournament clashTournament = easyRandom.nextObject(ClashTournament.class);
-
-            when(tournamentDao.findAll())
-                    .thenReturn(Mono.just(List.of(clashTournament))
-                            .flatMapMany(Flux::fromIterable));
-
-            StepVerifier
-                    .create(tournamentService.retrieveAllTournaments(false))
-                    .expectNext(clashTournament)
-                    .verifyComplete();
-        }
-
-        @Test
-        @DisplayName("retrieveAllTournaments - If upcoming only is true then retrieve all tournaments that are after the current time")
-        void test3() {
-            ClashTournament clashTournament = easyRandom.nextObject(ClashTournament.class);
-
-            when(tournamentDao.findClashTournamentsByStartTimeAfter(any(Instant.class)))
-                    .thenReturn(Mono.just(List.of(clashTournament))
-                            .flatMapMany(Flux::fromIterable));
-
-            StepVerifier
-                    .create(tournamentService.retrieveAllTournaments(true))
-                    .expectNext(clashTournament)
-                    .verifyComplete();
-        }
-
-        @Test
-        @DisplayName("isTournamentActive - Should take a tournament name and day and return true of false if it is active")
-        void test4() {
-            TournamentId tournamentId = easyRandom.nextObject(TournamentId.class);
-
-            when(tournamentDao.existsByTournamentIdTournamentName_AndTournamentIdTournamentDay_AndStartTimeAfter(
-                    anyString(),
-                    anyString(),
-                    any(Instant.class))
-            ).thenReturn(Mono.just(true));
-
-            StepVerifier
-                    .create(tournamentService.isTournamentActive(tournamentId.getTournamentName(), tournamentId.getTournamentDay()))
-                    .expectNext(true)
-                    .verifyComplete();
-        }
-
+      StepVerifier
+          .create(tournamentService.retrieveTournamentsByTournamentOrDay(
+              tournamentId.getTournamentName(),
+              tournamentId.getTournamentDay())
+          )
+          .expectNext(clashTournament)
+          .verifyComplete();
     }
 
-    @Nested
-    @DisplayName("Create")
-    class Create {
+    @Test
+    @DisplayName("retrieveAllTournaments - If upcoming only is false then retrieve all tournaments")
+    void test2() {
+      ClashTournament clashTournament = easyRandom.nextObject(ClashTournament.class);
 
-        @Test
-        @DisplayName("saveTournament - should take a tournament in and invoke save")
-        void test() {
-            ClashTournament clashTournament = easyRandom.nextObject(ClashTournament.class);
+      when(tournamentDao.findAll())
+          .thenReturn(Mono
+                          .just(List.of(clashTournament))
+                          .flatMapMany(Flux::fromIterable));
 
-            when(tournamentDao.save(clashTournament))
-                    .thenReturn(Mono.just(clashTournament));
-
-            StepVerifier
-                    .create(tournamentService.saveTournament(clashTournament))
-                    .expectNext(clashTournament)
-                    .verifyComplete();
-        }
-
+      StepVerifier
+          .create(tournamentService.retrieveAllTournaments(false))
+          .expectNext(clashTournament)
+          .verifyComplete();
     }
+
+    @Test
+    @DisplayName("retrieveAllTournaments - If upcoming only is true then retrieve all tournaments that are after the current time")
+    void test3() {
+      ClashTournament clashTournament = easyRandom.nextObject(ClashTournament.class);
+
+      when(tournamentDao.findClashTournamentsByStartTimeAfter(any(Instant.class)))
+          .thenReturn(Mono
+                          .just(List.of(clashTournament))
+                          .flatMapMany(Flux::fromIterable));
+
+      StepVerifier
+          .create(tournamentService.retrieveAllTournaments(true))
+          .expectNext(clashTournament)
+          .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("isTournamentActive - Should take a tournament name and day and return true of false if it is active")
+    void test4() {
+      TournamentId tournamentId = easyRandom.nextObject(TournamentId.class);
+
+      when(tournamentDao.existsByTournamentIdTournamentName_AndTournamentIdTournamentDay_AndStartTimeAfter(
+          anyString(),
+          anyString(),
+          any(Instant.class))
+      ).thenReturn(Mono.just(true));
+
+      StepVerifier
+          .create(
+              tournamentService.isTournamentActive(tournamentId.getTournamentName(), tournamentId.getTournamentDay()))
+          .expectNext(true)
+          .verifyComplete();
+    }
+
+  }
+
+  @Nested
+  @DisplayName("Create")
+  class Create {
+
+    @Test
+    @DisplayName("saveTournament - should take a tournament in and invoke save")
+    void test() {
+      ClashTournament clashTournament = easyRandom.nextObject(ClashTournament.class);
+
+      when(tournamentDao.save(clashTournament))
+          .thenReturn(Mono.just(clashTournament));
+
+      StepVerifier
+          .create(tournamentService.saveTournament(clashTournament))
+          .expectNext(clashTournament)
+          .verifyComplete();
+    }
+
+  }
 
 }

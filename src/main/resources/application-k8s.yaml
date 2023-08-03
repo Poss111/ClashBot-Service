@@ -11,6 +11,10 @@ aws:
   endpoint-configuration:
     url: http://host.docker.internal:4566
     signingRegion: us-east-1
+riot:
+  url: https://na1.api.riotgames.com
+  api-key: ${RIOT_API_KEY}
+  timeout: 30s
 cloud:
   aws:
     stack:

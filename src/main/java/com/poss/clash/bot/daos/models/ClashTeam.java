@@ -17,11 +17,11 @@ import java.util.Map;
 @Builder
 public class ClashTeam extends AuditEntity {
 
-    @Id
-    private TeamId teamId;
-    private String teamName;
-    private String serverId;
-    private String teamIconLink;
-    private Map<Role, BasePlayerRecord> positions;
+  @Id
+  private TeamId teamId;
+  private String teamName;
+  private String serverId;
+  private String teamIconLink;
+  private Map<Role, BasePlayerRecord> positions;
 
 }

@@ -7,9 +7,9 @@ import org.springframework.context.annotation.Bean;
 @TestConfiguration
 public class ClashBotTestingConfig {
 
-    @Bean
-    protected EasyRandom easyRandom() {
-        return new EasyRandom();
-    }
+  @Bean
+  protected EasyRandom easyRandom() {
+    return new EasyRandom();
+  }
 
 }

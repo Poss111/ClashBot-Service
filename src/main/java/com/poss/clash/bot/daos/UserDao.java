@@ -10,10 +10,10 @@ import reactor.core.publisher.Mono;
 @Repository
 public interface UserDao extends ReactiveCrudRepository<User, String> {
 
-    Mono<User> findUserByDiscordId(String id);
+  Mono<User> findUserByDiscordId(String id);
 
-    @Query("{ 'discordId': ?0 }")
-    @Update("{ '$set': { 'serverId': ?1 }}")
-    Mono<Long> updateUserDefaultServerId(String id, String serverId);
+  @Query("{ 'discordId': ?0 }")
+  @Update("{ '$set': { 'serverId': ?1 }}")
+  Mono<Long> updateUserDefaultServerId(String id, String serverId);
 
 }

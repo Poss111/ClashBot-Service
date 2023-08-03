@@ -14,10 +14,10 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @Builder
 public class UserAssociation extends AuditEntity {
 
-    @Id
-    private UserAssociationKey userAssociationKey;
-    private String teamId;
-    private String tentativeId;
-    private String serverId;
+  @Id
+  private UserAssociationKey userAssociationKey;
+  private String teamId;
+  private String tentativeId;
+  private String serverId;
 
 }

@@ -16,9 +16,9 @@ import java.time.Instant;
 @Builder
 public class ClashTournament extends AuditEntity {
 
-    @Id
-    private TournamentId tournamentId;
-    private Instant startTime;
-    private Instant registrationTime;
+  @Id
+  private TournamentId tournamentId;
+  private Instant startTime;
+  private Instant registrationTime;
 
 }

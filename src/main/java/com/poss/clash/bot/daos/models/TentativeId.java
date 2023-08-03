@@ -13,8 +13,8 @@ import java.io.Serializable;
 @Builder
 public class TentativeId implements Serializable {
 
-    private String tentativeId;
-    private TournamentId tournamentId;
-    private String serverId;
+  private String tentativeId;
+  private TournamentId tournamentId;
+  private String serverId;
 
 }

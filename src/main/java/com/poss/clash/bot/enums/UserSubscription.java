@@ -7,22 +7,22 @@ import lombok.Getter;
 @Getter
 public enum UserSubscription {
 
-    DISCORD_MONDAY_NOTIFICATION("DISCORD_MONDAY_NOTIFICATION");
+  DISCORD_MONDAY_NOTIFICATION("DISCORD_MONDAY_NOTIFICATION");
 
-    private final String value;
+  private final String value;
 
-    @Override
-    public String toString() {
-        return String.valueOf(value);
+  @Override
+  public String toString() {
+    return String.valueOf(value);
+  }
+
+  public static UserSubscription fromValue(String value) {
+    for (UserSubscription b : UserSubscription.values()) {
+      if (b.value.equals(value)) {
+        return b;
+      }
     }
-
-    public static UserSubscription fromValue(String value) {
-        for (UserSubscription b : UserSubscription.values()) {
-            if (b.value.equals(value)) {
-                return b;
-            }
-        }
-        throw new IllegalArgumentException("Unexpected value '" + value + "'");
-    }
+    throw new IllegalArgumentException("Unexpected value '" + value + "'");
+  }
 
 }

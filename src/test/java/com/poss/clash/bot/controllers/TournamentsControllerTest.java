@@ -31,93 +31,109 @@ import static org.mockito.Mockito.when;
 @Import(ClashBotTestingConfig.class)
 public class TournamentsControllerTest {
 
-    @InjectMocks
-    TournamentsController tournamentsController;
+  @InjectMocks
+  TournamentsController tournamentsController;
 
-    @Mock
-    TournamentService tournamentService;
+  @Mock
+  TournamentService tournamentService;
 
-    @Spy
-    TournamentMapper tournamentMapper = Mappers.getMapper(TournamentMapper.class);
+  @Spy
+  TournamentMapper tournamentMapper = Mappers.getMapper(TournamentMapper.class);
 
-    @Autowired
-    EasyRandom easyRandom;
+  @Autowired
+  EasyRandom easyRandom;
 
-    @Nested
-    @DisplayName("POST - createTournament")
-    class CreateTournament {
+  @Nested
+  @DisplayName("POST - createTournament")
+  class CreateTournament {
 
-        @Test
-        @DisplayName("200 - should create and save a new tournament.")
-        void test() {
-            DetailedTournament detailedTournament = easyRandom.nextObject(DetailedTournament.class);
+    @Test
+    @DisplayName("200 - should create and save a new tournament.")
+    void test() {
+      DetailedTournament detailedTournament = easyRandom.nextObject(DetailedTournament.class);
 
-            ClashTournament clashTournament = tournamentMapper.detailedTournamentToClashTournament(detailedTournament);
-            when(tournamentService.saveTournament(clashTournament))
-                    .thenReturn(Mono.just(clashTournament));
+      ClashTournament clashTournament = tournamentMapper.detailedTournamentToClashTournament(detailedTournament);
+      when(tournamentService.saveTournament(clashTournament))
+          .thenReturn(Mono.just(clashTournament));
 
-            StepVerifier
-                    .create(tournamentsController.createTournament(easyRandom.nextObject(String.class), Mono.just(detailedTournament), null))
-                    .expectNext(ResponseEntity.ok(tournamentMapper.clashTournamentToDetailedTournament(clashTournament)))
-                    .verifyComplete();
-        }
-
+      StepVerifier
+          .create(
+              tournamentsController.createTournament(easyRandom.nextObject(String.class), Mono.just(detailedTournament),
+                                                     null))
+          .expectNext(ResponseEntity.ok(tournamentMapper.clashTournamentToDetailedTournament(clashTournament)))
+          .verifyComplete();
     }
 
-    @Nested
-    @DisplayName("GET - getTournaments")
-    class GetTournaments {
+  }
 
-        @Test
-        @DisplayName("200 - should retrieve tournaments based on filter")
-        void test() {
-            ClashTournament clashTournament = easyRandom.nextObject(ClashTournament.class);
+  @Nested
+  @DisplayName("GET - getTournaments")
+  class GetTournaments {
 
-            when(tournamentService.retrieveTournamentsByTournamentOrDay(
-                    clashTournament.getTournamentId().getTournamentName(),
-                    clashTournament.getTournamentId().getTournamentDay()))
-                    .thenReturn(Mono.just(List.of(clashTournament)).flatMapMany(Flux::fromIterable));
+    @Test
+    @DisplayName("200 - should retrieve tournaments based on filter")
+    void test() {
+      ClashTournament clashTournament = easyRandom.nextObject(ClashTournament.class);
 
-            Tournaments expectedResponse = Tournaments.builder()
-                    .tournaments(List.of(tournamentMapper.clashTournamentToDetailedTournament(clashTournament)))
-                    .count(1)
-                    .build();
+      when(tournamentService.retrieveTournamentsByTournamentOrDay(
+          clashTournament
+              .getTournamentId()
+              .getTournamentName(),
+          clashTournament
+              .getTournamentId()
+              .getTournamentDay()))
+          .thenReturn(Mono
+                          .just(List.of(clashTournament))
+                          .flatMapMany(Flux::fromIterable));
 
-            StepVerifier
-                    .create(tournamentsController.getTournaments(
-                            easyRandom.nextObject(String.class),
-                            clashTournament.getTournamentId().getTournamentName(),
-                            clashTournament.getTournamentId().getTournamentDay(),
-                            false,
-                            null))
-                    .expectNext(ResponseEntity.ok(expectedResponse))
-                    .verifyComplete();
-        }
+      Tournaments expectedResponse = Tournaments
+          .builder()
+          .tournaments(List.of(tournamentMapper.clashTournamentToDetailedTournament(clashTournament)))
+          .count(1)
+          .build();
 
-        @Test
-        @DisplayName("200 - if no filter criteria is passed, all tournaments should be returned")
-        void test2() {
-            ClashTournament clashTournament = easyRandom.nextObject(ClashTournament.class);
-
-            when(tournamentService.retrieveAllTournaments(false))
-                    .thenReturn(Mono.just(List.of(clashTournament)).flatMapMany(Flux::fromIterable));
-
-            Tournaments expectedResponse = Tournaments.builder()
-                    .tournaments(List.of(tournamentMapper.clashTournamentToDetailedTournament(clashTournament)))
-                    .count(1)
-                    .build();
-
-            StepVerifier
-                    .create(tournamentsController.getTournaments(
-                            easyRandom.nextObject(String.class),
-                            null,
-                            null,
-                            false,
-                            null))
-                    .expectNext(ResponseEntity.ok(expectedResponse))
-                    .verifyComplete();
-        }
-
+      StepVerifier
+          .create(tournamentsController.getTournaments(
+              easyRandom.nextObject(String.class),
+              clashTournament
+                  .getTournamentId()
+                  .getTournamentName(),
+              clashTournament
+                  .getTournamentId()
+                  .getTournamentDay(),
+              false,
+              null))
+          .expectNext(ResponseEntity.ok(expectedResponse))
+          .verifyComplete();
     }
+
+    @Test
+    @DisplayName("200 - if no filter criteria is passed, all tournaments should be returned")
+    void test2() {
+      ClashTournament clashTournament = easyRandom.nextObject(ClashTournament.class);
+
+      when(tournamentService.retrieveAllTournaments(false))
+          .thenReturn(Mono
+                          .just(List.of(clashTournament))
+                          .flatMapMany(Flux::fromIterable));
+
+      Tournaments expectedResponse = Tournaments
+          .builder()
+          .tournaments(List.of(tournamentMapper.clashTournamentToDetailedTournament(clashTournament)))
+          .count(1)
+          .build();
+
+      StepVerifier
+          .create(tournamentsController.getTournaments(
+              easyRandom.nextObject(String.class),
+              null,
+              null,
+              false,
+              null))
+          .expectNext(ResponseEntity.ok(expectedResponse))
+          .verifyComplete();
+    }
+
+  }
 
 }

@@ -70,6 +70,8 @@ dependencies {
     testImplementation 'io.projectreactor:reactor-test'
     testImplementation 'org.springframework.restdocs:spring-restdocs-webtestclient'
     testImplementation 'org.jeasy:easy-random-core:4.0.0'
+    testImplementation 'org.mock-server:mockserver-netty:3.10.8'
+    testImplementation 'org.mock-server:mockserver-client-java:3.10.8'
 
     // Integration Test Dependencies
 //    integrationTestImplementation "de.flapdoodle.embed:de.flapdoodle.embed.mongo"
