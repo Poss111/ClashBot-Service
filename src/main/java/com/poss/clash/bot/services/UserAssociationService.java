@@ -14,6 +14,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.text.MessageFormat;
+import java.util.List;
 
 @Service
 @Slf4j
@@ -77,6 +78,10 @@ public class UserAssociationService {
             .flatMap(teamSource::sendTeamUpdateEvent)
             .checkpoint(MessageFormat.format("Sending UPDATE event for team {0} for {1}", userAssociation.getTeamId(),
                                              discordId)));
+  }
+
+  public Flux<UserAssociation> retrieveUserAssociationsForATournament(List<TournamentId> tournamentIds) {
+    return userAssociationDao.findByUserAssociationKey_TournamentIdIsIn(tournamentIds);
   }
 
 }

@@ -29,9 +29,7 @@ import static org.mockserver.model.HttpResponse.response;
 @Import(ClashBotTestingConfig.class)
 public class RiotApiServiceTest {
 
-  RiotApiService riotService = new RiotApiService(WebClient
-                                                      .builder()
-                                                      .build());
+  RiotApiService riotService;
 
   @Autowired
   EasyRandom easyRandom;
@@ -40,7 +38,17 @@ public class RiotApiServiceTest {
 
   @BeforeAll
   static void beforeAll() {
-    mockServer = startClientAndServer(80);
+    mockServer = startClientAndServer(8090);
+  }
+
+  @BeforeEach
+  void before() {
+    riotService = new RiotApiService(WebClient
+                                         .builder()
+                                         .baseUrl("http://" + mockServer
+                                             .remoteAddress()
+                                             .getHostName() + ":" + mockServer.getPort())
+                                         .build());
   }
 
   @AfterAll

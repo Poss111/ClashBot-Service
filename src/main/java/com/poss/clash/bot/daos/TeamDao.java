@@ -23,7 +23,7 @@ public interface TeamDao extends ReactiveCrudRepository<ClashTeam, TeamId> {
 
   Flux<ClashTeam> findAllByTeamId_TournamentId_TournamentDay(String tournamentDay);
 
-  Flux<ClashTeam> findAllByTeamId_TournamentId_TournamentName_AndTeamId_TournamentId_TournamentName(
+  Flux<ClashTeam> findAllByTeamId_TournamentId_TournamentName_AndTeamId_TournamentId_TournamentDay(
       String tournamentName, String tournamentDay
   );
 

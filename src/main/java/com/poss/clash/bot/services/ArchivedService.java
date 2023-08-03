@@ -6,10 +6,7 @@ import com.poss.clash.bot.enums.ArchiveStatus;
 import com.poss.clash.bot.exceptions.ClashBotControllerException;
 import com.poss.clash.bot.exceptions.ClashBotDbException;
 import com.poss.clash.bot.services.models.ArchiveResults;
-import com.poss.clash.bot.utils.IdUtils;
-import com.poss.clash.bot.utils.TeamMapper;
-import com.poss.clash.bot.utils.TentativeMapper;
-import com.poss.clash.bot.utils.TournamentMapper;
+import com.poss.clash.bot.utils.*;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -27,16 +24,20 @@ public class ArchivedService {
   private final TournamentService tournamentService;
   private final TeamService teamService;
   private final TentativeService tentativeService;
+  private final UserAssociationService userAssociationService;
   private final TeamDao teamDao;
   private final TentativeDao tentativeDao;
   private final TournamentDao tournamentDao;
+  private final UserAssociationDao userAssociationDao;
   private final ArchivedClashTeamDao archivedClashTeamDao;
   private final ArchivedClashTournamentDao archivedClashTournamentDao;
   private final ArchivedTentativeQueueDao archivedTentativeQueueDao;
+  private final ArchivedUserAssociationDao archivedUserAssociationDao;
   private final ArchiveExecutionDao archiveExecutionDao;
   private final TournamentMapper tournamentMapper;
   private final TeamMapper teamMapper;
   private final TentativeMapper tentativeMapper;
+  private final UserAssociationMapper userAssociationMapper;
   private final IdUtils idUtils;
 
   public Flux<ArchivedTentativeQueue> retrieveArchivedTentativeQueues(
@@ -83,6 +84,7 @@ public class ArchivedService {
                                Mono.just(tournaments),
                                archiveTeamsBasedOnTournamentIds(tournamentIds),
                                archiveTentativeQueuesBasedOnTournamentIds(tournamentIds),
+                               archiveUserAssociationsBasedOnTournamentIds(tournamentIds),
                                Mono.just(savedExecution)));
         })
         .log()
@@ -90,7 +92,7 @@ public class ArchivedService {
         .flatMap(tuple -> archivedClashTournaments(tuple.getT1())
             .thenReturn(tuple))
         .flatMap(tuple -> {
-          ArchiveExecution archiveExecution = tuple.getT4();
+          ArchiveExecution archiveExecution = tuple.getT5();
           archiveExecution.setTeamsArchived(tuple
                                                 .getT2()
                                                 .size());
@@ -99,7 +101,7 @@ public class ArchivedService {
                                                           .size());
           archiveExecution.setStatus(ArchiveStatus.SUCCESSFUL);
           return archiveExecutionDao
-              .save(tuple.getT4())
+              .save(tuple.getT5())
               .thenReturn(tuple);
         })
         .checkpoint("Archived Clash Tournaments")
@@ -172,6 +174,22 @@ public class ArchivedService {
     return Instant
         .now()
         .isAfter(clashTournament.getStartTime());
+  }
+
+  public Mono<List<ArchivedUserAssociation>> archiveUserAssociationsBasedOnTournamentIds(
+      List<TournamentId> tournamentIds
+  ) {
+    return userAssociationService
+        .retrieveUserAssociationsForATournament(tournamentIds)
+        .map(userAssociationMapper::userAssociationToArchivedUserAssociation)
+        .flatMap(archivedUserAssociationDao::save)
+        .collectList()
+        .flatMap(archivedUserAssociation -> Flux
+            .fromIterable(archivedUserAssociation)
+            .map(ArchivedUserAssociation::getUserAssociationKey)
+            .collectList()
+            .flatMap(userAssociationDao::deleteAllById)
+            .thenReturn(archivedUserAssociation));
   }
 
 }

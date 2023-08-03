@@ -309,7 +309,7 @@ public class TeamServiceTest {
           easyRandom.nextObject(ClashTeam.class)
       );
 
-      when(teamDao.findAllByTeamId_TournamentId_TournamentName_AndTeamId_TournamentId_TournamentName(
+      when(teamDao.findAllByTeamId_TournamentId_TournamentName_AndTeamId_TournamentId_TournamentDay(
           tournamentName,
           tournamentDay
       )).thenReturn(Mono
@@ -324,7 +324,7 @@ public class TeamServiceTest {
           .verifyComplete();
 
       verify(teamDao, times(1))
-          .findAllByTeamId_TournamentId_TournamentName_AndTeamId_TournamentId_TournamentName(
+          .findAllByTeamId_TournamentId_TournamentName_AndTeamId_TournamentId_TournamentDay(
               tournamentName,
               tournamentDay
           );

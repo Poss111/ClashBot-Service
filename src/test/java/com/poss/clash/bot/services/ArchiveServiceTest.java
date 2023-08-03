@@ -7,10 +7,7 @@ import com.poss.clash.bot.enums.ArchiveStatus;
 import com.poss.clash.bot.exceptions.ClashBotControllerException;
 import com.poss.clash.bot.exceptions.ClashBotDbException;
 import com.poss.clash.bot.services.models.ArchiveResults;
-import com.poss.clash.bot.utils.IdUtils;
-import com.poss.clash.bot.utils.TeamMapper;
-import com.poss.clash.bot.utils.TentativeMapper;
-import com.poss.clash.bot.utils.TournamentMapper;
+import com.poss.clash.bot.utils.*;
 import org.jeasy.random.EasyRandom;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -55,6 +52,9 @@ public class ArchiveServiceTest {
   TentativeService tentativeService;
 
   @Mock
+  UserAssociationService userAssociationService;
+
+  @Mock
   TeamDao teamDao;
 
   @Mock
@@ -70,7 +70,13 @@ public class ArchiveServiceTest {
   TournamentDao tournamentDao;
 
   @Mock
+  UserAssociationDao userAssociationDao;
+
+  @Mock
   ArchivedClashTournamentDao archivedClashTournamentDao;
+
+  @Mock
+  ArchivedUserAssociationDao archivedUserAssociationDao;
 
   @Mock
   ArchiveExecutionDao archiveExecutionDao;
@@ -86,6 +92,9 @@ public class ArchiveServiceTest {
 
   @Spy
   TentativeMapper tentativeMapper = Mappers.getMapper(TentativeMapper.class);
+
+  @Spy
+  UserAssociationMapper userAssociationMapper = Mappers.getMapper(UserAssociationMapper.class);
 
   @Autowired
   EasyRandom easyRandom;
@@ -115,8 +124,8 @@ public class ArchiveServiceTest {
   }
 
   @Test
-  @DisplayName("archiveBasedOnInactiveTournaments - Should query for all inactive Tournaments then query for the matching teams and tentative queues")
-  void test4() {
+  @DisplayName("archiveBasedOnInactiveTournaments - Should query for all inactive Tournaments then query for the matching teams, tentative queues, and user associations")
+  void test_archiveBasedOnInactiveTournaments() {
     ClashTournament clashTournament = easyRandom.nextObject(ClashTournament.class);
     clashTournament.setStartTime(Instant
                                      .now()
@@ -126,6 +135,10 @@ public class ArchiveServiceTest {
     TentativeQueue tentativeQueue = easyRandom.nextObject(TentativeQueue.class);
     tentativeQueue
         .getTentativeId()
+        .setTournamentId(clashTournament.getTournamentId());
+    UserAssociation userAssociation = easyRandom.nextObject(UserAssociation.class);
+    userAssociation
+        .getUserAssociationKey()
         .setTournamentId(clashTournament.getTournamentId());
     List<ClashTeam> clashTeams = List.of(clashTeam);
     List<ArchivedClashTeam> expectedArchivedTeam = clashTeams
@@ -146,6 +159,16 @@ public class ArchiveServiceTest {
         .stream()
         .map(tournamentMapper::clashTournamentToArchivedClashTournament)
         .collect(Collectors.toList());
+    List<TournamentId> tournamentIds = List.of(clashTournament.getTournamentId());
+    List<UserAssociation> userAssociations = List.of(userAssociation);
+    List<ArchivedUserAssociation> archivedUserAssociations = userAssociations
+        .stream()
+        .map(userAssociationMapper::userAssociationToArchivedUserAssociation)
+        .collect(Collectors.toList());
+    List<UserAssociationKey> userAssociationKeys = userAssociations
+        .stream()
+        .map(UserAssociation::getUserAssociationKey)
+        .collect(Collectors.toList());
 
     ArrayList<PublisherProbe> probes = new ArrayList<>();
     PublisherProbe<ClashTournament> clashTournamentProbe = PublisherProbe.of(
@@ -155,7 +178,7 @@ public class ArchiveServiceTest {
         .thenReturn(clashTournamentProbe.flux());
     PublisherProbe<ClashTeam> clashTeamProbe = PublisherProbe.of(Flux.fromIterable(clashTeams));
     probes.add(clashTeamProbe);
-    when(teamService.retrieveTeamsBasedOnListOfTournaments(List.of(clashTournament.getTournamentId())))
+    when(teamService.retrieveTeamsBasedOnListOfTournaments(tournamentIds))
         .thenReturn(clashTeamProbe.flux());
     PublisherProbe<ArchivedClashTeam> archivedClashTeamProbe = PublisherProbe.of(
         Mono.just(expectedArchivedTeam.get(0)));
@@ -165,13 +188,30 @@ public class ArchiveServiceTest {
     PublisherProbe<TentativeQueue> tentativeQueuePublisherProbe = PublisherProbe.of(
         Flux.fromIterable(List.of(tentativeQueue)));
     probes.add(tentativeQueuePublisherProbe);
-    when(tentativeService.retrieveTentativeQueuesBasedOnTournaments(List.of(clashTournament.getTournamentId())))
+    when(tentativeService.retrieveTentativeQueuesBasedOnTournaments(tournamentIds))
         .thenReturn(tentativeQueuePublisherProbe.flux());
     PublisherProbe<ArchivedTentativeQueue> archivedTentativeQueuePublisherProbe = PublisherProbe.of(
         Mono.just(archivedTentativeQueues.get(0)));
     probes.add(archivedTentativeQueuePublisherProbe);
     when(archivedTentativeQueueDao.save(archivedTentativeQueues.get(0)))
         .thenReturn(archivedTentativeQueuePublisherProbe.mono());
+    PublisherProbe<UserAssociation> userAssociationPublisherProbe = PublisherProbe.of(
+        Flux.fromIterable(userAssociations));
+    probes.add(userAssociationPublisherProbe);
+    when(userAssociationService.retrieveUserAssociationsForATournament(tournamentIds))
+        .thenReturn(userAssociationPublisherProbe.flux());
+    archivedUserAssociations
+        .forEach(archivedUserAssociation -> {
+          PublisherProbe<ArchivedUserAssociation> archivedUserAssociationPublisherProbe = PublisherProbe.of(
+              Mono.just(archivedUserAssociation));
+          probes.add(archivedUserAssociationPublisherProbe);
+          when(archivedUserAssociationDao.save(archivedUserAssociation))
+              .thenReturn(archivedUserAssociationPublisherProbe.mono());
+        });
+    PublisherProbe<Void> deleteUserAssociationPublisherProbe = PublisherProbe.empty();
+    probes.add(deleteUserAssociationPublisherProbe);
+    when(userAssociationDao.deleteAllById(userAssociationKeys))
+        .thenReturn(deleteUserAssociationPublisherProbe.mono());
     PublisherProbe<ArchivedClashTournament> archivedClashTournamentPublisherProbe = PublisherProbe.of(
         Flux.fromIterable(expectedArchivedClashTournaments));
     when(archivedClashTournamentDao.save(expectedArchivedClashTournaments.get(0)))
@@ -392,6 +432,55 @@ public class ArchiveServiceTest {
         .expectNext(archivedClashTournaments)
         .verifyComplete();
 
+    probes.forEach(PublisherProbe::assertWasSubscribed);
+  }
+
+  @Test
+  @DisplayName("archiveUserAssociationsBasedOnTournamentIds - Should save User associations to Archive User associations and delete them from User associations table based on a Tournament Ids")
+  void test_archiveUserAssociationsBasedOnTournamentIds() {
+    UserAssociation userAssociation = easyRandom.nextObject(UserAssociation.class);
+    UserAssociation userAssociation2 = easyRandom.nextObject(UserAssociation.class);
+    List<UserAssociation> userAssociationsToArchive = List.of(userAssociation, userAssociation2);
+    ArrayList<PublisherProbe> probes = new ArrayList<>();
+
+    List<UserAssociationKey> userAssociationKeys = userAssociationsToArchive
+        .stream()
+        .map(UserAssociation::getUserAssociationKey)
+        .collect(Collectors.toList());
+
+    List<TournamentId> tournamentIds = userAssociationKeys
+        .stream()
+        .map(UserAssociationKey::getTournamentId)
+        .collect(Collectors.toList());
+
+    List<ArchivedUserAssociation> archivedUserAssociations = userAssociationsToArchive
+        .stream()
+        .map(userAssociationMapper::userAssociationToArchivedUserAssociation)
+        .collect(Collectors.toList());
+
+    PublisherProbe<UserAssociation> userAssociationPublisherProbe = PublisherProbe.of(
+        Flux.fromIterable(userAssociationsToArchive));
+    when(userAssociationService.retrieveUserAssociationsForATournament(tournamentIds))
+        .thenReturn(userAssociationPublisherProbe.flux());
+    probes.add(userAssociationPublisherProbe);
+
+    for (ArchivedUserAssociation archivedUserAssociation :
+        archivedUserAssociations) {
+      PublisherProbe<ArchivedUserAssociation> archivedUserAssociationPublisherProbe = PublisherProbe.of(
+          Mono.just(archivedUserAssociation));
+      probes.add(archivedUserAssociationPublisherProbe);
+      when(archivedUserAssociationDao.save(archivedUserAssociation))
+          .thenReturn(archivedUserAssociationPublisherProbe.mono());
+    }
+
+    PublisherProbe<Void> deleteUserAssociationProbes = PublisherProbe.empty();
+    when(userAssociationDao.deleteAllById(userAssociationKeys)).thenReturn(deleteUserAssociationProbes.mono());
+    probes.add(deleteUserAssociationProbes);
+
+    StepVerifier
+        .create(archivedService.archiveUserAssociationsBasedOnTournamentIds(tournamentIds))
+        .expectNext(archivedUserAssociations)
+        .verifyComplete();
     probes.forEach(PublisherProbe::assertWasSubscribed);
   }
 

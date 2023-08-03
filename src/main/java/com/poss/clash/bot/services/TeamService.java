@@ -150,7 +150,7 @@ public class TeamService {
               MessageFormat.format("Retrieve Teams based on serverId={0} tournamentDay={1}", serverId, tournamentDay));
     } else if (StringUtils.isNotBlank(tournamentName) && StringUtils.isNotBlank(tournamentDay)) {
       return teamDao
-          .findAllByTeamId_TournamentId_TournamentName_AndTeamId_TournamentId_TournamentName(
+          .findAllByTeamId_TournamentId_TournamentName_AndTeamId_TournamentId_TournamentDay(
               tournamentName,
               tournamentDay
           )

@@ -24,6 +24,10 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.PublisherProbe;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
@@ -220,6 +224,34 @@ class UserAssociationServiceTest {
           .findTeamById(userAssociation.getTeamId());
       verify(userService, times(0))
           .enrichClashTeamWithUserDetails(clashTeam);
+    }
+
+  }
+
+  @Nested
+  @DisplayName("Retrieve User Associations")
+  class RetrieveUserAssignments {
+
+    @Test
+    @DisplayName("retrieveUserAssociationsForATournament - should return a list of user associations for a specific Tournament")
+    void test_retrieveUserAssignmentsForATournament() {
+      TournamentId tournamentId = easyRandom.nextObject(TournamentId.class);
+      UserAssociation userAssociation = easyRandom.nextObject(UserAssociation.class);
+
+      List<TournamentId> tournamentIds = List.of(tournamentId);
+
+      PublisherProbe<UserAssociation> userAssociationPublisherProbe = PublisherProbe.of(Flux.just(userAssociation));
+      when(userAssociationDaoMock.findByUserAssociationKey_TournamentIdIsIn(tournamentIds)).thenReturn(
+          userAssociationPublisherProbe.flux());
+
+      StepVerifier
+          .create(userAssociationService.retrieveUserAssociationsForATournament(tournamentIds))
+          .recordWith(ArrayList::new)
+          .expectNextCount(1)
+          .expectNext()
+          .verifyComplete();
+
+      userAssociationPublisherProbe.assertWasSubscribed();
     }
 
   }
