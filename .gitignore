@@ -40,3 +40,11 @@ out/
 .vscode/
 
 local
+
+### Node ###
+node_modules/
+
+.DS_Store
+
+harness-delegate.sh
+update-secret.sh

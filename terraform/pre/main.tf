@@ -8,59 +8,109 @@
 #   }
 # }
 
+locals {
+  prefix = "clash-bot-service"
+}
+
 # An Task Execution Role for ECS
 resource "aws_iam_role" "ecs_task_execution_role" {
-  name               = "ecs-task-execution-role"
-  assume_role_policy = <<EOF
-    {
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Action": [
-                "ecr:GetAuthorizationToken",
-                "ecr:BatchCheckLayerAvailability",
-                "ecr:GetDownloadUrlForLayer",
-                "ecr:BatchGetImage",
-                "logs:CreateLogGroup",
-                "logs:CreateLogStream",
-                "logs:PutLogEvents"
-            ],
-            "Effect": "Allow",
-            "Resource": "*"
+  name = "${local.prefix}-ecs-task-execution-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Principal = {
+          Service = "ecs-tasks.amazonaws.com"
         },
-        {
-            "Action": "secretsmanager:GetSecretValue",
-            "Effect": "Allow",
-            "Resource": "arn:aws:secretsmanager:*:*:secret:prod/MrBot/*"
-        },
-        {
-            "Action": "secretsmanager:GetSecretValue",
-            "Effect": "Allow",
-            "Resource": "arn:aws:secretsmanager:*:*:secret:RIOT_TOKEN*"
-        }
+        Action = "sts:AssumeRole"
+      }
     ]
-    }
-    EOF
+  })
+}
+
+# Policy attachment for ECS Task Execution Role
+resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_policy_attachment" {
+  role       = aws_iam_role.ecs_task_execution_role.name
+  policy_arn = aws_iam_role_policy.ecs_task_execution_role_policy.arn
+}
+
+# An Task Execution Role Policy for ECS
+resource "aws_iam_role_policy" "ecs_task_execution_role_policy" {
+  name = "${local.prefix}-ecs-task-execution-role-policy"
+  role = aws_iam_role.ecs_task_execution_role.id
+  policy = jsonencode(
+    {
+      "Version" : "2012-10-17",
+      "Statement" : [
+        {
+          "Action" : [
+            "ecr:GetAuthorizationToken",
+            "ecr:BatchCheckLayerAvailability",
+            "ecr:GetDownloadUrlForLayer",
+            "ecr:BatchGetImage",
+            "logs:CreateLogGroup",
+            "logs:CreateLogStream",
+            "logs:PutLogEvents"
+          ],
+          "Effect" : "Allow",
+          "Resource" : "*"
+        },
+        {
+          "Action" : "secretsmanager:GetSecretValue",
+          "Effect" : "Allow",
+          "Resource" : "arn:aws:secretsmanager:*:*:secret:prod/MrBot/*"
+        },
+        {
+          "Action" : "secretsmanager:GetSecretValue",
+          "Effect" : "Allow",
+          "Resource" : "arn:aws:secretsmanager:*:*:secret:RIOT_TOKEN*"
+        }
+      ]
+  })
 }
 
 # An Task Role for ECS
 resource "aws_iam_role" "ecs_task_role" {
-  name               = "ecs-task-role"
-  assume_role_policy = <<EOF
-    {
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Action": [
-                "appconfig:StartConfigurationSession",
-                "appconfig:GetLatestConfiguration"
-            ],
-            "Effect": "Allow",
-            "Resource": "*"
-        }
+  name = "${local.prefix}-ecs-task-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Principal = {
+          Service = "ecs-tasks.amazonaws.com"
+        },
+        Action = "sts:AssumeRole"
+      }
     ]
-    }
-    EOF
+  })
+}
+
+# Policy attachment for ECS Task Role
+resource "aws_iam_role_policy_attachment" "ecs_task_role_policy_attachment" {
+  role       = aws_iam_role.ecs_task_role.name
+  policy_arn = aws_iam_role_policy.ecs_task_role_policy.arn
+}
+
+# An Task Role Policy for ECS
+resource "aws_iam_role_policy" "ecs_task_role_policy" {
+  name = "${local.prefix}-ecs-task-role-policy"
+  role = aws_iam_role.ecs_task_role.id
+  policy = jsonencode(
+    {
+      "Version" : "2012-10-17",
+      "Statement" : [
+        {
+          "Action" : [
+            "appconfig:StartConfigurationSession",
+            "appconfig:GetLatestConfiguration"
+          ],
+          "Effect" : "Allow",
+          "Resource" : "*"
+        }
+      ]
+  })
 }
 
 # VPC
@@ -70,7 +120,7 @@ data "aws_vpc" "vpc" {
 
 # Security Group for ECS Task
 resource "aws_security_group" "ecs_task_security_group" {
-  name        = "ecs-task-security-group"
+  name        = "${local.prefix}-ecs-task-security-group"
   description = "ECS Task Security Group"
   vpc_id      = data.aws_vpc.vpc.id
 
