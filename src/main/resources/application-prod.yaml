@@ -1,7 +1,7 @@
 spring:
   data:
     mongodb:
-      uri: mongodb://tba/clash-bot
+      uri: ${MONGO_DB_URI}
 logging:
   level:
     root: ERROR

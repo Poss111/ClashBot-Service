@@ -1,0 +1,1 @@
+keytool -genkeypair -alias clash-bot-service -keyalg RSA -keysize 2048 -storetype PKCS12 -keystore clash-bot-service.p12 -validity 3650
