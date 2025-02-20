@@ -32,13 +32,12 @@ resource "aws_iam_role" "ecs_task_execution_role" {
 # Policy attachment for ECS Task Execution Role
 resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_policy_attachment" {
   role       = aws_iam_role.ecs_task_execution_role.name
-  policy_arn = aws_iam_role_policy.ecs_task_execution_role_policy.arn
+  policy_arn = aws_iam_policy.ecs_task_execution_role_policy.arn
 }
 
 # An Task Execution Role Policy for ECS
-resource "aws_iam_role_policy" "ecs_task_execution_role_policy" {
+resource "aws_iam_policy" "ecs_task_execution_role_policy" {
   name = "${local.prefix}-ecs-task-execution-role-policy"
-  role = aws_iam_role.ecs_task_execution_role.id
   policy = jsonencode(
     {
       "Version" : "2012-10-17",
@@ -90,13 +89,12 @@ resource "aws_iam_role" "ecs_task_role" {
 # Policy attachment for ECS Task Role
 resource "aws_iam_role_policy_attachment" "ecs_task_role_policy_attachment" {
   role       = aws_iam_role.ecs_task_role.name
-  policy_arn = aws_iam_role_policy.ecs_task_role_policy.arn
+  policy_arn = aws_iam_policy.ecs_task_role_policy.arn
 }
 
 # An Task Role Policy for ECS
-resource "aws_iam_role_policy" "ecs_task_role_policy" {
+resource "aws_iam_policy" "ecs_task_role_policy" {
   name = "${local.prefix}-ecs-task-role-policy"
-  role = aws_iam_role.ecs_task_role.id
   policy = jsonencode(
     {
       "Version" : "2012-10-17",
