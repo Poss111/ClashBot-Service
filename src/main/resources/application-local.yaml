@@ -4,9 +4,6 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-  data:
-    mongodb:
-      uri: mongodb://127.0.0.1:27017/clash-bot
 aws:
   endpoint-configuration:
     url: http://127.0.0.1:4566
@@ -27,4 +24,4 @@ riot:
 logging:
   level:
     root: ERROR
-    com.poss.clash: TRACE
+    com.poss.clash: INFO

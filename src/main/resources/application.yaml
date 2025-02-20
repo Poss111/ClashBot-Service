@@ -4,6 +4,9 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+  data:
+    mongodb:
+      uri: ${MONGO_DB_URI}
   cloud:
     stream:
       bindings:

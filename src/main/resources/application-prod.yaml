@@ -1,7 +1,3 @@
-spring:
-  data:
-    mongodb:
-      uri: ${MONGO_DB_URI}
 logging:
   level:
     root: ERROR
