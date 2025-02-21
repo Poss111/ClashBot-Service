@@ -48,3 +48,13 @@ node_modules/
 
 harness-delegate.sh
 update-secret.sh
+
+### Terraform ###
+
+.terraform/
+.terraform.lock.hcl
+terraform.tfstate
+terraform.tfstate.backup
+
+### Infracost ###
+.infracost/

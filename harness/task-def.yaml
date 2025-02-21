@@ -1,0 +1,53 @@
+executionRoleArn: "<+stage.variables.ecsTaskExecutionArn>"
+containerDefinitions:
+  - portMappings:
+      - hostPort: 8080
+        protocol: tcp
+        containerPort: 8080
+    cpu: 256
+    mountPoints: []
+    memory: 512
+    volumesFrom: []
+    image: <+artifacts.primary.image>
+    essential: true
+    name: clash-bot-service
+    logConfiguration:
+      logDriver: awslogs
+      options:
+        awslogs-group: /ecs/clash-bot
+        mode: non-blocking
+        awslogs-create-group: "true"
+        max-buffer-size: 25m
+        awslogs-region: us-east-1
+        awslogs-stream-prefix: ecs
+    environment:
+      - name: SPRING_PROFILES_ACTIVE
+        value: "<+pipeline.variables.profile>"
+      - name: SERVER_PORT
+        value: 8080
+      - name: AWS_REGION
+        value: us-east-1
+      - name: MONGO_DB_URI
+        value: <+pipeline.variables.mongoDbUri>
+    secrets:
+      - name: RIOT_API_KEY
+        valueFrom: <+secrets.getValue('riot-api-key')>
+placementConstraints: []
+memory: 512
+taskRoleArn: "<+stage.variables.ecsTaskArn>"
+family: clash-bot-service
+requiresCompatibilities:
+  - FARGATE
+networkMode: awsvpc
+runtimePlatform:
+  cpuArchitecture: ARM64
+  operatingSystemFamily: LINUX
+cpu: 256
+volumes: []
+tags:
+  - key: Application
+    value: Clash-Bot-Service
+  - key: ECS-Service
+    value: <+stage.identifier>
+  - key: ECS-Cluster
+    value: main-cluster
