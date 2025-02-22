@@ -12,3 +12,8 @@ output "ecs_task_role_arn" {
   value       = aws_iam_role.ecs_task_role.arn
   description = "The ARN of the ECS Task Role"
 }
+
+output "ecs_service_security_group_id" {
+  value       = aws_security_group.ecs_task_security_group.id
+  description = "The ID of the ECS Service Security Group"
+}

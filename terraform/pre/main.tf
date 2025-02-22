@@ -122,6 +122,14 @@ resource "aws_security_group" "ecs_task_security_group" {
   description = "ECS Task Security Group"
   vpc_id      = data.aws_vpc.vpc.id
 
+  # Allow inbound traffic on the container port
+  ingress {
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = [data.aws_subnet.subnet.cidr_block]
+  }
+
   egress {
     from_port   = 0
     to_port     = 0

@@ -1,4 +1,3 @@
 logging:
   level:
-    root: ERROR
     com.poss: INFO

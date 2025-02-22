@@ -23,5 +23,4 @@ riot:
   timeout: 30s
 logging:
   level:
-    root: ERROR
     com.poss.clash: INFO
