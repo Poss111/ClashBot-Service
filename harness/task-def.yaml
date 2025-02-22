@@ -32,6 +32,14 @@ containerDefinitions:
     secrets:
       - name: RIOT_API_KEY
         valueFrom: <+secrets.getValue('riot-api-key')>
+    healthCheck:
+      command:
+        - CMD-SHELL
+        - curl -f http://localhost:8080/actuator/health || exit 1
+      interval: 30
+      timeout: 5
+      retries: 3
+      startPeriod: 60
 placementConstraints: []
 memory: 512
 taskRoleArn: "<+stage.variables.ecsTaskArn>"

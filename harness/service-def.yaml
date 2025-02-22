@@ -1,0 +1,13 @@
+launchType: FARGATE
+serviceName: <+pipeline.identifier>
+desiredCount: 1
+networkConfiguration:
+  awsvpcConfiguration:
+    vpc: <+stage.variables.vpcId>
+    subnets:
+      - <+stage.variables.subnet1>
+    assignPublicIp: DISABLED
+  role: <+stage.variables.ecsServiceExecutionArn>
+deploymentConfiguration:
+  maximumPercent: 200
+  minimumHealthyPercent: 100
