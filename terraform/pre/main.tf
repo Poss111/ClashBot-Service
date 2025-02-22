@@ -116,6 +116,11 @@ data "aws_vpc" "vpc" {
   id = var.vpc_id
 }
 
+# Subnet
+data "aws_subnet" "subnet" {
+  vpc_id = data.aws_vpc.vpc.id
+}
+
 # Security Group for ECS Task
 resource "aws_security_group" "ecs_task_security_group" {
   name        = "${local.prefix}-ecs-task-security-group"
