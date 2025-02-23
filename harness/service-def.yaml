@@ -5,8 +5,8 @@ networkConfiguration:
   awsvpcConfiguration:
     vpc: <+variable.vpc_id>
     subnets:
-      - <+variable.subnet_one>
-      - <+variable.subnet_two>
+      - <+variable.public_subneet_use1a>
+      - <+variable.public_subnet_use1b>
     assignPublicIp: ENABLED
     securityGroups:
       - <+stage.variables.securityGroupId>
