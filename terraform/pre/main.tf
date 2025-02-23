@@ -111,28 +111,25 @@ resource "aws_iam_policy" "ecs_task_role_policy" {
   })
 }
 
-# VPC
-data "aws_vpc" "vpc" {
-  id = var.vpc_id
-}
 # Security Group for ECS Task
 resource "aws_security_group" "ecs_task_security_group" {
   name        = "${local.prefix}-ecs-task-security-group"
   description = "ECS Task Security Group"
   vpc_id      = data.aws_vpc.vpc.id
+}
 
-  # Allow inbound traffic on the container port
-  ingress {
-    from_port   = 8080
-    to_port     = 8080
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+resource "aws_vpc_security_group_egress_rule" "ecs_task_security_group_egress_rule" {
+  security_group_id = aws_security_group.ecs_task_security_group.id
+  from_port         = 0
+  to_port           = 0
+  ip_protocol       = "tcp"
+  cidr_ipv4         = "0.0.0.0/0"
+}
 
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+resource "aws_vpc_security_group_ingress_rule" "ecs_task_security_group_ingress_rule" {
+  security_group_id = aws_security_group.ecs_task_security_group.id
+  from_port         = 8080
+  to_port           = 8080
+  ip_protocol       = "tcp"
+  cidr_ipv4         = "0.0.0.0/0"
 }
