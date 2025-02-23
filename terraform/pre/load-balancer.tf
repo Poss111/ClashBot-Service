@@ -29,9 +29,9 @@ resource "aws_lb_target_group" "ecs_tg" {
     path                = "/actuator/health"
     protocol            = "HTTP"
     port                = "traffic-port"
-    interval            = 90
+    interval            = 60
     timeout             = 5
-    healthy_threshold   = 1
+    healthy_threshold   = 2
     unhealthy_threshold = 5
   }
   target_type = "ip"
