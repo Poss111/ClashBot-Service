@@ -16,3 +16,18 @@ variable "tags" {
     Name = "terraform-pre"
   }
 }
+
+variable "cluster_name" {
+  description = "ECS cluster name"
+  type        = string
+}
+
+variable "container_port" {
+  description = "Container port"
+  type        = number
+}
+
+variable "load_balancer_port" {
+  description = "Load balancer port"
+  type        = number
+}

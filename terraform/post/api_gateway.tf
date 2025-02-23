@@ -7,7 +7,10 @@ resource "aws_apigatewayv2_api" "ecs_api" {
 resource "aws_apigatewayv2_vpc_link" "ecs_vpc_link" {
   name               = "ecs-vpc-link"
   security_group_ids = [aws_security_group.clash_bot_lb_security_group.id]
-  subnet_ids         = [data.aws_subnet.subnet.id]
+  subnet_ids = [
+    data.aws_subnet.subnet.id,
+    data.aws_subnet.subnet-two.id
+  ]
 }
 
 resource "aws_apigatewayv2_integration" "ecs_integration" {
