@@ -3,11 +3,14 @@ serviceName: <+pipeline.identifier>
 desiredCount: 1
 networkConfiguration:
   awsvpcConfiguration:
-    vpc: <+stage.variables.vpcId>
+    vpc: <+variable.vpc_id>
     subnets:
-      - <+stage.variables.subnet1>
-    assignPublicIp: DISABLED
-  role: <+stage.variables.ecsServiceExecutionArn>
+      - <+variable.subnet_one>
+      - <+variable.subnet_two>
+    assignPublicIp: ENABLED
+    securityGroups:
+      - <+stage.variables.securityGroupId>
+  role: <+variable.ecs_service_role_arn>
 deploymentConfiguration:
   maximumPercent: 200
   minimumHealthyPercent: 100

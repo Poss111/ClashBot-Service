@@ -15,12 +15,22 @@ spring:
           content-type: application/json
       poller:
         fixed-delay: 3000
+server:
+  ssl:
+    enabled: true
+    key-store: classpath:keystore/clash-bot-service.p12
+    key-store-password: changeit
+    key-alias: clash-bot-service
+    key-store-type: PKCS12
 management:
   endpoint:
     health:
       probes:
         enabled: true
+riot:
+  url: https://na1.api.riotgames.com
+  api-key: ${RIOT_API_KEY}
+  timeout: 30s
 logging:
   level:
-    root: ERROR
     com.poss: INFO

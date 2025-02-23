@@ -1,3 +1,4 @@
 logging:
   level:
     com.poss: INFO
+    org.springframework: INFO

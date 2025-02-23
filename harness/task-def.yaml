@@ -4,9 +4,9 @@ containerDefinitions:
       - hostPort: 8080
         protocol: tcp
         containerPort: 8080
-    cpu: 256
+    cpu: 512
     mountPoints: []
-    memory: 512
+    memory: 2048
     volumesFrom: []
     image: <+artifacts.primary.image>
     essential: true
@@ -35,13 +35,13 @@ containerDefinitions:
     healthCheck:
       command:
         - CMD-SHELL
-        - curl -f http://localhost:8080/actuator/health || exit 1
-      interval: 30
+        - "curl -k https://localhost:8080/actuator/health/readiness >> /proc/1/fd/1 2>&1  || exit 1"
+      interval: 60
       timeout: 5
       retries: 3
-      startPeriod: 60
+      startPeriod: 120
 placementConstraints: []
-memory: 512
+memory: 2048
 taskRoleArn: "<+stage.variables.ecsTaskArn>"
 family: clash-bot-service
 requiresCompatibilities:
@@ -50,7 +50,7 @@ networkMode: awsvpc
 runtimePlatform:
   cpuArchitecture: ARM64
   operatingSystemFamily: LINUX
-cpu: 256
+cpu: 512
 volumes: []
 tags:
   - key: Application
