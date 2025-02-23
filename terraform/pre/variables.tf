@@ -31,3 +31,13 @@ variable "load_balancer_port" {
   description = "Load balancer port"
   type        = number
 }
+
+variable "subnet_one_id" {
+  description = "Subnet one ID"
+  type        = string
+}
+
+variable "subnet_two_id" {
+  description = "Subnet two ID"
+  type        = string
+}

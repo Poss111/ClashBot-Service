@@ -1,6 +1,12 @@
 # Application Load Balancer
-locals {
-  host_network = "0.0.0.0/0"
+data "aws_subnet" "subnet" {
+  vpc_id = data.aws_vpc.vpc.id
+  id     = var.subnet_one_id
+}
+
+data "aws_subnet" "subnet-two" {
+  vpc_id = data.aws_vpc.vpc.id
+  id     = var.subnet_two_id
 }
 
 resource "aws_lb" "clash_bot_lb" {
@@ -26,10 +32,7 @@ resource "aws_vpc_security_group_ingress_rule" "http_clash_bot_lb_security_ingre
   from_port         = 80
   to_port           = var.container_port
   ip_protocol       = "tcp"
-  cidr_ipv4 = [
-    data.aws_subnet.subnet.cidr_block,
-    data.aws_subnet.subnet-two.cidr_block
-  ]
+  cidr_ipv4         = data.aws_subnet.subnet.cidr_block
 }
 
 resource "aws_vpc_security_group_ingress_rule" "https_clash_bot_lb_security_ingress_rule" {
@@ -37,18 +40,13 @@ resource "aws_vpc_security_group_ingress_rule" "https_clash_bot_lb_security_ingr
   from_port         = 443
   to_port           = var.container_port
   ip_protocol       = "tcp"
-  cidr_ipv4 = [
-    data.aws_subnet.subnet.cidr_block,
-    data.aws_subnet.subnet-two.cidr_block
-  ]
+  cidr_ipv4         = data.aws_subnet.subnet.cidr_block
 }
 
 resource "aws_vpc_security_group_egress_rule" "clash_bot_lb_security_ingress_rule" {
   security_group_id = aws_security_group.clash_bot_lb_security_group.id
   ip_protocol       = "-1"
-  cidr_ipv4 = [
-    local.host_network
-  ]
+  cidr_ipv4         = "0.0.0.0/0"
 }
 
 # Listener for Load Balancer
