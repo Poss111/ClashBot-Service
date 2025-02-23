@@ -21,10 +21,19 @@ resource "aws_lb" "clash_bot_lb" {
 }
 
 resource "aws_lb_target_group" "ecs_tg" {
-  name        = "clash-bot-ecs-target-group"
-  port        = 80
-  protocol    = "HTTP"
-  vpc_id      = data.aws_vpc.vpc.id
+  name     = "clash-bot-ecs-target-group"
+  port     = 80
+  protocol = "HTTP"
+  vpc_id   = data.aws_vpc.vpc.id
+  health_check {
+    path                = "/actuator/health"
+    protocol            = "HTTP"
+    port                = "traffic-port"
+    interval            = 90
+    timeout             = 5
+    healthy_threshold   = 1
+    unhealthy_threshold = 5
+  }
   target_type = "ip"
 }
 
