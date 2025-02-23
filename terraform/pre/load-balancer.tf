@@ -28,7 +28,7 @@ resource "aws_lb_target_group" "ecs_tg" {
   health_check {
     path                = "/actuator/health/readiness"
     protocol            = "HTTP"
-    port                = "traffic-port"
+    port                = 8080
     interval            = 60
     timeout             = 5
     healthy_threshold   = 2
