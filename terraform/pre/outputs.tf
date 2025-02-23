@@ -37,3 +37,8 @@ output "load_balencer_name" {
   value       = aws_lb.clash_bot_lb.name
   description = "The name of the Load Balancer"
 }
+
+output "target_group_arn" {
+  value       = aws_lb_target_group.ecs_tg.arn
+  description = "The ARN of the Target Group"
+}

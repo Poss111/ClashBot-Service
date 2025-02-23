@@ -11,13 +11,21 @@ data "aws_subnet" "subnet-two" {
 
 resource "aws_lb" "clash_bot_lb" {
   name               = "clash-bot-service-lb"
-  internal           = false
+  internal           = true
   load_balancer_type = "application"
   security_groups    = [aws_security_group.clash_bot_lb_security_group.id]
   subnets = [
     data.aws_subnet.subnet.id,
     data.aws_subnet.subnet-two.id
   ]
+}
+
+resource "aws_lb_target_group" "ecs_tg" {
+  name        = "clash-bot-ecs-target-group"
+  port        = 80
+  protocol    = "HTTP"
+  vpc_id      = data.aws_vpc.vpc.id
+  target_type = "ip"
 }
 
 # Security Group for Load Balancer
@@ -56,13 +64,8 @@ resource "aws_lb_listener" "clash_bot_lb_listener" {
   protocol          = "HTTP"
 
   default_action {
-    type = "fixed-response"
-
-    fixed_response {
-      content_type = "text/html"
-      message_body = "<html><body><h1>Maintenance Mode</h1><p>How did you make it here! We'll be back soon.</p></body></html>"
-      status_code  = "503"
-    }
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.ecs_tg.arn
   }
 }
 

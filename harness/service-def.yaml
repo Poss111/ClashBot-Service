@@ -16,5 +16,6 @@ deploymentConfiguration:
   minimumHealthyPercent: 100
 loadBalancers:
   - loadBalancerName: <+pipeline.stages.Pre.spec.execution.steps.apply.output.outputVariables.load_balencer_name>
+    targetGroupArn: <+pipeline.stages.Pre.spec.execution.steps.apply.output.outputVariables.target_group_arn>
     containerName: clash-bot-service
     containerPort: 8080
