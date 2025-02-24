@@ -1,4 +1,9 @@
+server:
+  servlet:
+    context-path: /clash-bot
 logging:
   level:
     com.poss: INFO
     org.springframework: INFO
+    org.springframework.web: DEBUG
+    org.springframework.boot.actuate.web: DEBUG

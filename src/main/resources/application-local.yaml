@@ -4,6 +4,10 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+  data:
+    mongodb:
+      uri: ${MONGO_DB_URI:mongodb://localhost:27017/clash-bot}
+      database: clash-bot
 aws:
   endpoint-configuration:
     url: http://127.0.0.1:4566
