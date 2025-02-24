@@ -26,3 +26,24 @@ variable "vpc_id" {
   description = "VPC ID"
   type        = string
 }
+
+variable "subnet_one_id" {
+  description = "Subnet One ID"
+  type        = string
+}
+
+variable "subnet_two_id" {
+  description = "Subnet Two ID"
+  type        = string
+}
+
+variable "load_balancer_arn" {
+  description = "Load Balancer ARN"
+  type        = string
+}
+
+variable "path" {
+  description = "Path"
+  default     = "/clash-bot"
+  type        = string
+}

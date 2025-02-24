@@ -3,3 +3,7 @@ container_port         = 8080
 cluster_name           = "main-cluster"
 clash_bot_service_name = "Deploy_Clash_Bot_Service__1"
 vpc_id                 = "vpc-04738ea3a5ae3ba52"
+subnet_one_id          = "subnet-092e50e03e16be078"
+subnet_two_id          = "subnet-02d5547ced2a60b1d"
+load_balancer_arn      = "arn:aws:elasticloadbalancing:us-east-1:816923827429:loadbalancer/app/clash-bot-service-lb/26c25cb23bf253ba"
+path                   = "/clash-bot"

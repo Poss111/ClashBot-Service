@@ -26,7 +26,7 @@ resource "aws_lb_target_group" "ecs_tg" {
   protocol = "HTTP"
   vpc_id   = data.aws_vpc.vpc.id
   health_check {
-    path                = "/actuator/health/readiness"
+    path                = "/clash-bot/actuator/health/readiness"
     protocol            = "HTTPS"
     port                = 8080
     interval            = 60
