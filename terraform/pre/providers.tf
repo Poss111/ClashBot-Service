@@ -11,8 +11,6 @@ terraform {
 provider "aws" {
   region = var.aws_region
 
-  profile = "Master"
-
   default_tags {
     tags = var.tags
   }
