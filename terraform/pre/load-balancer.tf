@@ -11,6 +11,38 @@ data "aws_subnet" "subnet-two" {
 
 resource "aws_s3_bucket" "lb_logs" {
   bucket_prefix = "clash-bot-service-logs"
+  force_destroy = true
+}
+
+data "aws_caller_identity" "current" {}
+
+# S3 Bucket Policy to Allow ALB to Write Logs
+resource "aws_s3_bucket_policy" "alb_logs_policy" {
+  bucket = aws_s3_bucket.alb_logs.id
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Sid       = "AWSLogDeliveryAclCheck",
+        Effect    = "Allow",
+        Principal = { Service = "delivery.logs.amazonaws.com" },
+        Action    = "s3:GetBucketAcl",
+        Resource  = aws_s3_bucket.alb_logs.arn
+      },
+      {
+        Sid       = "AWSLogDeliveryWrite",
+        Effect    = "Allow",
+        Principal = { Service = "delivery.logs.amazonaws.com" },
+        Action    = "s3:PutObject",
+        Resource  = "${aws_s3_bucket.lb_logs.arn}/AWSLogs/${data.aws_caller_identity.current.account_id}/*",
+        Condition = {
+          StringEquals = {
+            "s3:x-amz-acl" = "bucket-owner-full-control"
+          }
+        }
+      }
+    ]
+  })
 }
 
 resource "aws_lb" "clash_bot_lb" {
@@ -25,7 +57,7 @@ resource "aws_lb" "clash_bot_lb" {
 
   access_logs {
     bucket  = aws_s3_bucket.lb_logs.id
-    prefix  = "test-lb"
+    prefix  = "clash-bot-service-lb"
     enabled = true
   }
 
@@ -106,9 +138,4 @@ resource "aws_lb_listener" "clash_bot_lb_https_listener" {
     type             = "forward"
     target_group_arn = aws_lb_target_group.ecs_tg.arn
   }
-}
-
-# ECS Cluster
-data "aws_ecs_cluster" "cluster" {
-  cluster_name = var.cluster_name
 }

@@ -9,19 +9,6 @@ variable "vpc_id" {
   type        = string
 }
 
-variable "tags" {
-  description = "Tags"
-  type        = map(string)
-  default = {
-    Name = "terraform-pre"
-  }
-}
-
-variable "cluster_name" {
-  description = "ECS cluster name"
-  type        = string
-}
-
 variable "container_port" {
   description = "Container port"
   type        = number
