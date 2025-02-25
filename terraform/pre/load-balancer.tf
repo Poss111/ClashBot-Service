@@ -9,40 +9,8 @@ data "aws_subnet" "subnet-two" {
   id     = var.subnet_two_id
 }
 
-resource "aws_s3_bucket" "lb_logs" {
-  bucket_prefix = "clash-bot-service-logs"
-  force_destroy = true
-}
-
-data "aws_caller_identity" "current" {}
-
-# S3 Bucket Policy to Allow ALB to Write Logs
-resource "aws_s3_bucket_policy" "alb_logs_policy" {
-  bucket = aws_s3_bucket.lb_logs.id
-  policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
-      {
-        Sid       = "AWSLogDeliveryAclCheck",
-        Effect    = "Allow",
-        Principal = { Service = "delivery.logs.amazonaws.com" },
-        Action    = "s3:GetBucketAcl",
-        Resource  = aws_s3_bucket.lb_logs.arn
-      },
-      {
-        Sid       = "AWSLogDeliveryWrite",
-        Effect    = "Allow",
-        Principal = { Service = "delivery.logs.amazonaws.com" },
-        Action    = "s3:PutObject",
-        Resource  = "${aws_s3_bucket.lb_logs.arn}/AWSLogs/${data.aws_caller_identity.current.account_id}/*",
-        Condition = {
-          StringEquals = {
-            "s3:x-amz-acl" = "bucket-owner-full-control"
-          }
-        }
-      }
-    ]
-  })
+data "aws_s3_bucket" "lb_logs" {
+  bucket = "logs.clash-bot.ninja"
 }
 
 resource "aws_lb" "clash_bot_lb" {
@@ -56,7 +24,7 @@ resource "aws_lb" "clash_bot_lb" {
   ]
 
   access_logs {
-    bucket  = aws_s3_bucket.lb_logs.id
+    bucket  = data.aws_s3_bucket.lb_logs.id
     prefix  = "clash-bot-service-lb"
     enabled = true
   }
