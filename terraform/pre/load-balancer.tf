@@ -10,7 +10,7 @@ data "aws_subnet" "subnet-two" {
 }
 
 data "aws_s3_bucket" "lb_logs" {
-  bucket = "logs.clash-bot.ninja"
+  bucket = "logs.clash-bot-service.us-east-1"
 }
 
 resource "aws_lb" "clash_bot_lb" {
