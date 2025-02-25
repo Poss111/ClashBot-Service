@@ -41,3 +41,8 @@ variable "subnet_two_id" {
   description = "Subnet two ID"
   type        = string
 }
+
+variable "domain_name" {
+  description = "Domain name"
+  type        = string
+}

@@ -34,3 +34,7 @@ riot:
 logging:
   level:
     com.poss: INFO
+
+openapi:
+  clashBotService:
+    base-path: /clash-bot

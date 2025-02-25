@@ -26,7 +26,7 @@ resource "aws_lb_target_group" "ecs_tg" {
   protocol = "HTTP"
   vpc_id   = data.aws_vpc.vpc.id
   health_check {
-    path                = "/clash-bot/actuator/health/readiness"
+    path                = "/actuator/health/readiness"
     protocol            = "HTTPS"
     port                = 8080
     interval            = 60
@@ -71,6 +71,25 @@ resource "aws_lb_listener" "clash_bot_lb_listener" {
   load_balancer_arn = aws_lb.clash_bot_lb.arn
   port              = var.load_balancer_port
   protocol          = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.ecs_tg.arn
+  }
+}
+
+data "aws_acm_certificate" "cert" {
+  domain   = var.domain_name
+  statuses = ["ISSUED"]
+}
+
+# Listener for Load Balancer HTTPS
+resource "aws_lb_listener" "clash_bot_lb_https_listener" {
+  load_balancer_arn = aws_lb.clash_bot_lb.arn
+  port              = 443
+  protocol          = "HTTPS"
+  ssl_policy        = "ELBSecurityPolicy-2016-08"
+  certificate_arn   = data.aws_acm_certificate.cert.arn
 
   default_action {
     type             = "forward"
