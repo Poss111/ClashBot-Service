@@ -9,6 +9,10 @@ data "aws_subnet" "subnet-two" {
   id     = var.subnet_two_id
 }
 
+resource "aws_s3_bucket" "lb_logs" {
+  bucket_prefix = "clash-bot-service-logs"
+}
+
 resource "aws_lb" "clash_bot_lb" {
   name               = "clash-bot-service-lb"
   internal           = true
@@ -18,6 +22,13 @@ resource "aws_lb" "clash_bot_lb" {
     data.aws_subnet.subnet.id,
     data.aws_subnet.subnet-two.id
   ]
+
+  access_logs {
+    bucket  = aws_s3_bucket.lb_logs.id
+    prefix  = "test-lb"
+    enabled = true
+  }
+
 }
 
 resource "aws_lb_target_group" "ecs_tg" {
