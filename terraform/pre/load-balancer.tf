@@ -18,7 +18,7 @@ data "aws_caller_identity" "current" {}
 
 # S3 Bucket Policy to Allow ALB to Write Logs
 resource "aws_s3_bucket_policy" "alb_logs_policy" {
-  bucket = aws_s3_bucket.alb_logs.id
+  bucket = aws_s3_bucket.lb_logs.id
   policy = jsonencode({
     Version = "2012-10-17",
     Statement = [
@@ -27,7 +27,7 @@ resource "aws_s3_bucket_policy" "alb_logs_policy" {
         Effect    = "Allow",
         Principal = { Service = "delivery.logs.amazonaws.com" },
         Action    = "s3:GetBucketAcl",
-        Resource  = aws_s3_bucket.alb_logs.arn
+        Resource  = aws_s3_bucket.lb_logs.arn
       },
       {
         Sid       = "AWSLogDeliveryWrite",
