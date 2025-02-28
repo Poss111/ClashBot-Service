@@ -15,7 +15,7 @@ data "aws_s3_bucket" "lb_logs" {
 
 resource "aws_lb" "clash_bot_lb" {
   name               = "clash-bot-service-lb"
-  internal           = true
+  internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.clash_bot_lb_security_group.id]
   subnets = [
