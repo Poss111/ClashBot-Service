@@ -57,16 +57,8 @@ resource "aws_security_group" "clash_bot_lb_security_group" {
 
 resource "aws_vpc_security_group_ingress_rule" "http_clash_bot_lb_security_ingress_rule" {
   security_group_id = aws_security_group.clash_bot_lb_security_group.id
-  from_port         = 80
-  to_port           = var.container_port
-  ip_protocol       = "tcp"
-  cidr_ipv4         = data.aws_subnet.subnet.cidr_block
-}
-
-resource "aws_vpc_security_group_ingress_rule" "https_clash_bot_lb_security_ingress_rule" {
-  security_group_id = aws_security_group.clash_bot_lb_security_group.id
-  from_port         = 443
-  to_port           = var.container_port
+  from_port         = 1
+  to_port           = 65535
   ip_protocol       = "tcp"
   cidr_ipv4         = data.aws_subnet.subnet.cidr_block
 }

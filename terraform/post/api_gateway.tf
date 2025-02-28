@@ -4,13 +4,27 @@ resource "aws_apigatewayv2_api" "ecs_api" {
   protocol_type = "HTTP"
 }
 
-data "aws_security_group" "clash_bot_lb_security_group" {
-  name = "clash-bot-lb-security-group"
+resource "aws_security_group" "vpc_link_security_group" {
+  name        = "clash-bot-vpc_link_security_group"
+  description = "Clash Bot VPC Link Security Group"
+  vpc_id      = data.aws_vpc.vpc.id
+}
+
+resource "aws_vpc_security_group_ingress" "http_vpc_link_security_ingress_rule" {
+  security_group_id = aws_security_group.vpc_link_security_group.id
+  from_port         = 443
+  to_port           = 443
+  protocol          = "tcp"
+  cidr_blocks = [
+    "0.0.0.0/0"
+  ]
 }
 
 resource "aws_apigatewayv2_vpc_link" "ecs_vpc_link" {
-  name               = "ecs-vpc-link"
-  security_group_ids = [data.aws_security_group.clash_bot_lb_security_group.id]
+  name = "ecs-vpc-link"
+  security_group_ids = [
+    aws_security_group.vpc_link_security_group.id
+  ]
   subnet_ids = [
     data.aws_subnet.subnet.id,
     data.aws_subnet.subnet-two.id
