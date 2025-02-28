@@ -7,14 +7,14 @@ spring:
   data:
     mongodb:
       uri: ${MONGO_DB_URI}
-  cloud:
-    stream:
-      bindings:
-        teamEvents-out-0:
-          destination: clashBotTeamEvent
-          content-type: application/json
-      poller:
-        fixed-delay: 3000
+  # cloud:
+  #   stream:
+  #     bindings:
+  #       teamEvents-out-0:
+  #         destination: clashBotTeamEvent
+  #         content-type: application/json
+  #     poller:
+  #       fixed-delay: 3000
 server:
   ssl:
     enabled: true

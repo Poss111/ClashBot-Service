@@ -1,7 +1,13 @@
 server:
   servlet:
     context-path: /clash-bot
+spring:
+  webflux:
+    base-path: /clash-bot
 logging:
+  structured:
+    format:
+      console: ecs
   level:
     com.poss: INFO
     org.springframework: INFO

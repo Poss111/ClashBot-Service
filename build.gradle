@@ -10,17 +10,18 @@ buildscript {
 
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '2.7.7'
-    id 'io.spring.dependency-management' version '1.1.0'
+	id 'org.springframework.boot' version '3.4.3'
     id 'org.asciidoctor.convert' version '2.4.0'
-    id 'org.openapi.generator' version '6.1.0'
-    id 'org.unbroken-dome.test-sets' version '4.0.0'
+    id 'org.openapi.generator' version '7.11.0'
+    id("org.unbroken-dome.test-sets") version "4.1.0"
 }
+
+apply plugin: 'io.spring.dependency-management'
 
 group = 'com.poss.clash-bot'
 version = '1.0.0-SNAPSHOT'
-sourceCompatibility = '11'
-targetCompatibility = '11'
+sourceCompatibility = '21'
+targetCompatibility = '21'
 
 configurations {
     compileOnly {
@@ -38,13 +39,9 @@ sourceSets {
     }
 }
 
-jar {
+bootJar {
    archiveBaseName = 'clash-bot-spring-service'
    archiveVersion =  '1.0.0'
-}
-
-testSets {
-    integrationTest
 }
 
 dependencies {
@@ -52,6 +49,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
     implementation 'org.springframework.boot:spring-boot-starter-data-mongodb-reactive'
+    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
     implementation 'org.springdoc:springdoc-openapi-webflux-ui:1.6.14'
     implementation 'io.swagger.core.v3:swagger-annotations:2.2.8'
     implementation 'javax.validation:validation-api:2.0.1.Final'
@@ -60,10 +58,8 @@ dependencies {
     implementation platform('org.testcontainers:testcontainers-bom:1.16.0')
     compileOnly 'org.projectlombok:lombok'
 //    developmentOnly 'org.springframework.boot:spring-boot-devtools'
-    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
     annotationProcessor 'org.projectlombok:lombok'
     annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.3.Final'
-    implementation 'org.springframework.cloud:spring-cloud-stream-binder-kinesis:2.2.0'
 
     // Testing Dependencies
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
@@ -75,9 +71,9 @@ dependencies {
 
     // Integration Test Dependencies
 //    integrationTestImplementation "de.flapdoodle.embed:de.flapdoodle.embed.mongo"
-    integrationTestImplementation "org.testcontainers:mongodb"
-    integrationTestImplementation 'org.testcontainers:localstack'
-    integrationTestImplementation "org.testcontainers:junit-jupiter"
+    // integrationTestImplementation "org.testcontainers:mongodb"
+    // integrationTestImplementation 'org.testcontainers:localstack'
+    // integrationTestImplementation "org.testcontainers:junit-jupiter"
 }
 
 tasks.named('test') {
@@ -85,10 +81,10 @@ tasks.named('test') {
     useJUnitPlatform()
 } 
 
-tasks.named('integrationTest') {
-    outputs.dir snippetsDir
-    useJUnitPlatform()
-}
+// tasks.named('integrationTest') {
+//     outputs.dir snippetsDir
+//     useJUnitPlatform()
+// }
 
 tasks.named('asciidoctor') {
     inputs.dir snippetsDir
@@ -107,7 +103,8 @@ openApiGenerate {
             interfaceOnly: "true",
             skipDefaultInterface: "true",
             additionalModelTypeAnnotations: "@lombok.Data();@lombok.NoArgsConstructor();@lombok.AllArgsConstructor();@lombok.Builder()",
-            useSwaggerUI: "true"
+            useSwaggerUI: "true",
+            useJakartaEe: "true"
     ]
 }
 

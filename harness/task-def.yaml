@@ -35,7 +35,7 @@ containerDefinitions:
     healthCheck:
       command:
         - CMD-SHELL
-        - "curl -k https://localhost:8080/actuator/health/readiness || exit 1"
+        - "curl -k https://localhost:8080/clash-bot/actuator/health/readiness || exit 1"
       interval: 60
       timeout: 5
       retries: 3
