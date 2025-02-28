@@ -33,8 +33,8 @@ resource "aws_lb" "clash_bot_lb" {
 
 resource "aws_lb_target_group" "ecs_tg" {
   name     = "clash-bot-ecs-target-group"
-  port     = 80
-  protocol = "HTTP"
+  port     = 443
+  protocol = "HTTPS"
   vpc_id   = data.aws_vpc.vpc.id
   health_check {
     path                = "/clash-bot/actuator/health/readiness"

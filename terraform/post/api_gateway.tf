@@ -2,6 +2,12 @@
 resource "aws_apigatewayv2_api" "ecs_api" {
   name          = "clash-bot-services-apis"
   protocol_type = "HTTP"
+  description   = "Clash Bot Services API"
+  cors_configuration {
+    allow_methods = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    allow_origins = ["*"]
+  }
+
 }
 
 resource "aws_security_group" "vpc_link_security_group" {
@@ -10,14 +16,12 @@ resource "aws_security_group" "vpc_link_security_group" {
   vpc_id      = data.aws_vpc.vpc.id
 }
 
-resource "aws_vpc_security_group_ingress" "http_vpc_link_security_ingress_rule" {
+resource "aws_vpc_security_group_ingress_rule" "http_vpc_link_security_ingress_rule" {
   security_group_id = aws_security_group.vpc_link_security_group.id
   from_port         = 443
   to_port           = 443
-  protocol          = "tcp"
-  cidr_blocks = [
-    "0.0.0.0/0"
-  ]
+  ip_protocol       = "tcp"
+  cidr_ipv4         = "0.0.0.0/0"
 }
 
 resource "aws_apigatewayv2_vpc_link" "ecs_vpc_link" {
@@ -73,4 +77,8 @@ resource "aws_apigatewayv2_stage" "ecs_stage" {
   api_id      = aws_apigatewayv2_api.ecs_api.id
   name        = "$default"
   auto_deploy = true
+  default_route_settings {
+    detailed_metrics_enabled = true
+    logging_level            = "INFO"
+  }
 }
