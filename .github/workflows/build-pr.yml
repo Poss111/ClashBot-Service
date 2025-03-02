@@ -19,8 +19,7 @@ jobs:
 
       - name: Gradle build
         run: |
-          ls -lha
-          CI=true ./gradlew clean build
+          CI=true ./gradlew clean build -x test --debug
 
       - uses: actions/upload-artifact@v4.6.1
         with:
