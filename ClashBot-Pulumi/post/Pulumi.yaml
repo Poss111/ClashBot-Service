@@ -1,0 +1,7 @@
+name: post
+description: Post deployment prereqs for the Clash Bot service.
+runtime: go
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: aws-go

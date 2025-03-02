@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 
-	"github.com/pulumi/pulumi-aws/sdk/v5/go/aws/acm"
 	"github.com/pulumi/pulumi-aws/sdk/v5/go/aws/ec2"
 	"github.com/pulumi/pulumi-aws/sdk/v5/go/aws/ecs"
 	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/iam"
@@ -17,7 +16,7 @@ func main() {
 		vpcID := "vpc-04738ea3a5ae3ba52"
 		subnetOneID := "subnet-092e50e03e16be078"
 		subnetTwoID := "subnet-02d5547ced2a60b1d"
-		domainName := "clash-bot.ninja"
+		// domainName := "clash-bot.ninja"
 		const image = "0.0.11-adding-path"
 
 		vpcDetails, err := ec2.LookupVpc(ctx, &ec2.LookupVpcArgs{
@@ -164,13 +163,46 @@ func main() {
 			return err
 		}
 
+		apiGatewayIpCidrs := pulumi.StringArray{
+			pulumi.String("0.0.0.0/0"),
+		}
+
+		// apiGatewayIpCidrs := pulumi.StringArray{
+		// 	pulumi.String("3.216.135.0/24"),
+		// 	pulumi.String("3.216.136.0/21"),
+		// 	pulumi.String("3.216.144.0/23"),
+		// 	pulumi.String("3.216.148.0/22"),
+		// 	pulumi.String("3.235.26.0/23"),
+		// 	pulumi.String("3.235.32.0/21"),
+		// 	pulumi.String("3.238.166.0/24"),
+		// 	pulumi.String("44.206.4.0/22"),
+		// 	pulumi.String("44.210.64.0/22"),
+		// 	pulumi.String("44.212.176.0/23"),
+		// 	pulumi.String("44.212.178.0/23"),
+		// 	pulumi.String("44.212.180.0/23"),
+		// 	pulumi.String("44.212.182.0/23"),
+		// 	pulumi.String("44.218.96.0/23"),
+		// 	pulumi.String("44.220.28.0/22"),
+		// }
 		_, err = ec2.NewSecurityGroupRule(ctx, "lbSecurityGroupIngress", &ec2.SecurityGroupRuleArgs{
 			Type:            pulumi.String("ingress"),
 			SecurityGroupId: lbSecurityGroup.ID(),
 			FromPort:        pulumi.Int(443),
 			ToPort:          pulumi.Int(443),
 			Protocol:        pulumi.String("tcp"),
-			CidrBlocks:      pulumi.StringArray{pulumi.String("0.0.0.0/0")},
+			CidrBlocks:      apiGatewayIpCidrs,
+		})
+		if err != nil {
+			return err
+		}
+
+		_, err = ec2.NewSecurityGroupRule(ctx, "lbSecurityGroupIngress80", &ec2.SecurityGroupRuleArgs{
+			Type:            pulumi.String("ingress"),
+			SecurityGroupId: lbSecurityGroup.ID(),
+			FromPort:        pulumi.Int(80),
+			ToPort:          pulumi.Int(80),
+			Protocol:        pulumi.String("tcp"),
+			CidrBlocks:      apiGatewayIpCidrs,
 		})
 		if err != nil {
 			return err
@@ -207,8 +239,8 @@ func main() {
 
 		targetGroup, err := lb.NewTargetGroup(ctx, "ecsTg", &lb.TargetGroupArgs{
 			Name:     pulumi.String("clash-bot-ecs-target-group"),
-			Port:     pulumi.Int(443),
-			Protocol: pulumi.String("HTTPS"),
+			Port:     pulumi.Int(80),
+			Protocol: pulumi.String("HTTP"),
 			VpcId:    pulumi.String(vpcID),
 			HealthCheck: &lb.TargetGroupHealthCheckArgs{
 				Path:               pulumi.String("/clash-bot/actuator/health/readiness"),
@@ -225,20 +257,20 @@ func main() {
 			return err
 		}
 
-		cert, err := acm.LookupCertificate(ctx, &acm.LookupCertificateArgs{
-			Domain:   domainName,
-			Statuses: []string{"ISSUED"},
-		}, nil)
-		if err != nil {
-			return err
-		}
+		// cert, err := acm.LookupCertificate(ctx, &acm.LookupCertificateArgs{
+		// 	Domain:   domainName,
+		// 	Statuses: []string{"ISSUED"},
+		// }, nil)
+		// if err != nil {
+		// 	return err
+		// }
 
 		_, err = lb.NewListener(ctx, "clashBotLbListener", &lb.ListenerArgs{
 			LoadBalancerArn: alb.Arn,
-			Port:            pulumi.Int(443),
-			Protocol:        pulumi.String("HTTPS"),
-			SslPolicy:       pulumi.String("ELBSecurityPolicy-2016-08"),
-			CertificateArn:  pulumi.String(cert.Arn),
+			Port:            pulumi.Int(80),
+			// Protocol:        pulumi.String("HTTP"),
+			// SslPolicy:       pulumi.String("ELBSecurityPolicy-2016-08"),
+			// CertificateArn:  pulumi.String(cert.Arn),
 			DefaultActions: lb.ListenerDefaultActionArray{
 				&lb.ListenerDefaultActionArgs{
 					Type:           pulumi.String("forward"),

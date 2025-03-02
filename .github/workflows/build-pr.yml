@@ -100,7 +100,7 @@ jobs:
           go-version: '1.23.6'
 
       - name: Go mod tidy
-        working-directory: ClashBot-Pulumi/
+        working-directory: ClashBot-Pulumi/pre/
         run: go mod tidy
 
       - name: Setup AWS credentials
@@ -113,7 +113,7 @@ jobs:
         with:
           command: preview
           stack-name: pre
-          work-dir: ClashBot-Pulumi/
+          work-dir: ClashBot-Pulumi/pre/
         env:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
 
@@ -121,23 +121,19 @@ jobs:
         with:
           command: up
           stack-name: pre
-          work-dir: ClashBot-Pulumi/
+          work-dir: ClashBot-Pulumi/pre/
         env:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
 
       - name: Set output to context
         id: get-task-def
-        working-directory: ClashBot-Pulumi/
+        working-directory: ClashBot-Pulumi/pre/
         run: |
           echo "ecsTaskExecutionRoleArn=$(pulumi stack output ecsTaskExecutionRoleArn)" >> $GITHUB_OUTPUT
           echo "ecsTaskRoleArn=$(pulumi stack output ecsTaskRoleArn)" >> $GITHUB_OUTPUT
           echo "lb-url=$(pulumi stack output loadBalancerDns)" >> $GITHUB_OUTPUT
           echo "ecsServiceName=$(pulumi stack output ecsServiceName)" >> $GITHUB_OUTPUT
           
-
-
-      
-
   deploy-ecs:
     name: "Deploy Clash Bot Docker Image to ECS"
     needs:
@@ -199,6 +195,7 @@ jobs:
           wait-for-minutes: 5
           run-task-assign-public-IP: ENABLED
           run-task-launch-type: FARGATE
+          desired-count: 1
 
       - name: Update Github Environment url
         run: |
