@@ -1,4 +1,4 @@
-executionRoleArn: "{{ ECS_EXECUTION_ROLE_ARN }}"
+executionRoleArn: {{ ECS_EXECUTION_ROLE_ARN|tojson }}
 containerDefinitions:
   - portMappings:
       - hostPort: {{ ECS_CONTAINER_PORT }}
@@ -16,7 +16,7 @@ containerDefinitions:
       options:
         awslogs-group: {{ ECS_LOG_CONFIG_GROUP }}
         mode: non-blocking
-        awslogs-create-group: "{{ ECS_LOG_CONFIG_CREATE_GROUP }}"
+        awslogs-create-group: {{ ECS_LOG_CONFIG_CREATE_GROUP|tojson }}
         max-buffer-size: {{ ECS_LOG_CONFIG_MAX_BUFFER_SIZE }}
         awslogs-region: {{ ECS_AWS_REGION}}
         awslogs-stream-prefix: {{ ECS_LOG_CONFIG_STREAM_PREFIX }}
@@ -24,7 +24,7 @@ containerDefinitions:
       - name: SPRING_PROFILES_ACTIVE
         value: {{ ECS_SPRING_PROFILE }}
       - name: SERVER_PORT
-        value: "{{ ECS_CONTAINER_PORT }}"
+        value: {{ ECS_CONTAINER_PORT|string|tojson }}
       - name: AWS_REGION
         value: {{ ECS_AWS_REGION }}
     secrets:
@@ -41,16 +41,16 @@ containerDefinitions:
       retries: {{ ECS_HEALTH_CHECK_RETRIES }}
       startPeriod: {{ ECS_HEALTH_CHECK_START_PERIOD }}
 placementConstraints: []
-memory: "{{ ECS_MEMORY }}"
-taskRoleArn: "{{ ECS_TASK_ROLE_ARN}}"
-family: "{{ ECS_TASK_DEF_FAMILY}}"
+memory: {{ ECS_MEMORY|string|tojson }}
+taskRoleArn: {{ ECS_TASK_ROLE_ARN|tojson }}
+family: {{ ECS_TASK_DEF_FAMILY|tojson }}
 requiresCompatibilities:
   - FARGATE
 networkMode: awsvpc
 runtimePlatform:
   cpuArchitecture: ARM64
   operatingSystemFamily: LINUX
-cpu: "{{ ECS_CPU }}"
+cpu: {{ ECS_CPU|string|tojson }}
 volumes: []
 tags:
   - key: Application
