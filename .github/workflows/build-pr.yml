@@ -48,6 +48,9 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4.2.2
 
+      - name: Setup Python
+        uses: actions/setup-python@v5.4.0
+
       - name: Download built jar
         uses: actions/download-artifact@v4.1.9
         with:
@@ -65,11 +68,7 @@ jobs:
 
       - name: Build Docker Image
         id: docker
-        run: |
-          version = $(echo $GITHUB_REF | sed 's/refs\/heads\///' | sed 's/\//-/g')-$(echo $GITHUB_SHA | cut -c1-7)
-          echo "Building Docker Image with version $version..."
-          docker build -t clash-bot-service:$version .
-          echo "::set-output name=fullDockerPath::${ECR_REPO_URI}:${version}"
+        run: python CIScripts/build-tag.py
 
       - name: Push Docker Image to ECR
         run: |
