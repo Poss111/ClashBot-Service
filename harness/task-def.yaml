@@ -9,7 +9,7 @@ containerDefinitions:
     memory: {{ ECS_MEMORY }}
     volumesFrom: []
     essential: true
-    name: clash-bot-service
+    name: clash-bot
     image: {{ ECS_IMAGE_URI }}
     logConfiguration:
       logDriver: awslogs
