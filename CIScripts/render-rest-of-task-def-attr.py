@@ -16,6 +16,8 @@ def main(task_def_file, template_vars):
     
     rendered_content = render_template(task_def_file, template_vars)
     
+    print(f'Rendered task def: {rendered_content}')
+    
     # prefix name of file with rendered- to indicate that it has been rendered
     # Check if it is under a directory
     if '/' in task_def_file:
@@ -31,6 +33,8 @@ def main(task_def_file, template_vars):
     print(f'Rendered content written to {output_file}')
     with open(os.environ['GITHUB_OUTPUT'], 'a') as fh:
         print(f'rendered-task-definition={output_file}', file=fh)
+        
+    
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
