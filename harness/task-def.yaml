@@ -41,7 +41,7 @@ containerDefinitions:
       retries: {{ ECS_HEALTH_CHECK_RETRIES }}
       startPeriod: {{ ECS_HEALTH_CHECK_START_PERIOD }}
 placementConstraints: []
-memory: {{ ECS_MEMORY }}
+memory: "{{ ECS_MEMORY }}"
 taskRoleArn: "{{ ECS_TASK_ROLE_ARN}}"
 family: "{{ ECS_TASK_DEF_FAMILY}}"
 requiresCompatibilities:
@@ -50,7 +50,7 @@ networkMode: awsvpc
 runtimePlatform:
   cpuArchitecture: ARM64
   operatingSystemFamily: LINUX
-cpu: {{ ECS_CPU }}
+cpu: "{{ ECS_CPU }}"
 volumes: []
 tags:
   - key: Application
