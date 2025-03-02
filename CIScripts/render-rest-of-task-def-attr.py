@@ -16,7 +16,15 @@ def main(task_def_file, template_vars):
     
     rendered_content = render_template(task_def_file, template_vars)
     
-    output_file = 'rendered_' + task_def_file
+    # prefix name of file with rendered- to indicate that it has been rendered
+    # Check if it is under a directory
+    if '/' in task_def_file:
+        output_file = task_def_file.split('/')
+        output_file[-1] = 'rendered-' + output_file[-1]
+        output_file = '/'.join(output_file)
+    else:
+        output_file = 'rendered-' + task_def_file
+        
     with open(output_file, 'w') as file:
         file.write(rendered_content)
     
