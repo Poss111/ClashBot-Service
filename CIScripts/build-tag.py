@@ -30,6 +30,10 @@ def parse_args():
 
 args = parse_args()
 
+def normalize_tag(tag):
+    """Normalizes a Docker tag."""
+    return tag.replace("/", "-").replace(":", "-")
+
 def docker_build(image, tag):
     """Builds a Docker image."""
     result = subprocess.run(['docker', 'build', '-t', f"{image}:{tag}", '.'], stdout=subprocess.PIPE)
@@ -58,7 +62,7 @@ def create_docker_tag(branch, git_hash):
 if __name__ == "__main__":
     branch = get_git_branch()
     git_hash = get_git_hash()
-    tag = create_docker_tag(branch, git_hash)
+    tag = normalize_tag(create_docker_tag(branch, git_hash))
     print(f"Docker tag: {tag}")
     image_uri = f"{args.registry}/poss11111/{args.image_name}"
     docker_build(image=args.image_name, tag=tag)
