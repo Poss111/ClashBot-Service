@@ -64,11 +64,12 @@ jobs:
           role-to-assume: ${{ secrets.AWS_OIDC_ROLE }}
 
       - name: Login to ECR
+        id: ecr-login
         uses: aws-actions/amazon-ecr-login@v2.0.1
 
       - name: Build Docker Image
         id: docker
-        run: python CIScripts/build-tag.py
+        run: python CIScripts/build-tag.py -r ${{ steps.ecr-login.outputs.registry }} -i clash-bot-service-round-2
 
       - name: Push Docker Image to ECR
         run: |
