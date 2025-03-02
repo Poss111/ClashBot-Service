@@ -155,37 +155,33 @@ jobs:
           aws-region: ${{ vars.AWS_REGION }}
           role-to-assume: ${{ secrets.AWS_OIDC_ROLE }}
 
-      - name: Render task def
-        id: render-task-def
-        uses: aws-actions/amazon-ecs-render-task-definition@v1.6.2
-        with:
-          task-definition-family: clash-bot-service
-          task-definition: harness/task-def.yaml
-          container-name: clash-bot-service
-          image: ${{ needs.build-image.outputs.fullDockerPath }}
-          environment-variables: |
-            SPRING_PROFILES_ACTIVE="${{ vars.SPRING_PROFILE }}"
-            SERVER_PORT="8080"
-            AWS_REGION="${{ vars.AWS_REGION }}"
-          secrets: |
-            RIOT_API_KEY=${{ secrets.RIOT_API_KEY }}
-            MONGO_DB_URI=${{ secrets.MONGO_DB_URI }}
-          log-configuration-log-driver: awslogs
-          log-configuration-options: |
-            awslogs-create-group=true
-            awslogs-group=/ecs/clash-bot
-            awslogs-region=us-east-1
+      - name: Install jinja
+        run: pip install jinja2
 
       - name: Render the rest of the task def
         id: render-task-def-rest
         env:
+          ECS_AWS_REGION: ${{ vars.AWS_REGION }}
+          ECS_IMAGE_URI: ${{ needs.build-image.outputs.fullDockerPath }}
           ECS_EXECUTION_ROLE_ARN: ${{ needs.deploy-infra.outputs.ecsTaskExecutionRoleArn }}
+          ECS_TASK_ROLE_ARN: ${{ needs.deploy-infra.outputs.ecsTaskRoleArn }}
           ECS_CONTAINER_PORT: 8080
           ECS_CPU: 512
           ECS_MEMORY: 2048
-          ECS_TASK_ROLE_ARN: ${{ needs.deploy-infra.outputs.ecsTaskRoleArn }}
           ECS_HEALTH_CHECK_PATH: clash-bot/actuator/health/readiness
+          ECS_HEALTH_CHECK_INTERVAL: 60
+          ECS_HEALTH_CHECK_TIMEOUT: 5
+          ECS_HEALTH_CHECK_RETRIES: 3
+          ECS_HEALTH_CHECK_START_PERIOD: 120
           ECS_TAG_VERSION: ${{ needs.build-image.outputs.version }}
+          ECS_TASK_DEF_FAMILY: clash-bot-service
+          ECS_LOG_CONFIG_CREATE_GROUP: "true"
+          ECS_LOG_CONFIG_GROUP: /ecs/clash-bot
+          ECS_LOG_CONFIG_MAX_BUFFER_SIZE: 25m
+          ECS_LOG_CONFIG_STREAM_PREFIX: ecs-clash-bot-service
+          ECS_SPRING_PROFILE: ${{ vars.SPRING_PROFILE }}
+          ECS_RIOT_API_KEY: ${{ secrets.RIOT_API_KEY }}
+          ECS_MONGO_DB_URI: ${{ secrets.MONGO_DB_URI }}
         run: python3 CIScripts/render-rest-of-task-def-attr.py harness/task-def.yaml 
 
       - name: Deploy to ECS

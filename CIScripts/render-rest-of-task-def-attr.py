@@ -6,7 +6,6 @@ import os
 
 # Load environment variables dynamically into a dictionary
 template_vars = {key: value for key, value in os.environ.items() if key.startswith("ECS_")}
-tag_vars = {key: value for key, value in os.environ.items() if key.startswith("ECS_TAG_")}
 
 def render_template(template_path, context):
     with open(template_path, 'r') as file:
@@ -26,14 +25,10 @@ def main(task_def_file, template_vars):
         print(f'rendered-task-definition={output_file}', file=fh)
 
 if __name__ == "__main__":
-    if len(sys.argv) != 10:
-        print("Usage: python render-rest-of-task-def-attr.py <task_def_file> <context_file>")
+    if len(sys.argv) != 2:
+        print("Usage: python render-rest-of-task-def-attr.py <task_def_file>")
         sys.exit(1)
     
     task_def_file = sys.argv[1]
-    context_file = sys.argv[2]
-    
-    # merge template_vars and tag_vars
-    template_vars.update(tag_vars)
     
     main(task_def_file, template_vars)
