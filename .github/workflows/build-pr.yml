@@ -47,7 +47,7 @@ jobs:
           path: build/libs
 
       - name: Setup AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v4.1.0
         with:
 
           aws-region: ${{ vars.AWS_REGION }}
@@ -88,7 +88,7 @@ jobs:
         run: go mod tidy
 
       - name: Setup AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v4.1.0
         with:
           aws-region: ${{ vars.AWS_REGION }}
           role-to-assume: ${{ secrets.AWS_OIDC_ROLE }}
