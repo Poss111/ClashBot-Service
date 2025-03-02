@@ -36,23 +36,23 @@ def normalize_tag(tag):
 
 def docker_build(image, tag):
     """Builds a Docker image."""
-    result = subprocess.run(['docker', 'build', '-t', f"{image}:{tag}", '.'], stdout=subprocess.PIPE)
+    result = subprocess.run(['docker', 'build', '--platform', 'linux/arm64', '-t', f"{image}:{tag}", '.'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
     return result.stdout.decode('utf-8').strip()
 
 def docker_tag(original_uri, new_uri):
     """Tags a Docker image."""
-    result = subprocess.run(['docker', 'tag', original_uri, f"{new_uri}"], stdout=subprocess.PIPE)
+    result = subprocess.run(['docker', 'tag', original_uri, f"{new_uri}"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
     return result.stdout.decode('utf-8').strip()
     
 
 def get_git_branch():
     """Gets the current Git branch."""
-    result = subprocess.run(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], stdout=subprocess.PIPE)
+    result = subprocess.run(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
     return result.stdout.decode('utf-8').strip()
 
 def get_git_hash():
     """Gets the current Git hash."""
-    result = subprocess.run(['git', 'rev-parse', '--short', 'HEAD'], stdout=subprocess.PIPE)
+    result = subprocess.run(['git', 'rev-parse', '--short', 'HEAD'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
     return result.stdout.decode('utf-8').strip()
 
 def create_docker_tag(branch, git_hash):
