@@ -30,10 +30,16 @@ def parse_args():
 
 args = parse_args()
 
-def docker_build(uri, tag):
+def docker_build(image, tag):
     """Builds a Docker image."""
-    result = subprocess.run(['docker', 'build', '-t', f"{uri}:{tag}", '.'], stdout=subprocess.PIPE)
+    result = subprocess.run(['docker', 'build', '-t', f"{image}:{tag}", '.'], stdout=subprocess.PIPE)
     return result.stdout.decode('utf-8').strip()
+
+def docker_tag(original_uri, new_uri):
+    """Tags a Docker image."""
+    result = subprocess.run(['docker', 'tag', original_uri, f"{new_uri}"], stdout=subprocess.PIPE)
+    return result.stdout.decode('utf-8').strip()
+    
 
 def get_git_branch():
     """Gets the current Git branch."""
@@ -52,13 +58,14 @@ def create_docker_tag(branch, git_hash):
 if __name__ == "__main__":
     branch = get_git_branch()
     git_hash = get_git_hash()
-    docker_tag = create_docker_tag(branch, git_hash)
+    tag = create_docker_tag(branch, git_hash)
     print(f"Docker tag: {docker_tag}")
-    image_uri = f"{args.registry}/{args.image_name}"
-    docker_build(uri=image_uri, tag=docker_tag)
-    print(f"Built Docker image: {image_uri}:{docker_tag}")
+    image_uri = f"{args.registry}/poss11111/{args.image_name}"
+    docker_build(image=args.image_name, tag=tag)
+    print(f"Built Docker image: {image_uri}:{tag}")
     full_image_uri = f"{image_uri}:{docker_tag}"
+    docker_tag(original_uri=f"{args.image_name}:{tag}", new_uri=full_image_uri)
     
     with open(os.environ['GITHUB_OUTPUT'], 'a') as fh:
         print(f"fullDockerPath={full_image_uri}", file=fh)
-        print(f"version={docker_tag}", file=fh)
+        print(f"version={tag}", file=fh)
