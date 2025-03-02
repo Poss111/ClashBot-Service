@@ -14,8 +14,13 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4.2.2
 
+      - uses: actions/setup-java@v4.7.0
+        with:
+          distribution: 'zulu'
+          java-version: '21'
+
       - name: Setup Gradle
-        uses: gradle/gradle-build-action@v3.5.0
+        uses: gradle/actions/setup-gradle@v4.3.0
 
       - name: Gradle build
         run: |
@@ -103,8 +108,6 @@ jobs:
           command: preview
           stack-name: pre
           work-dir: ClashBot-Pulumi/
-          comment-on-pr: true
-          comment-on-summary: true
         env:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
 
@@ -113,8 +116,6 @@ jobs:
           command: up
           stack-name: pre
           work-dir: ClashBot-Pulumi/
-          comment-on-pr: true
-          comment-on-summary: true
         env:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
 
