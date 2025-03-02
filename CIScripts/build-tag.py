@@ -59,11 +59,11 @@ if __name__ == "__main__":
     branch = get_git_branch()
     git_hash = get_git_hash()
     tag = create_docker_tag(branch, git_hash)
-    print(f"Docker tag: {docker_tag}")
+    print(f"Docker tag: {tag}")
     image_uri = f"{args.registry}/poss11111/{args.image_name}"
     docker_build(image=args.image_name, tag=tag)
     print(f"Built Docker image: {image_uri}:{tag}")
-    full_image_uri = f"{image_uri}:{docker_tag}"
+    full_image_uri = f"{image_uri}:{tag}"
     docker_tag(original_uri=f"{args.image_name}:{tag}", new_uri=full_image_uri)
     
     with open(os.environ['GITHUB_OUTPUT'], 'a') as fh:
