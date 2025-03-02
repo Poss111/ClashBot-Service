@@ -19,7 +19,7 @@ jobs:
 
       - name: Gradle build
         run: |
-          CI=true ./gradlew clean build -x test --debug
+          CI=true ./gradlew clean build -x test --scan
 
       - uses: actions/upload-artifact@v4.6.1
         with:
@@ -33,6 +33,9 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: Feature
+    permissions:
+      id-token: write
+      contents: read
     outputs:
       fullDockerPath: ${{ steps.docker.outputs.fullDockerPath }}
 
@@ -49,7 +52,6 @@ jobs:
       - name: Setup AWS credentials
         uses: aws-actions/configure-aws-credentials@v4.1.0
         with:
-
           aws-region: ${{ vars.AWS_REGION }}
           role-to-assume: ${{ secrets.AWS_OIDC_ROLE }}
 
@@ -71,6 +73,9 @@ jobs:
   deploy-infra:
     name: "Deploy Clash Bot preqrequisite Infrastructure"
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     environment:
       name: Feature
     
@@ -126,6 +131,9 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: Feature
+    permissions:
+      id-token: write
+      contents: read
 
     steps:
       - name: Checkout repo
