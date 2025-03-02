@@ -127,11 +127,16 @@ jobs:
 
       - name: Set output to context
         id: get-task-def
+        working-directory: ClashBot-Pulumi/
         run: |
           echo "ecsTaskExecutionRoleArn=$(pulumi stack output ecsTaskExecutionRoleArn)" >> $GITHUB_OUTPUT
           echo "ecsTaskRoleArn=$(pulumi stack output ecsTaskRoleArn)" >> $GITHUB_OUTPUT
           echo "lb-url=$(pulumi stack output loadBalancerDns)" >> $GITHUB_OUTPUT
           echo "ecsServiceName=$(pulumi stack output ecsServiceName)" >> $GITHUB_OUTPUT
+          
+
+
+      
 
   deploy-ecs:
     name: "Deploy Clash Bot Docker Image to ECS"
