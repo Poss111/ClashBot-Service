@@ -1,0 +1,7 @@
+name: ClashBot-Pulumi
+description: Prerequisites for ClashBot Service
+runtime: go
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: aws-go
