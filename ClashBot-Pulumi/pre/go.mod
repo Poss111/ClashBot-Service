@@ -5,7 +5,6 @@ go 1.22
 toolchain go1.23.6
 
 require (
-	github.com/pulumi/pulumi-aws/sdk/v5 v5.43.0
 	github.com/pulumi/pulumi-aws/sdk/v6 v6.70.0
 	github.com/pulumi/pulumi/sdk/v3 v3.148.0
 )
@@ -68,6 +67,7 @@ require (
 	github.com/santhosh-tekuri/jsonschema/v5 v5.0.0 // indirect
 	github.com/sergi/go-diff v1.3.2-0.20230802210424-5b0b94c5c0d3 // indirect
 	github.com/skeema/knownhosts v1.3.0 // indirect
+	github.com/spf13/cast v1.4.1 // indirect
 	github.com/spf13/cobra v1.8.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/texttheater/golang-levenshtein v1.0.1 // indirect

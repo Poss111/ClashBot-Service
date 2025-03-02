@@ -3,20 +3,23 @@ package main
 import (
 	"encoding/json"
 
-	"github.com/pulumi/pulumi-aws/sdk/v5/go/aws/ec2"
-	"github.com/pulumi/pulumi-aws/sdk/v5/go/aws/ecs"
+	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/acm"
+	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/ec2"
+	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/ecs"
 	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/iam"
 	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/lb"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
+	"github.com/pulumi/pulumi/sdk/v3/go/pulumi/config"
 )
 
 func main() {
 	pulumi.Run(func(ctx *pulumi.Context) error {
 		// Variables
-		vpcID := "vpc-04738ea3a5ae3ba52"
-		subnetOneID := "subnet-092e50e03e16be078"
-		subnetTwoID := "subnet-02d5547ced2a60b1d"
-		// domainName := "clash-bot.ninja"
+		configuration := config.New(ctx, "clash-bot")
+		vpcID := configuration.Require("vpcID")
+		subnetOneID := configuration.Require("privateSubnetOneId")
+		subnetTwoID := configuration.Require("privateSubnetTwoId")
+		domainName := "clash-bot.ninja"
 		const image = "0.0.11-adding-path"
 
 		vpcDetails, err := ec2.LookupVpc(ctx, &ec2.LookupVpcArgs{
@@ -223,7 +226,7 @@ func main() {
 		// Load Balancer
 		alb, err := lb.NewLoadBalancer(ctx, "clashBotLb", &lb.LoadBalancerArgs{
 			Name:             pulumi.String("clash-bot-service-lb"),
-			Internal:         pulumi.Bool(false),
+			Internal:         pulumi.Bool(true),
 			LoadBalancerType: pulumi.String("application"),
 			SecurityGroups:   pulumi.StringArray{lbSecurityGroup.ID()},
 			Subnets:          pulumi.StringArray{pulumi.String(subnetOne.Id), pulumi.String(subnetTwo.Id)},
@@ -239,8 +242,8 @@ func main() {
 
 		targetGroup, err := lb.NewTargetGroup(ctx, "ecsTg", &lb.TargetGroupArgs{
 			Name:     pulumi.String("clash-bot-ecs-target-group"),
-			Port:     pulumi.Int(80),
-			Protocol: pulumi.String("HTTP"),
+			Port:     pulumi.Int(443),
+			Protocol: pulumi.String("HTTPS"),
 			VpcId:    pulumi.String(vpcID),
 			HealthCheck: &lb.TargetGroupHealthCheckArgs{
 				Path:               pulumi.String("/clash-bot/actuator/health/readiness"),
@@ -257,22 +260,49 @@ func main() {
 			return err
 		}
 
-		// cert, err := acm.LookupCertificate(ctx, &acm.LookupCertificateArgs{
-		// 	Domain:   domainName,
-		// 	Statuses: []string{"ISSUED"},
-		// }, nil)
-		// if err != nil {
-		// 	return err
-		// }
+		cert, err := acm.LookupCertificate(ctx, &acm.LookupCertificateArgs{
+			Domain:   pulumi.StringRef(domainName),
+			Statuses: []string{"ISSUED"},
+		}, nil)
+		if err != nil {
+			return err
+		}
 
-		_, err = lb.NewListener(ctx, "clashBotLbListener", &lb.ListenerArgs{
+		listener, err := lb.NewListener(ctx, "clashBotLbListener", &lb.ListenerArgs{
 			LoadBalancerArn: alb.Arn,
-			Port:            pulumi.Int(80),
-			// Protocol:        pulumi.String("HTTP"),
-			// SslPolicy:       pulumi.String("ELBSecurityPolicy-2016-08"),
-			// CertificateArn:  pulumi.String(cert.Arn),
+			Port:            pulumi.Int(443),
+			Protocol:        pulumi.String("HTTPS"),
+			SslPolicy:       pulumi.String("ELBSecurityPolicy-2016-08"),
+			CertificateArn:  pulumi.String(cert.Arn),
 			DefaultActions: lb.ListenerDefaultActionArray{
 				&lb.ListenerDefaultActionArgs{
+					Type: pulumi.String("fixed-response"),
+					FixedResponse: &lb.ListenerDefaultActionFixedResponseArgs{
+						ContentType: pulumi.String("text/plain"),
+						MessageBody: pulumi.String("404 Not Found"),
+						StatusCode:  pulumi.String("404"),
+					},
+				},
+			},
+		})
+		if err != nil {
+			return err
+		}
+
+		_, err = lb.NewListenerRule(ctx, "clashBotLbListenerRule", &lb.ListenerRuleArgs{
+			ListenerArn: listener.Arn,
+			Priority:    pulumi.Int(1),
+			Conditions: lb.ListenerRuleConditionArray{
+				&lb.ListenerRuleConditionArgs{
+					PathPattern: &lb.ListenerRuleConditionPathPatternArgs{
+						Values: pulumi.StringArray{
+							pulumi.String("/clash-bot/*"),
+						},
+					},
+				},
+			},
+			Actions: lb.ListenerRuleActionArray{
+				&lb.ListenerRuleActionArgs{
 					Type:           pulumi.String("forward"),
 					TargetGroupArn: targetGroup.Arn,
 				},
@@ -338,7 +368,7 @@ func main() {
 			DesiredCount: pulumi.Int(1),
 			LaunchType:   pulumi.String("FARGATE"),
 			NetworkConfiguration: &ecs.ServiceNetworkConfigurationArgs{
-				AssignPublicIp: pulumi.Bool(true),
+				AssignPublicIp: pulumi.Bool(false),
 				SecurityGroups: pulumi.StringArray{ecsSecurityGroup.ID()},
 				Subnets: pulumi.StringArray{
 					pulumi.String(subnetOne.Id),
