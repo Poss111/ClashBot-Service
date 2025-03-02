@@ -24,7 +24,7 @@ containerDefinitions:
       - name: SPRING_PROFILES_ACTIVE
         value: {{ ECS_SPRING_PROFILE }}
       - name: SERVER_PORT
-        value: {{ ECS_CONTAINER_PORT }}
+        value: "{{ ECS_CONTAINER_PORT }}"
       - name: AWS_REGION
         value: {{ ECS_AWS_REGION }}
     secrets:

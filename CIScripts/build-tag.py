@@ -73,3 +73,10 @@ if __name__ == "__main__":
     with open(os.environ['GITHUB_OUTPUT'], 'a') as fh:
         print(f"fullDockerPath={full_image_uri}", file=fh)
         print(f"version={tag}", file=fh)
+        
+    with open(os.environ['GITHUB_STEP_SUMMARY']) as fh:
+        
+        print("## Docker Build Summary", file=fh)
+        print("| Key            | Value               |", file=fh)
+        print("|----------------|---------------------|", file=fh)
+        print(f"| version        | {tag}               |", file=fh)
