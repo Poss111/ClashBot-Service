@@ -89,6 +89,7 @@ jobs:
       ecsTaskRoleArn: ${{ steps.get-task-def.outputs.ecsTaskRoleArn }}
       lbUrl: ${{ steps.get-task-def.outputs.lb-url }}
       ecsServiceName: ${{ steps.get-task-def.outputs.ecsServiceName }}
+      ecsServiceSecurityGroupId: ${{ steps.get-task-def.outputs.ecsServiceSecurityGroupId }}
     
     steps:
       - name: Checkout repo
@@ -133,6 +134,7 @@ jobs:
           echo "ecsTaskRoleArn=$(pulumi stack output ecsTaskRoleArn)" >> $GITHUB_OUTPUT
           echo "lb-url=$(pulumi stack output loadBalancerDns)" >> $GITHUB_OUTPUT
           echo "ecsServiceName=$(pulumi stack output ecsServiceName)" >> $GITHUB_OUTPUT
+          echo "ecsServiceSecurityGroupId=$(pulumi stack output ecsServiceSecurityGroupId)" >> $GITHUB_OUTPUT
           
   deploy-ecs:
     name: "Deploy Clash Bot Docker Image to ECS"
@@ -183,6 +185,7 @@ jobs:
           ECS_SPRING_PROFILE: ${{ vars.SPRING_PROFILE }}
           ECS_RIOT_API_KEY: ${{ secrets.RIOT_API_KEY }}
           ECS_MONGO_DB_URI: ${{ secrets.MONGO_DB_URI }}
+          ECS_SECURITY_GROUP_ID: ${{ needs.deploy-infra.outputs.ecsServiceSecurityGroupId }}
         run: python3 CIScripts/render-rest-of-task-def-attr.py harness/task-def.yaml 
 
       - name: Deploy to ECS
