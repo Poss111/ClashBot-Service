@@ -1,48 +1,26 @@
-executionRoleArn: "<+stage.variables.ecsTaskExecutionArn>"
+executionRoleArn: "{{ ECS_EXECUTION_ROLE_ARN }}"
 containerDefinitions:
   - portMappings:
-      - hostPort: 8080
+      - hostPort: {{ ECS_CONTAINER_PORT }}
         protocol: tcp
-        containerPort: 8080
-    cpu: 512
+        containerPort: {{ ECS_CONTAINER_PORT }}
+    cpu: {{ ECS_CPU }}
     mountPoints: []
-    memory: 2048
+    memory: {{ ECS_MEMORY }}
     volumesFrom: []
-    image: <+artifacts.primary.image>
     essential: true
     name: clash-bot-service
-    logConfiguration:
-      logDriver: awslogs
-      options:
-        awslogs-group: /ecs/clash-bot
-        mode: non-blocking
-        awslogs-create-group: "true"
-        max-buffer-size: 25m
-        awslogs-region: us-east-1
-        awslogs-stream-prefix: ecs
-    environment:
-      - name: SPRING_PROFILES_ACTIVE
-        value: "<+pipeline.variables.profile>"
-      - name: SERVER_PORT
-        value: 8080
-      - name: AWS_REGION
-        value: us-east-1
-      - name: MONGO_DB_URI
-        value: <+pipeline.variables.mongoDbUri>
-    secrets:
-      - name: RIOT_API_KEY
-        valueFrom: <+secrets.getValue('riot-api-key')>
     healthCheck:
       command:
         - CMD-SHELL
-        - "curl -k https://localhost:8080/clash-bot/actuator/health/readiness || exit 1"
+        - "curl -k https://localhost:{{ ECS_CONTAINER_PORT }}/{{ ECS_HEALTH_CHECK_PATH }} || exit 1"
       interval: 60
       timeout: 5
       retries: 3
       startPeriod: 120
 placementConstraints: []
-memory: 2048
-taskRoleArn: "<+stage.variables.ecsTaskArn>"
+memory: {{ ECS_MEMORY }}
+taskRoleArn: "{{ ECS_TASK_ROLE_ARN}}"
 family: clash-bot-service
 requiresCompatibilities:
   - FARGATE
@@ -50,12 +28,12 @@ networkMode: awsvpc
 runtimePlatform:
   cpuArchitecture: ARM64
   operatingSystemFamily: LINUX
-cpu: 512
+cpu: {{ ECS_CPU }}
 volumes: []
 tags:
   - key: Application
     value: Clash-Bot-Service
-  - key: ECS-Service
-    value: <+stage.identifier>
+  - key: Version
+    value: {{ ECS_TAG_VERSION }}
   - key: ECS-Cluster
     value: main-cluster

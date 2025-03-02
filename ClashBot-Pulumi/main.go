@@ -301,7 +301,7 @@ func main() {
 			return err
 		}
 
-		ecs.NewService(ctx, "clashBotService", &ecs.ServiceArgs{
+		service, err := ecs.NewService(ctx, "clashBotService", &ecs.ServiceArgs{
 			Cluster:      pulumi.String("main-cluster"),
 			DesiredCount: pulumi.Int(1),
 			LaunchType:   pulumi.String("FARGATE"),
@@ -339,6 +339,7 @@ func main() {
 		ctx.Export("loadBalancerType", alb.LoadBalancerType)
 		ctx.Export("loadBalancerName", alb.Name)
 		ctx.Export("targetGroupArn", targetGroup.Arn)
+		ctx.Export("ecsServiceName", service.Name)
 
 		return nil
 	})

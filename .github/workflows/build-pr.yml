@@ -43,6 +43,7 @@ jobs:
       contents: read
     outputs:
       fullDockerPath: ${{ steps.docker.outputs.fullDockerPath }}
+      version: ${{ steps.docker.outputs.version }}
 
     steps:
       - name: Checkout repo
@@ -83,6 +84,11 @@ jobs:
       contents: read
     environment:
       name: Feature
+    outputs:
+      ecsTaskExecutionRoleArn: ${{ steps.get-task-def.outputs.ecsTaskExecutionRoleArn }}
+      ecsTaskRoleArn: ${{ steps.get-task-def.outputs.ecsTaskRoleArn }}
+      lbUrl: ${{ steps.get-task-def.outputs.lb-url }}
+      ecsServiceName: ${{ steps.get-task-def.outputs.ecsServiceName }}
     
     steps:
       - name: Checkout repo
@@ -122,7 +128,10 @@ jobs:
       - name: Set output to context
         id: get-task-def
         run: |
-          echo "::set-output name="
+          echo "ecsTaskExecutionRoleArn=$(pulumi stack output ecsTaskExecutionRoleArn)" >> $GITHUB_OUTPUT
+          echo "ecsTaskRoleArn=$(pulumi stack output ecsTaskRoleArn)" >> $GITHUB_OUTPUT
+          echo "lb-url=$(pulumi stack output loadBalancerDns)" >> $GITHUB_OUTPUT
+          echo "ecsServiceName=$(pulumi stack output ecsServiceName)" >> $GITHUB_OUTPUT
 
   deploy-ecs:
     name: "Deploy Clash Bot Docker Image to ECS"
@@ -143,7 +152,6 @@ jobs:
       - name: Setup AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
-
           aws-region: ${{ vars.AWS_REGION }}
           role-to-assume: ${{ secrets.AWS_OIDC_ROLE }}
 
@@ -151,10 +159,10 @@ jobs:
         id: render-task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1.6.2
         with:
-          task-definition: harness/task-def.json
+          task-definition-family: clash-bot-service
+          task-definition: harness/task-def.yaml
           container-name: clash-bot-service
           image: ${{ needs.build-image.outputs.fullDockerPath }}
-          task-definition-family: clash-bot-service-round-2
           environment-variables: |
             SPRING_PROFILES_ACTIVE="${{ vars.SPRING_PROFILE }}"
             SERVER_PORT="8080"
@@ -168,13 +176,29 @@ jobs:
             awslogs-group=/ecs/clash-bot
             awslogs-region=us-east-1
 
+      - name: Render the rest of the task def
+        id: render-task-def-rest
+        env:
+          ECS_EXECUTION_ROLE_ARN: ${{ needs.deploy-infra.outputs.ecsTaskExecutionRoleArn }}
+          ECS_CONTAINER_PORT: 8080
+          ECS_CPU: 512
+          ECS_MEMORY: 2048
+          ECS_TASK_ROLE_ARN: ${{ needs.deploy-infra.outputs.ecsTaskRoleArn }}
+          ECS_HEALTH_CHECK_PATH: clash-bot/actuator/health/readiness
+          ECS_TAG_VERSION: ${{ needs.build-image.outputs.version }}
+        run: python3 CIScripts/render-rest-of-task-def-attr.py harness/task-def.yaml 
+
       - name: Deploy to ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2.3.0
         with:
           cluster: main-cluster
-          service: clash-bot-service
-          task-definition: ${{ steps.render-task-def.outputs.task-definition }}
+          service: ${{ needs.deploy-infra.outputs.ecsServiceName }}
+          task-definition: ${{ steps.render-task-def-rest.outputs.rendered-task-definition }}
           wait-for-service-stability: true
           wait-for-minutes: 5
           run-task-assign-public-IP: ENABLED
           run-task-launch-type: FARGATE
+
+      - name: Update Github Environment url
+        run: |
+          echo "release_url=${{ needs.deploy-infra.outputs.lbUrl }}" >> $GITHUB_OUTPUT
