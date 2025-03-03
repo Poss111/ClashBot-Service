@@ -203,3 +203,50 @@ jobs:
       - name: Update Github Environment url
         run: |
           echo "release_url=${{ needs.deploy-infra.outputs.lbUrl }}" >> $GITHUB_OUTPUT
+
+
+  deploy-api-gw:
+    name: "Deploy Clash Bot Docker Image to ECS"
+    needs:
+      - deploy-ecs
+    runs-on: ubuntu-latest
+    environment:
+      name: Feature
+    permissions:
+      id-token: write
+      contents: read
+    
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4.2.2
+
+      - name: Setup Go
+        uses: actions/setup-go@v5.3.0
+        with:
+          go-version: '1.23.6'
+
+      - name: Go mod tidy
+        working-directory: ClashBot-Pulumi/post/
+        run: go mod tidy
+
+      - name: Setup AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4.1.0
+        with:
+          aws-region: ${{ vars.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE }}
+
+      - uses: pulumi/actions@v6.1.0
+        with:
+          command: preview
+          stack-name: pre
+          work-dir: ClashBot-Pulumi/post/
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+
+      - uses: pulumi/actions@v6.1.0
+        with:
+          command: up
+          stack-name: pre
+          work-dir: ClashBot-Pulumi/post/
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}

@@ -312,6 +312,44 @@ func main() {
 			return err
 		}
 
+		listenerEighty, err := lb.NewListener(ctx, "clashBotLbListener80", &lb.ListenerArgs{
+			LoadBalancerArn: alb.Arn,
+			Port:            pulumi.Int(80),
+			Protocol:        pulumi.String("HTTP"),
+			DefaultActions: lb.ListenerDefaultActionArray{
+				&lb.ListenerDefaultActionArgs{
+					Type:           pulumi.String("forward"),
+					TargetGroupArn: targetGroup.Arn,
+				},
+			},
+		})
+		if err != nil {
+			return err
+		}
+
+		_, err = lb.NewListenerRule(ctx, "clashBotLbListenerRule80", &lb.ListenerRuleArgs{
+			ListenerArn: listenerEighty.Arn,
+			Priority:    pulumi.Int(1),
+			Conditions: lb.ListenerRuleConditionArray{
+				&lb.ListenerRuleConditionArgs{
+					PathPattern: &lb.ListenerRuleConditionPathPatternArgs{
+						Values: pulumi.StringArray{
+							pulumi.String("/clash-bot/*"),
+						},
+					},
+				},
+			},
+			Actions: lb.ListenerRuleActionArray{
+				&lb.ListenerRuleActionArgs{
+					Type:           pulumi.String("forward"),
+					TargetGroupArn: targetGroup.Arn,
+				},
+			},
+		})
+		if err != nil {
+			return err
+		}
+
 		// iam, err := iam.LookupRole(ctx, &iam.LookupRoleArgs{
 		// 	Name: "AWSServiceRoleForECS",
 		// })

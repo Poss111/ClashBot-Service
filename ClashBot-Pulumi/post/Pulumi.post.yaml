@@ -2,5 +2,9 @@ config:
   aws:region: us-east-1
   post:aws_region: us-east-1
   post:path: /clash-bot
-  clash-bot-services:load_balancer_arn: "arn:aws:elasticloadbalancing:us-east-1:816923827429:loadbalancer/app/clash-bot-service-lb/8ba06f4239ab6010"
+  clash-bot-services:load_balancer_arn: "arn:aws:elasticloadbalancing:us-east-1:816923827429:loadbalancer/app/clash-bot-service-lb/029d602f4ac224f2"
   clash-bot-services:path: /clash-bot
+  clash-bot-services:api_gateway_name: ClashBot_Services_API 
+  clash-bot-services:api_gateway_id: i4t6aobzrc
+  clash-bot-services:subnet_id_one: subnet-0534486e9d32ce489
+  clash-bot-services:subnet_id_two: subnet-0feb95cb7268e81a9
