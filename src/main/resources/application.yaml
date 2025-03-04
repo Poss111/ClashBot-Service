@@ -30,7 +30,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: info
+        include: info, health, readiness, liveness
   info:
     git:
       mode: full
