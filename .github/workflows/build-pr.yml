@@ -238,7 +238,7 @@ jobs:
       - uses: pulumi/actions@v6.1.0
         with:
           command: preview
-          stack-name: pre
+          stack-name: post
           work-dir: ClashBot-Pulumi/post/
         env:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
@@ -246,7 +246,7 @@ jobs:
       - uses: pulumi/actions@v6.1.0
         with:
           command: up
-          stack-name: pre
+          stack-name: post
           work-dir: ClashBot-Pulumi/post/
         env:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
