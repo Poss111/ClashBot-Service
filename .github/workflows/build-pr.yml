@@ -88,6 +88,7 @@ jobs:
       ecsTaskExecutionRoleArn: ${{ steps.get-task-def.outputs.ecsTaskExecutionRoleArn }}
       ecsTaskRoleArn: ${{ steps.get-task-def.outputs.ecsTaskRoleArn }}
       lbUrl: ${{ steps.get-task-def.outputs.lb-url }}
+      loadBalancerArn: ${{ steps.get-task-def.outputs.loadBalancerArn }}
       ecsServiceName: ${{ steps.get-task-def.outputs.ecsServiceName }}
       ecsServiceSecurityGroupId: ${{ steps.get-task-def.outputs.ecsServiceSecurityGroupId }}
     
@@ -133,6 +134,7 @@ jobs:
           echo "ecsTaskExecutionRoleArn=$(pulumi stack output ecsTaskExecutionRoleArn)" >> $GITHUB_OUTPUT
           echo "ecsTaskRoleArn=$(pulumi stack output ecsTaskRoleArn)" >> $GITHUB_OUTPUT
           echo "lb-url=$(pulumi stack output loadBalancerDns)" >> $GITHUB_OUTPUT
+          echo "loadBalancerArn=$(pulumi stack output loadBalancerArn)" >> $GITHUB_OUTPUT
           echo "ecsServiceName=$(pulumi stack output ecsServiceName)" >> $GITHUB_OUTPUT
           echo "ecsServiceSecurityGroupId=$(pulumi stack output ecsServiceSecurityGroupId)" >> $GITHUB_OUTPUT
           
@@ -209,6 +211,7 @@ jobs:
     name: "Deploy Clash Bot Docker Image to ECS"
     needs:
       - deploy-ecs
+      - deploy-infra
     runs-on: ubuntu-latest
     environment:
       name: Feature
@@ -240,6 +243,8 @@ jobs:
           command: preview
           stack-name: post
           work-dir: ClashBot-Pulumi/post/
+          config-map: |
+            clash-bot-services:load_balancer_arn: "${{ needs.deploy-infra.outputs.loadBalancerArn }}"
         env:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
 
@@ -248,5 +253,7 @@ jobs:
           command: up
           stack-name: post
           work-dir: ClashBot-Pulumi/post/
+          config-map: |
+            clash-bot-services:load_balancer_arn: "${{ needs.deploy-infra.outputs.loadBalancerArn }}"
         env:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
