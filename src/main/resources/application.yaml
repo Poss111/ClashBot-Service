@@ -1,6 +1,10 @@
 spring:
   application:
     name: clash-bot-service
+  jmx:
+    enabled: false 
+  main:
+    lazy-initialization: true
   jpa:
     hibernate:
       ddl-auto: update
