@@ -12,7 +12,7 @@ plugins {
     id 'java'
 	id 'org.springframework.boot' version '3.4.3'
     id 'org.asciidoctor.convert' version '2.4.0'
-    id 'org.openapi.generator' version '7.11.0'
+    id 'org.openapi.generator' version '7.12.0'
     id("org.unbroken-dome.test-sets") version "4.1.0"
 }
 
@@ -91,6 +91,17 @@ tasks.named('asciidoctor') {
     dependsOn test
 }
 
+task generateGitProperties {
+    doLast {
+        def gitProps = file("${projectDir}/src/main/resources/git.properties")
+        gitProps.text = """
+        git.branch=${'git rev-parse --abbrev-ref HEAD'.execute().text.trim()}
+        git.commit.id=${'git rev-parse --short HEAD'.execute().text.trim()}
+        git.commit.time=${'git log -1 --format=%cI'.execute().text.trim()}
+        """.stripIndent()
+    }
+}
+
 openApiGenerate {
     generatorName = "spring"
     inputSpec = 'ClashBot-OpenAPI/definitions/open-api.yml'.toString()
@@ -108,9 +119,10 @@ openApiGenerate {
     ]
 }
 
+
 repositories {
     mavenCentral()
 }
 
 compileJava.dependsOn tasks.openApiGenerate
-
+processResources.dependsOn generateGitProperties

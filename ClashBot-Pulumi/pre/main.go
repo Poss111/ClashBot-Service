@@ -402,6 +402,7 @@ func main() {
 		}
 
 		service, err := ecs.NewService(ctx, "clashBotService", &ecs.ServiceArgs{
+			Name:         pulumi.String("clash-bot-service"),
 			Cluster:      pulumi.String("main-cluster"),
 			DesiredCount: pulumi.Int(1),
 			LaunchType:   pulumi.String("FARGATE"),

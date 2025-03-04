@@ -58,3 +58,5 @@ terraform.tfstate.backup
 
 ### Infracost ###
 .infracost/
+
+git.properties

@@ -27,6 +27,13 @@ management:
     health:
       probes:
         enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: info
+  info:
+    git:
+      mode: full
 riot:
   url: https://na1.api.riotgames.com
   api-key: ${RIOT_API_KEY}

@@ -205,21 +205,6 @@ func main() {
 			return fmt.Errorf("failed to create API Gateway Route: %w", err)
 		}
 
-		// API Gateway Stage
-		_, err = apigatewayv2.NewStage(ctx, "ecsStage", &apigatewayv2.StageArgs{
-			ApiId:      pulumi.String(api.ApiId),
-			Name:       pulumi.String("$default"),
-			AutoDeploy: pulumi.Bool(true),
-			DefaultRouteSettings: &apigatewayv2.StageDefaultRouteSettingsArgs{
-				DataTraceEnabled:     pulumi.Bool(false),
-				ThrottlingBurstLimit: pulumi.Int(100),
-				ThrottlingRateLimit:  pulumi.Float64(50),
-			},
-		})
-		if err != nil {
-			return fmt.Errorf("failed to create API Gateway Stage: %w", err)
-		}
-
 		// Outputs
 		ctx.Export("apiGatewayUrl", pulumi.String(api.ApiEndpoint))
 		ctx.Export("vpcLink", vpcLink.ID())
