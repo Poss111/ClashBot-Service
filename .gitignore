@@ -5,6 +5,9 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
+**/application-local.yml
+src/main/resources/application-local.yaml
+
 ### STS ###
 .apt_generated
 .classpath
@@ -37,3 +40,23 @@ out/
 .vscode/
 
 local
+
+### Node ###
+node_modules/
+
+.DS_Store
+
+harness-delegate.sh
+update-secret.sh
+
+### Terraform ###
+
+.terraform/
+.terraform.lock.hcl
+terraform.tfstate
+terraform.tfstate.backup
+
+### Infracost ###
+.infracost/
+
+git.properties

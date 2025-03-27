@@ -878,8 +878,6 @@ paths:
           $ref: '#/components/responses/BadInput'
         404:
           $ref: '#/components/responses/NoneFound'
-        500:
-          $ref: '#/components/responses/ClashBotException'
     delete:
       description: Removes a User from the specified Team.
       operationId: removeUserFromTeam
@@ -915,7 +913,11 @@ paths:
         404:
           $ref: '#/components/responses/NoneFound'
         500:
-          $ref: '#/components/schemas/Error'
+          description: An error occurred.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     post:
       description: Creates a Tentative queue.
       operationId: createTentativeQueue
@@ -929,7 +931,11 @@ paths:
         204:
           $ref: '#/components/responses/NoneFound'
         500:
-          $ref: '#/components/schemas/Error'
+          description: An error occurred.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /tentatives/{tentativeId}:
     summary: Interacts with a Tentative queue.
     parameters:
@@ -946,7 +952,11 @@ paths:
         404:
           $ref: '#/components/responses/NoneFound'
         500:
-          $ref: '#/components/schemas/Error'
+          description: An error occurred.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /tentatives/{tentativeId}/users/{discordId}:
     summary: Interacts with a specific Tentative queue.
     parameters:
@@ -963,8 +973,6 @@ paths:
           $ref: '#/components/responses/TentativeResponse'
         404:
           $ref: '#/components/responses/NoneFound'
-        500:
-          $ref: '#/components/schemas/Error'
     delete:
       description: Removes a User from the specified Tentative Queue.
       operationId: removeUserFromTentativeQueue
@@ -977,8 +985,6 @@ paths:
           $ref: '#/components/responses/BadInput'
         404:
           $ref: '#/components/responses/NoneFound'
-        500:
-          $ref: '#/components/responses/ClashBotException'
   /tournaments:
     summary: APIs to interact with Clash Tournaments.
     parameters:
@@ -1205,8 +1211,6 @@ paths:
           $ref: '#/components/responses/BadInput'
         404:
           $ref: '#/components/responses/NotFound'
-        5XX:
-          $ref: '#/components/schemas/Error'
     post:
       description: Updates the users preferred champions with an entirely new list. Cannot be greater than a length of 5.
       operationId: createListOfPreferredChampionsForUser
@@ -1223,8 +1227,12 @@ paths:
           $ref: '#/components/responses/BadInput'
         404:
           $ref: '#/components/responses/NotFound'
-        5XX:
-          $ref: '#/components/schemas/Error'
+        500:
+          description: An error occurred while trying to update the User's preferred champions.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     patch:
       description: Adds the requested champion to the users preferred champions. Cannot be greater than a length of 5.
       operationId: addToPreferredChampionsForUser
@@ -1241,8 +1249,12 @@ paths:
           $ref: '#/components/responses/BadInput'
         404:
           $ref: '#/components/responses/NotFound'
-        5XX:
-          $ref: '#/components/schemas/Error'
+        500:
+          description: An error occurred while trying to add the requested champion to the User's preferred champions.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     delete:
       description: Removes the requested champion to the users preferred champions.
       operationId: removePreferredChampionForUser
@@ -1264,8 +1276,6 @@ paths:
           $ref: '#/components/responses/BadInput'
         404:
           $ref: '#/components/responses/NotFound'
-        5XX:
-          $ref: '#/components/schemas/Error'
   /users/{discordId}/servers:
     parameters:
       - $ref: '#/components/parameters/AuditHeaderParam'
@@ -1282,8 +1292,8 @@ paths:
           $ref: '#/components/responses/BadInput'
         404:
           $ref: '#/components/responses/NotFound'
-        5XX:
-          $ref: '#/components/schemas/Error'
+        500:
+          $ref: '#/components/responses/ClashBotException'
     post:
       description: Updates the users selected servers with an entirely new list. Cannot be greater than a length of 5.
       operationId: createUsersSelectedServers
@@ -1300,8 +1310,12 @@ paths:
           $ref: '#/components/responses/BadInput'
         404:
           $ref: '#/components/responses/NotFound'
-        5XX:
-          $ref: '#/components/schemas/Error'
+        500:
+          description: An error occurred while trying to update the User's selected servers.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     patch:
       description: Adds the selected server to the users selected servers. Cannot be greater than a length of 5.
       operationId: addUsersSelectedServers
@@ -1318,8 +1332,12 @@ paths:
           $ref: '#/components/responses/BadInput'
         404:
           $ref: '#/components/responses/NotFound'
-        5XX:
-          $ref: '#/components/schemas/Error'
+        500:
+          description: An error occurred while trying to add the requested server to the User's selected servers.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     delete:
       description: Removes the selected server to the users selected servers.
       operationId: removeUsersSelectedServers
@@ -1341,8 +1359,12 @@ paths:
           $ref: '#/components/responses/BadInput'
         404:
           $ref: '#/components/responses/NotFound'
-        5XX:
-          $ref: '#/components/schemas/Error'
+        500:
+          description: An error occurred while trying to remove the requested server from the User's selected servers.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /archive:
     parameters:
       - $ref: '#/components/parameters/AuditHeaderParam'
@@ -1356,6 +1378,10 @@ paths:
       responses:
         200:
           $ref: '#/components/responses/ArchiveResponse'
-        5XX:
-          $ref: '#/components/schemas/Error'
+        500:
+          description: An error occurred while trying to archive the Teams and Tentative Queues.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 

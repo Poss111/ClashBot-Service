@@ -1,0 +1,61 @@
+executionRoleArn: {{ ECS_EXECUTION_ROLE_ARN|tojson }}
+containerDefinitions:
+  - portMappings:
+      - hostPort: {{ ECS_CONTAINER_PORT }}
+        protocol: tcp
+        containerPort: {{ ECS_CONTAINER_PORT }}
+    cpu: {{ ECS_CPU }}
+    mountPoints: []
+    memory: {{ ECS_MEMORY }}
+    volumesFrom: []
+    essential: true
+    name: clash-bot
+    image: {{ ECS_IMAGE_URI }}
+    logConfiguration:
+      logDriver: awslogs
+      options:
+        awslogs-group: {{ ECS_LOG_CONFIG_GROUP }}
+        mode: non-blocking
+        awslogs-create-group: {{ ECS_LOG_CONFIG_CREATE_GROUP|tojson }}
+        max-buffer-size: {{ ECS_LOG_CONFIG_MAX_BUFFER_SIZE }}
+        awslogs-region: {{ ECS_AWS_REGION}}
+        awslogs-stream-prefix: {{ ECS_LOG_CONFIG_STREAM_PREFIX }}
+    environment:
+      - name: SPRING_PROFILES_ACTIVE
+        value: {{ ECS_SPRING_PROFILE }}
+      - name: SERVER_PORT
+        value: {{ ECS_CONTAINER_PORT|string|tojson }}
+      - name: AWS_REGION
+        value: {{ ECS_AWS_REGION }}
+    secrets:
+      - name: RIOT_API_KEY
+        valueFrom: {{ ECS_RIOT_API_KEY }}
+      - name: MONGO_DB_URI
+        valueFrom: {{ ECS_MONGO_DB_URI }}
+    healthCheck:
+      command:
+        - CMD-SHELL
+        - "curl -k https://localhost:{{ ECS_CONTAINER_PORT }}/{{ ECS_HEALTH_CHECK_PATH }} || exit 1"
+      interval: {{ ECS_HEALTH_CHECK_INTERVAL }}
+      timeout: {{ ECS_HEALTH_CHECK_TIMEOUT }}
+      retries: {{ ECS_HEALTH_CHECK_RETRIES }}
+      startPeriod: {{ ECS_HEALTH_CHECK_START_PERIOD }}
+placementConstraints: []
+memory: {{ ECS_MEMORY|string|tojson }}
+taskRoleArn: {{ ECS_TASK_ROLE_ARN|tojson }}
+family: {{ ECS_TASK_DEF_FAMILY|tojson }}
+requiresCompatibilities:
+  - FARGATE
+networkMode: awsvpc
+runtimePlatform:
+  cpuArchitecture: ARM64
+  operatingSystemFamily: LINUX
+cpu: {{ ECS_CPU|string|tojson }}
+volumes: []
+tags:
+  - key: Application
+    value: Clash-Bot-Service
+  - key: Version
+    value: {{ ECS_TAG_VERSION }}
+  - key: ECS-Cluster
+    value: main-cluster

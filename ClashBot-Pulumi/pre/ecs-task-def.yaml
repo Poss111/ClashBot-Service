@@ -1,0 +1,41 @@
+
+- portMappings:
+  - hostPort: {{ .serverPort }}
+    protocol: tcp
+    containerPort: {{ .serverPort }}
+  cpu: {{ .containerCpu }}
+  mountPoints: []
+  memory: {{ .containerMemory }}
+  volumesFrom: []
+  image: {{ .imageUri }}
+  essential: true
+  name: {{ .containerName }}
+  logConfiguration:
+    logDriver: awslogs
+    options:
+      awslogs-group: /ecs/clash-bot
+      mode: non-blocking
+      awslogs-create-group: "true"
+      max-buffer-size: 25m
+      awslogs-region: {{ .awsRegion }}
+      awslogs-stream-prefix: ecs
+  environment:
+    - name: SPRING_PROFILES_ACTIVE
+      value: "{{ .springProfilesActive }}"
+    - name: SERVER_PORT
+      value: {{ .serverPort }}
+    - name: AWS_REGION
+      value: {{ .awsRegion }}
+  secrets:
+    - name: RIOT_API_KEY
+      valueFrom: {{ .riotApiKeyArn }}
+    - name: MONGO_DB_URI
+      value: {{ .mongoDbUriArn }}
+  healthCheck:
+    command:
+      - CMD-SHELL
+      - "curl -k https://localhost:{{ .serverPort }}/{{ .healthcheckPath }} || exit 1"
+    interval: 60
+    timeout: 5
+    retries: 3
+    startPeriod: 120

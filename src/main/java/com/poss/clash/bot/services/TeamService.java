@@ -11,7 +11,7 @@ import com.poss.clash.bot.utils.IdUtils;
 import com.poss.clash.bot.utils.TeamMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
@@ -59,7 +59,6 @@ public class TeamService {
     return this.teamDao.save(clashTeam);
   }
 
-
   public ClashTeam addUserToTeam(String id, Role role, ClashTeam team) {
     ClashTeam clone = teamMapper.clone(team);
     clone
@@ -77,8 +76,8 @@ public class TeamService {
         .entrySet()
         .stream()
         .filter((entry) -> discordId.equals(entry
-                                                .getValue()
-                                                .getDiscordId()))
+            .getValue()
+            .getDiscordId()))
         .map(Map.Entry::getKey)
         .findFirst();
     role.ifPresent(value -> team
@@ -102,61 +101,55 @@ public class TeamService {
             .updateTeamName(teamId, newTeamName)
             .thenReturn(team))
         .flatMap(team -> {
-                   team.setTeamName(newTeamName);
-                   return teamSource
-                       .sendTeamUpdateEvent(teamMapper.clashTeamToTeam(team))
-                       .thenReturn(team);
-                 }
-        );
+          team.setTeamName(newTeamName);
+          return teamSource
+              .sendTeamUpdateEvent(teamMapper.clashTeamToTeam(team))
+              .thenReturn(team);
+        });
   }
 
   public Mono<ClashTeam> findTeamById(String teamId) {
     return teamDao
         .findByTeamId_Id(teamId)
         .onErrorMap(error -> new ClashBotDbException("Failed to retrieve Clash Team record", error,
-                                                     HttpStatus.INTERNAL_SERVER_ERROR));
+            HttpStatus.INTERNAL_SERVER_ERROR));
   }
 
   public Flux<ClashTeam> retrieveTeamBasedOnCriteria(
-      String discordId, String serverId, String tournamentName, String tournamentDay
-  ) {
+      String discordId, String serverId, String tournamentName, String tournamentDay) {
     if (StringUtils.isNotBlank(discordId)) {
       return teamDao.findAllTeamsThatUserBelongsTo(discordId);
     } else if (StringUtils.isNotBlank(serverId) && StringUtils.isNotBlank(tournamentName) &&
-               StringUtils.isNotBlank(tournamentDay)) {
+        StringUtils.isNotBlank(tournamentDay)) {
       return teamDao
           .findAllByServerId_AndTeamId_TournamentId_TournamentName_AndTeamId_TournamentId_TournamentDay(
               serverId,
               tournamentName,
-              tournamentDay
-          )
+              tournamentDay)
           .checkpoint(MessageFormat.format("Retrieve Teams based on serverId={0} tournamentName={1} tournamentDay={2}",
-                                           serverId, tournamentName, tournamentDay));
+              serverId, tournamentName, tournamentDay));
     } else if (StringUtils.isNotBlank(serverId) && StringUtils.isNotBlank(tournamentName)) {
       return teamDao
           .findAllByServerId_AndTeamId_TournamentId_TournamentName(
               serverId,
-              tournamentName
-          )
+              tournamentName)
           .checkpoint(MessageFormat.format("Retrieve Teams based on serverId={0} tournamentName={1}", serverId,
-                                           tournamentName));
+              tournamentName));
     } else if (StringUtils.isNotBlank(serverId) && StringUtils.isNotBlank(tournamentDay)) {
       return teamDao
           .findAllByServerId_AndTeamId_TournamentId_TournamentDay(
               serverId,
-              tournamentDay
-          )
+              tournamentDay)
           .checkpoint(
               MessageFormat.format("Retrieve Teams based on serverId={0} tournamentDay={1}", serverId, tournamentDay));
     } else if (StringUtils.isNotBlank(tournamentName) && StringUtils.isNotBlank(tournamentDay)) {
       return teamDao
           .findAllByTeamId_TournamentId_TournamentName_AndTeamId_TournamentId_TournamentDay(
               tournamentName,
-              tournamentDay
-          )
+              tournamentDay)
           .checkpoint(
               MessageFormat.format("Retrieve Teams based on tournamentName={0} tournamentDay={1}", tournamentName,
-                                   tournamentDay));
+                  tournamentDay));
     } else if (StringUtils.isNotBlank(serverId)) {
       return teamDao
           .findAllByServerId(serverId)

@@ -1,0 +1,20 @@
+launchType: FARGATE
+serviceName: <+pipeline.identifier>
+desiredCount: 1
+networkConfiguration:
+  awsvpcConfiguration:
+    vpc: <+variable.vpc_id>
+    subnets:
+      - <+variable.public_subneet_use1a>
+      - <+variable.public_subnet_use1b>
+    assignPublicIp: ENABLED
+    securityGroups:
+      - <+stage.variables.securityGroupId>
+  role: <+variable.ecs_service_role_arn>
+deploymentConfiguration:
+  maximumPercent: 200
+  minimumHealthyPercent: 100
+loadBalancers:
+  - targetGroupArn: <+pipeline.stages.Pre.spec.execution.steps.apply.output.outputVariables.target_group_arn>
+    containerName: clash-bot-service
+    containerPort: 8080

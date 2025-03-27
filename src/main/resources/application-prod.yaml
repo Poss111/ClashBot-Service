@@ -1,8 +1,15 @@
+server:
+  servlet:
+    context-path: /clash-bot
 spring:
-  data:
-    mongodb:
-      uri: mongodb://tba/clash-bot
+  webflux:
+    base-path: /clash-bot
 logging:
+  structured:
+    format:
+      console: ecs
   level:
-    root: ERROR
     com.poss: INFO
+    org.springframework: INFO
+    org.springframework.web: DEBUG
+    org.springframework.boot.actuate.web: DEBUG

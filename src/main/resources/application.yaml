@@ -1,23 +1,51 @@
 spring:
   application:
     name: clash-bot-service
+  jmx:
+    enabled: false 
+  main:
+    lazy-initialization: true
   jpa:
     hibernate:
       ddl-auto: update
-  cloud:
-    stream:
-      bindings:
-        teamEvents-out-0:
-          destination: clashBotTeamEvent
-          content-type: application/json
-      poller:
-        fixed-delay: 3000
+  data:
+    mongodb:
+      uri: ${MONGO_DB_URI}
+  # cloud:
+  #   stream:
+  #     bindings:
+  #       teamEvents-out-0:
+  #         destination: clashBotTeamEvent
+  #         content-type: application/json
+  #     poller:
+  #       fixed-delay: 3000
+server:
+  ssl:
+    enabled: true
+    key-store: classpath:keystore/clash-bot-service.p12
+    key-store-password: changeit
+    key-alias: clash-bot-service
+    key-store-type: PKCS12
 management:
   endpoint:
     health:
       probes:
         enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: info, health, readiness, liveness
+  info:
+    git:
+      mode: full
+riot:
+  url: https://na1.api.riotgames.com
+  api-key: ${RIOT_API_KEY}
+  timeout: 30s
 logging:
   level:
-    root: ERROR
     com.poss: INFO
+
+openapi:
+  clashBotService:
+    base-path: /clash-bot

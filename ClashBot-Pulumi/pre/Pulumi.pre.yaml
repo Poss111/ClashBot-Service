@@ -1,0 +1,5 @@
+config:
+  aws:region: us-east-1
+  clash-bot:vpcID: vpc-095a347d625307970
+  clash-bot:privateSubnetOneId: subnet-0534486e9d32ce489
+  clash-bot:privateSubnetTwoId: subnet-0feb95cb7268e81a9
